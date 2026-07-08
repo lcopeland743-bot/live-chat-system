@@ -3,79 +3,196 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 
+
+const config =
+require("./server/config/server-config");
+
+
+const MeridianTime =
+require("./server/utils/time");
+
+
+
+const registerChatHandler =
+require("./server/socket/chat-handler");
+
+
+const registerPresenceHandler =
+require("./server/socket/presence-handler");
+
+
+
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+const server =
+http.createServer(app);
 
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
 
-io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
 
-  socket.on("user_enter", (data) => {
-    const payload = {
-      socketId: socket.id,
-      userId: data.userId,
-      page: data.page,
-      referrer: data.referrer,
-      time: data.time || new Date().toISOString()
-    };
+const io =
+new Server(server);
 
-    console.log("User entered:", payload);
 
-    io.emit("admin_user_enter", payload);
-  });
 
-  socket.on("user_message", (data) => {
-    const payload = {
-      socketId: socket.id,
-      userId: data.userId,
-      message: data.message,
-      page: data.page,
-      time: data.time || new Date().toISOString()
-    };
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "public"
+        )
+    )
+);
 
-    console.log("User message:", payload);
 
-    io.emit("admin_user_message", payload);
-  });
 
-  socket.on("admin_reply", (data) => {
-    if (!data.socketId || !data.message) return;
+app.get(
+    "/",
+    (req,res)=>{
 
-    const payload = {
-      socketId: data.socketId,
-      message: data.message,
-      time: data.time || new Date().toISOString()
-    };
 
-    console.log("Admin reply:", payload);
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "index.html"
+            )
+        );
 
-    io.to(data.socketId).emit("admin_reply", payload);
-  });
 
-  socket.on("disconnect", () => {
-    const payload = {
-      socketId: socket.id,
-      time: new Date().toISOString()
-    };
+    }
+);
 
-    console.log("Socket disconnected:", payload);
 
-    io.emit("admin_user_leave", payload);
-  });
-});
 
-const PORT = process.env.PORT || 3000;
+app.get(
+    "/admin",
+    (req,res)=>{
 
-server.listen(PORT, () => {
-  console.log(`Meridian Chat SDK running on port ${PORT}`);
-});
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "admin.html"
+            )
+        );
+
+
+    }
+);
+
+
+
+
+
+io.on(
+    "connection",
+    (socket)=>{
+
+
+        console.log(
+            "Socket connected:",
+            socket.id
+        );
+
+
+
+        /**
+         * 注册聊天模块
+         */
+        registerChatHandler(
+            io,
+            socket
+        );
+
+
+
+        /**
+         * 注册在线状态模块
+         */
+        registerPresenceHandler(
+            io,
+            socket
+        );
+
+
+
+
+
+        /**
+         * 用户进入记录
+         *
+         * 暂时保留
+         */
+        socket.on(
+            "user_enter",
+            (data)=>{
+
+
+                const payload = {
+
+
+                    socketId:
+                    socket.id,
+
+
+                    userId:
+                    data.userId,
+
+
+                    page:
+                    data.page,
+
+
+                    referrer:
+                    data.referrer,
+
+
+                    time:
+                    data.time
+                    ||
+                    MeridianTime.now()
+
+
+                };
+
+
+
+                console.log(
+                    "User entered:",
+                    payload
+                );
+
+
+
+                io.emit(
+                    "admin_user_enter",
+                    payload
+                );
+
+
+            }
+        );
+
+
+
+    }
+);
+
+
+
+
+
+server.listen(
+    config.port,
+    ()=>{
+
+
+        console.log(
+            `${config.appName} running on port ${config.port}`
+        );
+
+
+    }
+);
