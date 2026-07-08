@@ -8,7 +8,7 @@
  * Features:
  * - Message Timestamp
  * - Message ID
- * - Duplicate prevention foundation
+ * - Message Deduplication
  */
 
 
@@ -16,16 +16,15 @@ const MeridianTime =
 require("../utils/time");
 
 
-console.log(
-    "CHAT HANDLER VERSION: messageId enabled"
-);
+const messageService =
+require("../services/message-service");
 
 
 
 
 
 /**
- * 生成消息ID
+ * 创建消息ID
  */
 function createMessageId(){
 
@@ -62,6 +61,8 @@ function registerChatHandler(
 
 
 
+
+
     /**
      * 用户发送消息
      */
@@ -74,6 +75,8 @@ function registerChatHandler(
 
 
                 messageId:
+                data.messageId
+                ||
                 createMessageId(),
 
 
@@ -103,6 +106,33 @@ function registerChatHandler(
 
 
 
+
+
+            /**
+             * 消息去重检查
+             */
+            if(
+                messageService.isDuplicate(
+                    payload.messageId
+                )
+            ){
+
+
+                console.log(
+                    "Duplicate user message ignored:",
+                    payload.messageId
+                );
+
+
+                return;
+
+
+            }
+
+
+
+
+
             console.log(
                 "User message:",
                 payload
@@ -110,8 +140,10 @@ function registerChatHandler(
 
 
 
+
+
             /**
-             * 发送给后台
+             * 发送后台
              */
             io.emit(
                 "admin_user_message",
@@ -149,10 +181,13 @@ function registerChatHandler(
 
 
 
+
             const payload = {
 
 
                 messageId:
+                data.messageId
+                ||
                 createMessageId(),
 
 
@@ -178,6 +213,33 @@ function registerChatHandler(
 
 
 
+
+
+            /**
+             * 消息去重检查
+             */
+            if(
+                messageService.isDuplicate(
+                    payload.messageId
+                )
+            ){
+
+
+                console.log(
+                    "Duplicate admin message ignored:",
+                    payload.messageId
+                );
+
+
+                return;
+
+
+            }
+
+
+
+
+
             console.log(
                 "Admin reply:",
                 payload
@@ -187,8 +249,10 @@ function registerChatHandler(
 
 
 
+
+
             /**
-             * 发送给用户
+             * 给用户
              */
             io.to(
                 data.socketId
@@ -202,8 +266,10 @@ function registerChatHandler(
 
 
 
+
+
             /**
-             * 当前客服窗口回显
+             * 当前后台回显
              */
             socket.emit(
                 "admin_reply",
