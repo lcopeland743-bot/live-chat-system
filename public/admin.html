@@ -1,20 +1,90 @@
 <div class="admin-container">
+
   <h1>Meridian Admin</h1>
 
-  <div id="adminMessages" class="admin-messages"></div>
+
+
+  <!-- 在线访客 -->
+
+  <div class="admin-online">
+
+    <h2>在线访客</h2>
+
+    <div id="onlineUsers">
+
+    </div>
+
+  </div>
+
+
+
+
+
+  <!-- 离线访客 -->
+
+  <div class="admin-offline">
+
+    <h2>离线访客</h2>
+
+    <div id="offlineUsers">
+
+    </div>
+
+  </div>
+
+
+
+
+
+  <!-- 聊天消息 -->
+
+  <div id="adminMessages" class="admin-messages">
+
+  </div>
+
+
+
+
+
+  <!-- 回复区域 -->
 
   <div class="admin-input">
-    <input id="adminReplyInput" type="text" placeholder="输入回复内容" />
-    <button id="adminSendBtn">发送</button>
+
+    <input
+      id="adminReplyInput"
+      type="text"
+      placeholder="输入回复内容"
+    />
+
+
+    <button id="adminSendBtn">
+      发送
+    </button>
+
+
   </div>
+
+
 </div>
+
+
+
+
 
 <script src="/socket.io/socket.io.js"></script>
 
+
 <script src="/js/core/events.js"></script>
+
 <script src="/js/core/logger.js"></script>
+
 <script src="/js/core/time.js"></script>
+
+
 <script src="/js/admin/admin-state.js"></script>
+
 <script src="/js/admin/admin-ui.js"></script>
+
 <script src="/js/admin/admin-socket.js"></script>
+
 <script src="/js/admin/admin.js"></script>

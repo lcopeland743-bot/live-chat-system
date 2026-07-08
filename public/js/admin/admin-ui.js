@@ -28,6 +28,13 @@ window.MeridianAdminUI = {
 
 
 
+        this.offlineUsers =
+        document.getElementById(
+            "offlineUsers"
+        );
+
+
+
         this.input =
         document.getElementById(
             "adminReplyInput"
@@ -41,7 +48,6 @@ window.MeridianAdminUI = {
         );
 
 
-
     },
 
 
@@ -49,35 +55,31 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 绑定发送事件
+     * 绑定发送
      */
     bindSend(callback){
 
 
 
-        if(!this.sendButton){
+        if(this.sendButton){
 
-            return;
+
+            this.sendButton.onclick =
+            ()=>{
+
+
+                callback();
+
+
+            };
+
 
         }
 
 
 
-        this.sendButton.onclick =
-        ()=>{
 
 
-            callback();
-
-
-        };
-
-
-
-
-        /**
-         * Enter发送
-         */
         if(this.input){
 
 
@@ -117,7 +119,7 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 获取输入内容
+     * 获取输入
      */
     getInputMessage(){
 
@@ -139,7 +141,7 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 清空输入框
+     * 清空输入
      */
     clearInput(){
 
@@ -147,7 +149,7 @@ window.MeridianAdminUI = {
         if(this.input){
 
 
-            this.input.value = "";
+            this.input.value="";
 
 
         }
@@ -160,7 +162,7 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 添加聊天消息
+     * 消息显示
      */
     addMessage(
         message,
@@ -169,13 +171,11 @@ window.MeridianAdminUI = {
     ){
 
 
-
         if(!this.messages){
 
             return;
 
         }
-
 
 
 
@@ -191,30 +191,6 @@ window.MeridianAdminUI = {
 
 
 
-
-        let timeHTML = "";
-
-
-
-        if(time){
-
-
-            timeHTML = `
-
-                <div class="message-time">
-
-                    ${MeridianTime.format(time)}
-
-                </div>
-
-            `;
-
-
-        }
-
-
-
-
         div.innerHTML = `
 
             <div class="message-content">
@@ -223,10 +199,23 @@ window.MeridianAdminUI = {
 
             </div>
 
-            ${timeHTML}
+
+            ${
+                time
+                ?
+                `
+                <div class="message-time">
+
+                ${MeridianTime.format(time)}
+
+                </div>
+                `
+                :
+                ""
+            }
+
 
         `;
-
 
 
 
@@ -252,11 +241,10 @@ window.MeridianAdminUI = {
     addEnter(data){
 
 
-
         this.addMessage(
 
             `
-            用户进入：
+            用户进入:
             ${data.userId}
             `,
 
@@ -274,7 +262,7 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 在线用户渲染
+     * 在线用户
      */
     renderOnlineUsers(){
 
@@ -293,14 +281,12 @@ window.MeridianAdminUI = {
 
 
 
-        this.onlineUsers.innerHTML = "";
+        this.onlineUsers.innerHTML="";
 
 
 
 
-        if(
-            users.length === 0
-        ){
+        if(users.length===0){
 
 
             this.onlineUsers.innerHTML =
@@ -316,6 +302,7 @@ window.MeridianAdminUI = {
 
 
         users.forEach(
+
             user=>{
 
 
@@ -333,28 +320,21 @@ window.MeridianAdminUI = {
 
                 item.innerHTML = `
 
-                    <div>
-
                     🟢 ${user.userId}
 
-                    </div>
-
+                    <br>
 
                     <small>
 
+                    在线时间:
                     ${
+                    user.connectedAt
+                    ?
+                    MeridianTime.format(
                         user.connectedAt
-
-                        ?
-
-                        MeridianTime.format(
-                            user.connectedAt
-                        )
-
-                        :
-
-                        ""
-
+                    )
+                    :
+                    ""
                     }
 
                     </small>
@@ -364,6 +344,109 @@ window.MeridianAdminUI = {
 
 
                 this.onlineUsers.appendChild(
+                    item
+                );
+
+
+            }
+
+        );
+
+
+    },
+
+
+
+
+
+
+    /**
+     * 离线用户
+     */
+    renderOfflineUsers(){
+
+
+
+        if(!this.offlineUsers){
+
+            return;
+
+        }
+
+
+
+        const users =
+        MeridianAdminState.getOfflineUsers();
+
+
+
+        this.offlineUsers.innerHTML="";
+
+
+
+
+
+        if(users.length===0){
+
+
+            this.offlineUsers.innerHTML =
+            "<div>暂无离线用户</div>";
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+        users.forEach(
+
+            user=>{
+
+
+                const item =
+                document.createElement(
+                    "div"
+                );
+
+
+
+                item.className =
+                "offline-user";
+
+
+
+                item.innerHTML = `
+
+                    ⚫ ${user.userId}
+
+                    <br>
+
+                    <small>
+
+                    最后在线:
+
+                    ${
+                    user.lastSeen
+                    ?
+                    MeridianTime.format(
+                        user.lastSeen
+                    )
+                    :
+                    ""
+                    }
+
+                    </small>
+
+                `;
+
+
+
+                this.offlineUsers.appendChild(
                     item
                 );
 

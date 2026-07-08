@@ -89,7 +89,7 @@ window.MeridianAdminSocket = {
 
 
         /**
-         * 客服回复显示
+         * 客服回复回显
          */
         this.socket.on(
 
@@ -117,8 +117,10 @@ window.MeridianAdminSocket = {
 
 
 
+
+
         /**
-         * Presence状态
+         * Presence状态更新
          */
         this.socket.on(
 
@@ -127,7 +129,11 @@ window.MeridianAdminSocket = {
             (data)=>{
 
 
-                if(!data || !data.user){
+                if(
+                    !data
+                    ||
+                    !data.user
+                ){
 
                     return;
 
@@ -135,13 +141,20 @@ window.MeridianAdminSocket = {
 
 
 
+
+
+                /**
+                 * 在线
+                 */
                 if(
                     data.type === "online"
                 ){
 
 
                     MeridianAdminState.addOnlineUser(
+
                         data.user
+
                     );
 
 
@@ -149,14 +162,20 @@ window.MeridianAdminSocket = {
 
 
 
+
+
+
+                /**
+                 * 离线
+                 */
                 if(
                     data.type === "offline"
                 ){
 
 
-                    MeridianAdminState.removeOnlineUser(
+                    MeridianAdminState.addOfflineUser(
 
-                        data.user.userId
+                        data.user
 
                     );
 
@@ -165,7 +184,22 @@ window.MeridianAdminSocket = {
 
 
 
+
+
                 MeridianAdminUI.renderOnlineUsers();
+
+
+
+                if(
+                    MeridianAdminUI.renderOfflineUsers
+                ){
+
+
+                    MeridianAdminUI.renderOfflineUsers();
+
+
+                }
+
 
 
             }
@@ -174,7 +208,10 @@ window.MeridianAdminSocket = {
 
 
 
+
+
     },
+
 
 
 
@@ -202,9 +239,11 @@ window.MeridianAdminSocket = {
                 "No active user"
             );
 
+
             return;
 
         }
+
 
 
 
@@ -219,7 +258,8 @@ window.MeridianAdminSocket = {
                 user.socketId,
 
 
-                message:message,
+                message:
+                message,
 
 
                 time:
@@ -229,6 +269,7 @@ window.MeridianAdminSocket = {
             }
 
         );
+
 
 
     }
