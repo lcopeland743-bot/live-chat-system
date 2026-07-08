@@ -1,0 +1,109 @@
+.meridian-chat {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  font-family: Arial, sans-serif;
+}
+
+.meridian-chat-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.meridian-chat-panel {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 72px;
+  width: 340px;
+  height: 460px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+}
+
+.meridian-chat-panel.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.meridian-chat-header {
+  height: 52px;
+  padding: 0 16px;
+  background: #111827;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.meridian-chat-header button {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.meridian-chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+.meridian-message {
+  max-width: 80%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.meridian-message-admin {
+  background: #e5e7eb;
+  color: #111827;
+  margin-right: auto;
+}
+
+.meridian-message-user {
+  background: #111827;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.meridian-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.meridian-chat-input input {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 10px 14px;
+  outline: none;
+}
+
+.meridian-chat-input button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}

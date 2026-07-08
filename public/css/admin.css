@@ -1,0 +1,72 @@
+.admin-container {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: Arial, sans-serif;
+}
+
+.admin-messages {
+  height: 500px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+.admin-message {
+  max-width: 70%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+}
+
+.admin-message-user {
+  background: #e5e7eb;
+  margin-right: auto;
+}
+
+.admin-message-admin {
+  background: #111827;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.admin-message-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.admin-message-time {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.admin-message-user .admin-message-time {
+  text-align: left;
+}
+
+.admin-message-admin .admin-message-time {
+  text-align: right;
+}
+
+.admin-log {
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+  margin: 10px 0;
+}
+
+.admin-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-input input {
+  flex: 1;
+  padding: 12px;
+}
+
+.admin-input button {
+  padding: 0 20px;
+}
