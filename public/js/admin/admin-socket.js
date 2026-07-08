@@ -1,80 +1,238 @@
+/**
+ * Meridian Admin Socket
+ *
+ * 后台 Socket 通信
+ *
+ * Version: v1.1.0
+ */
+
+
 window.MeridianAdminSocket = {
-  socket: null,
 
-  connect() {
-    const EVENTS = window.MERIDIAN_EVENTS;
 
-    if (!window.io) {
-      MeridianLogger.error(
-    "Socket.io not loaded"
-);
-      return null;
+    socket:null,
+
+
+
+    init(){
+
+
+        this.socket = io();
+
+
+
+        const EVENTS =
+        window.MERIDIAN_EVENTS;
+
+
+
+        /**
+         * 用户进入
+         */
+        this.socket.on(
+
+            EVENTS.ADMIN_USER_ENTER,
+
+            (data)=>{
+
+
+                MeridianAdminState.setCurrentUser(
+                    data
+                );
+
+
+                MeridianAdminUI.addEnter(
+                    data
+                );
+
+
+            }
+
+        );
+
+
+
+
+
+        /**
+         * 用户消息
+         */
+        this.socket.on(
+
+            EVENTS.ADMIN_USER_MESSAGE,
+
+            (data)=>{
+
+
+                MeridianAdminState.setCurrentUser(
+                    data
+                );
+
+
+                MeridianAdminUI.addMessage(
+
+                    data.message,
+
+                    "user",
+
+                    data.time
+
+                );
+
+
+            }
+
+        );
+
+
+
+
+
+        /**
+         * 客服回复显示
+         */
+        this.socket.on(
+
+            EVENTS.ADMIN_REPLY,
+
+            (data)=>{
+
+
+                MeridianAdminUI.addMessage(
+
+                    data.message,
+
+                    "admin",
+
+                    data.time
+
+                );
+
+
+            }
+
+        );
+
+
+
+
+
+        /**
+         * Presence状态
+         */
+        this.socket.on(
+
+            EVENTS.ADMIN_PRESENCE_UPDATE,
+
+            (data)=>{
+
+
+                if(!data || !data.user){
+
+                    return;
+
+                }
+
+
+
+                if(
+                    data.type === "online"
+                ){
+
+
+                    MeridianAdminState.addOnlineUser(
+                        data.user
+                    );
+
+
+                }
+
+
+
+                if(
+                    data.type === "offline"
+                ){
+
+
+                    MeridianAdminState.removeOnlineUser(
+
+                        data.user.userId
+
+                    );
+
+
+                }
+
+
+
+                MeridianAdminUI.renderOnlineUsers();
+
+
+            }
+
+        );
+
+
+
+    },
+
+
+
+
+
+    /**
+     * 发送客服回复
+     */
+    sendReply(message){
+
+
+
+        const user =
+        MeridianAdminState.getCurrentUser();
+
+
+
+        if(
+            !user
+            ||
+            !user.socketId
+        ){
+
+            console.log(
+                "No active user"
+            );
+
+            return;
+
+        }
+
+
+
+
+        this.socket.emit(
+
+            window.MERIDIAN_EVENTS.ADMIN_REPLY,
+
+            {
+
+                socketId:
+                user.socketId,
+
+
+                message:message,
+
+
+                time:
+                MeridianTime.now()
+
+
+            }
+
+        );
+
+
     }
 
-    if (!EVENTS) {
-      console.error("MERIDIAN_EVENTS not loaded");
-      return null;
-    }
 
-    this.socket = io();
 
-    this.socket.on("connect", () => {
-      MeridianLogger.info(
-    "Admin connected",
-    {
-        id:this.socket.id
-    }
-);
-      window.MeridianAdminUI.addLog("客服后台已连接");
-    });
-
-    this.socket.on(EVENTS.ADMIN_USER_ENTER, (data) => {
-      window.MeridianAdminState.setCurrentUser(data);
-
-      window.MeridianAdminUI.addLog(
-        `用户进入：${data.page || "未知页面"}`,
-        data.time
-      );
-    });
-
-    this.socket.on(EVENTS.ADMIN_USER_MESSAGE, (data) => {
-      window.MeridianAdminState.setCurrentUser(data);
-
-      window.MeridianAdminUI.addMessage(
-        data.message,
-        "user",
-        data.time
-      );
-    });
-
-    this.socket.on(EVENTS.ADMIN_USER_LEAVE, (data) => {
-      window.MeridianAdminState.clearCurrentUser(data.socketId);
-
-      window.MeridianAdminUI.addLog(
-        `用户离开：${data.socketId}`,
-        data.time
-      );
-    });
-
-    return this.socket;
-  },
-
-  sendReply(message) {
-    const EVENTS = window.MERIDIAN_EVENTS;
-    const socketId = window.MeridianAdminState.currentSocketId;
-    const time = MeridianTime.now();
-
-    if (!socketId || !message) {
-      window.MeridianAdminUI.addLog("没有可回复的用户", time);
-      return;
-    }
-
-    this.socket.emit(EVENTS.ADMIN_REPLY, {
-      socketId,
-      message,
-      time
-    });
-
-    window.MeridianAdminUI.addMessage(message, "admin", time);
-  }
 };

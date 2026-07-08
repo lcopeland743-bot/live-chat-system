@@ -30,14 +30,14 @@ function registerPresenceHandler(
 
 
     /**
-     * 用户上线事件
+     * 用户上线
      *
      * Client
-     *   ↓
+     * ↓
      * Server
      */
     socket.on(
-        "USER_ONLINE",
+        "user_online",
         (data)=>{
 
 
@@ -71,14 +71,10 @@ function registerPresenceHandler(
 
 
             /**
-             * 通知管理员
-             *
-             * Server
-             *    ↓
-             * Admin
+             * 通知后台
              */
             io.emit(
-                "ADMIN_PRESENCE_UPDATE",
+                "admin_presence_update",
                 {
 
                     type:"online",
@@ -97,10 +93,59 @@ function registerPresenceHandler(
 
 
     /**
-     * Socket断开
+     * 用户离线
+     */
+    socket.on(
+        "user_offline",
+        (data)=>{
+
+
+            const user =
+            presenceService.removeUser(
+                data.userId
+            );
+
+
+
+            if(!user){
+
+                return;
+
+            }
+
+
+
+            console.log(
+                "[Presence] User offline:",
+                user
+            );
+
+
+
+            io.emit(
+                "admin_presence_update",
+                {
+
+                    type:"offline",
+
+                    user:user
+
+                }
+            );
+
+
+        }
+    );
+
+
+
+
+
+    /**
+     * Socket断开保护
      *
-     * 用户关闭页面
-     * 网络断开
+     * 浏览器异常关闭
+     * 网络中断
      */
     socket.on(
         "disconnect",
@@ -123,17 +168,14 @@ function registerPresenceHandler(
 
 
             console.log(
-                "[Presence] User offline:",
+                "[Presence] Socket offline:",
                 user
             );
 
 
 
-            /**
-             * 通知管理员
-             */
             io.emit(
-                "ADMIN_PRESENCE_UPDATE",
+                "admin_presence_update",
                 {
 
                     type:"offline",
@@ -146,7 +188,6 @@ function registerPresenceHandler(
 
         }
     );
-
 
 
 }

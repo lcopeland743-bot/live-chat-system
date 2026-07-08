@@ -1,29 +1,97 @@
 (function () {
-  function initAdmin() {
-    window.MeridianAdminUI.init();
 
-    const socket = window.MeridianAdminSocket.connect();
 
-    if (!socket) {
-      window.MeridianAdminUI.addLog("客服后台连接失败");
-      return;
+    function initAdmin() {
+
+
+
+        /**
+         * 初始化后台UI
+         */
+        window.MeridianAdminUI.init();
+
+
+
+
+        /**
+         * 初始化后台Socket
+         */
+        window.MeridianAdminSocket.init();
+
+
+
+
+
+        /**
+         * 绑定发送按钮
+         */
+        window.MeridianAdminUI.bindSend(() => {
+
+
+
+            const message =
+            window.MeridianAdminUI.getInputMessage();
+
+
+
+
+            if(!message){
+
+                return;
+
+            }
+
+
+
+
+            window.MeridianAdminSocket.sendReply(
+                message
+            );
+
+
+
+            window.MeridianAdminUI.clearInput();
+
+
+
+        });
+
+
+
+
+        console.log(
+            "Meridian Admin initialized"
+        );
+
+
     }
 
-    window.MeridianAdminUI.bindSend(() => {
-      const message = window.MeridianAdminUI.getInputMessage();
 
-      if (!message) return;
 
-      window.MeridianAdminSocket.sendReply(message);
-      window.MeridianAdminUI.clearInput();
-    });
 
-    console.log("Meridian Admin initialized");
-  }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initAdmin);
-  } else {
-    initAdmin();
-  }
+    if(
+        document.readyState === "loading"
+    ){
+
+
+        document.addEventListener(
+
+            "DOMContentLoaded",
+
+            initAdmin
+
+        );
+
+
+    }else{
+
+
+        initAdmin();
+
+
+    }
+
+
+
 })();

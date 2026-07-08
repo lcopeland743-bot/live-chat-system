@@ -1,14 +1,30 @@
 (function () {
 
+
     function initMeridianChat() {
+
 
         MeridianPixel.pageView();
 
+
+
         MeridianSocket.connect();
+
+
+
+        /**
+         * 初始化用户在线状态
+         */
+        MeridianPresence.init();
+
+
 
         MeridianChatUI.init();
 
+
+
         MeridianSocket.onAdminReply((data) => {
+
 
             MeridianChatUI.addMessage(
 
@@ -18,15 +34,22 @@
 
             );
 
+
         });
 
+
+
         MeridianLogger.info(
-    "Chat SDK initialized"
-);
+            "Chat SDK initialized"
+        );
+
 
     }
 
+
+
     if (document.readyState === "loading") {
+
 
         document.addEventListener(
 
@@ -36,10 +59,14 @@
 
         );
 
+
     } else {
+
 
         initMeridianChat();
 
+
     }
+
 
 })();

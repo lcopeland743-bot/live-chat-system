@@ -4,6 +4,11 @@
  * Socket 聊天事件处理
  *
  * Version: v1.1.0
+ *
+ * Features:
+ * - Message Timestamp
+ * - Message ID
+ * - Duplicate prevention foundation
  */
 
 
@@ -11,13 +16,45 @@ const MeridianTime =
 require("../utils/time");
 
 
+console.log(
+    "CHAT HANDLER VERSION: messageId enabled"
+);
+
+
+
+
 
 /**
- * 注册聊天事件
- *
- * @param io Socket.io Server
- * @param socket 当前连接
+ * 生成消息ID
  */
+function createMessageId(){
+
+
+    return (
+
+        "msg_" +
+
+        Date.now()
+
+        +
+
+        "_"
+
+        +
+
+        Math.random()
+        .toString(36)
+        .substring(2,8)
+
+    );
+
+
+}
+
+
+
+
+
 function registerChatHandler(
     io,
     socket
@@ -27,12 +64,6 @@ function registerChatHandler(
 
     /**
      * 用户发送消息
-     *
-     * Client
-     *    ↓
-     * Server
-     *    ↓
-     * Admin
      */
     socket.on(
         "user_message",
@@ -40,6 +71,10 @@ function registerChatHandler(
 
 
             const payload = {
+
+
+                messageId:
+                createMessageId(),
 
 
                 socketId:
@@ -75,6 +110,9 @@ function registerChatHandler(
 
 
 
+            /**
+             * 发送给后台
+             */
             io.emit(
                 "admin_user_message",
                 payload
@@ -88,14 +126,10 @@ function registerChatHandler(
 
 
 
+
+
     /**
      * 客服回复
-     *
-     * Admin
-     *    ↓
-     * Server
-     *    ↓
-     * User
      */
     socket.on(
         "admin_reply",
@@ -114,15 +148,23 @@ function registerChatHandler(
 
 
 
+
             const payload = {
+
+
+                messageId:
+                createMessageId(),
+
 
 
                 socketId:
                 data.socketId,
 
 
+
                 message:
                 data.message,
+
 
 
                 time:
@@ -135,6 +177,7 @@ function registerChatHandler(
 
 
 
+
             console.log(
                 "Admin reply:",
                 payload
@@ -142,6 +185,11 @@ function registerChatHandler(
 
 
 
+
+
+            /**
+             * 发送给用户
+             */
             io.to(
                 data.socketId
             )
@@ -151,12 +199,27 @@ function registerChatHandler(
             );
 
 
+
+
+
+            /**
+             * 当前客服窗口回显
+             */
+            socket.emit(
+                "admin_reply",
+                payload
+            );
+
+
+
         }
     );
 
 
 
 }
+
+
 
 
 
