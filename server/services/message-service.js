@@ -1,147 +1,306 @@
 /**
  * Meridian Message Service
  *
- * 消息去重服务
+ * MongoDB Message Manager
  *
- * Version: v1.1.0
+ * Version:
+ * v1.2.0
+ *
+ * Features:
+ * - Save Message
+ * - Duplicate Check
+ * - Query History
  */
 
 
-class MessageService {
 
-
-
-    constructor(){
-
-
-        /**
-         * 已处理消息ID缓存
-         *
-         * Map:
-         *
-         * messageId
-         * timestamp
-         */
-        this.messages = new Map();
-
-
-
-        /**
-         * 最大保存数量
-         */
-        this.maxSize = 1000;
-
-
-
-    }
+const Message =
+require("../database/models/message-model");
 
 
 
 
 
 
-    /**
-     * 检查消息是否重复
-     *
-     * true:
-     * 已存在
-     *
-     * false:
-     * 新消息
-     */
-    isDuplicate(
-        messageId
+
+/**
+ * 临时消息去重缓存
+ *
+ * 用于防止短时间重复提交
+ *
+ * 后续可迁移 Redis
+ */
+const recentMessages =
+new Set();
+
+
+
+
+
+
+
+
+/**
+ * 判断重复消息
+ */
+function isDuplicate(
+
+    messageId
+
+){
+
+
+
+    if(
+        recentMessages.has(
+            messageId
+        )
     ){
 
+        return true;
 
-        if(
-            this.messages.has(
+    }
+
+
+
+
+
+    recentMessages.add(
+
+        messageId
+
+    );
+
+
+
+
+
+    /**
+     * 5分钟后释放
+     */
+    setTimeout(
+
+        ()=>{
+
+
+            recentMessages.delete(
+
                 messageId
-            )
-        ){
 
-            return true;
-
-        }
+            );
 
 
-
-        this.messages.set(
-
-            messageId,
-
-            Date.now()
-
-        );
+        },
 
 
-
-        this.cleanup();
-
+        5 * 60 * 1000
 
 
-        return false;
-
-
-    }
+    );
 
 
 
 
 
-    /**
-     * 清理旧消息
-     */
-    cleanup(){
-
-
-
-        if(
-            this.messages.size
-            <=
-            this.maxSize
-        ){
-
-            return;
-
-        }
-
-
-
-
-        const firstKey =
-        this.messages.keys()
-        .next()
-        .value;
-
-
-
-        this.messages.delete(
-            firstKey
-        );
-
-
-
-    }
-
-
-
-
-    /**
-     * 当前缓存数量
-     */
-    count(){
-
-
-        return this.messages.size;
-
-
-    }
+    return false;
 
 
 }
 
 
 
-module.exports =
-new MessageService();
+
+
+
+
+
+
+/**
+ * 保存消息
+ */
+async function saveMessage(data){
+
+
+
+    const message =
+
+    await Message.create({
+
+
+
+        messageId:
+        data.messageId,
+
+
+
+        sessionId:
+        data.sessionId
+        ||
+        data.userId,
+
+
+
+        userId:
+        data.userId,
+
+
+
+        socketId:
+        data.socketId
+        ||
+        null,
+
+
+
+        sender:
+        data.sender
+        ||
+        "user",
+
+
+
+
+        type:
+        data.type
+        ||
+        "text",
+
+
+
+
+        content:
+        data.content
+        ||
+        data.message
+        ||
+        "",
+
+
+
+        createdAt:
+        data.time
+        ||
+        new Date()
+
+
+
+    });
+
+
+
+
+
+
+
+    return message;
+
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 查询用户聊天记录
+ */
+async function getMessages(
+
+    userId
+
+){
+
+
+
+    const messages =
+
+    await Message.find({
+
+
+        userId:userId
+
+
+    })
+
+    .sort({
+
+        createdAt:1
+
+    });
+
+
+
+
+
+
+
+    return messages;
+
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 根据Session查询
+ */
+async function getSessionMessages(
+
+    sessionId
+
+){
+
+
+
+    return await Message.find({
+
+
+        sessionId:sessionId
+
+
+    })
+
+    .sort({
+
+        createdAt:1
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+module.exports = {
+
+
+    isDuplicate,
+
+
+    saveMessage,
+
+
+    getMessages,
+
+
+    getSessionMessages
+
+
+};

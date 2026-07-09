@@ -1,14 +1,25 @@
 /**
  * Meridian Presence Handler
  *
- * Socket 层在线状态处理
+ * Version:
+ * v1.2.0
  *
- * Version: v1.1.0
+ * Features:
+ * - Presence Online
+ * - Presence Offline
+ * - MongoDB Session
  */
+
 
 
 const presenceService =
 require("../services/presence-service");
+
+
+
+const sessionService =
+require("../services/session-service");
+
 
 
 const MeridianTime =
@@ -16,12 +27,11 @@ require("../utils/time");
 
 
 
-/**
- * 注册 Presence Socket Handler
- *
- * @param io Socket.io Server
- * @param socket 当前连接
- */
+
+
+
+
+
 function registerPresenceHandler(
     io,
     socket
@@ -29,16 +39,26 @@ function registerPresenceHandler(
 
 
 
+
+
+
     /**
      * 用户上线
-     *
-     * Client
-     * ↓
-     * Server
      */
     socket.on(
+
         "user_online",
-        (data)=>{
+
+        async(data)=>{
+
+
+
+            const time =
+            MeridianTime.now();
+
+
+
+
 
 
             const user =
@@ -57,140 +77,358 @@ function registerPresenceHandler(
 
 
                 connectedAt:
-                MeridianTime.now()
+                time
+
 
             });
 
 
 
+
+
+
+
+            const session =
+
+            await sessionService.createSession({
+
+
+
+                userId:
+                data.userId,
+
+
+
+                socketId:
+                socket.id,
+
+
+
+                page:
+                data.page,
+
+
+
+                time:
+                time
+
+
+
+            });
+
+
+
+
+
+
+
             console.log(
+
                 "[Presence] User online:",
+
                 user
+
             );
+
+
+
+
+
+
+
+            console.log(
+
+                "[Session] Created:",
+
+                session
+
+            );
+
+
+
+
+
 
 
 
             /**
-             * 通知后台
+             * 推送在线状态
              */
             io.emit(
+
                 "admin_presence_update",
+
                 {
 
-                    type:"online",
 
-                    user:user
+                    type:
+                    "online",
+
+
+
+                    user:
+                    user,
+
+
+
+                    session:
+                    session
+
+
 
                 }
-            );
 
-
-        }
-    );
-
-
-
-
-
-    /**
-     * 用户离线
-     */
-    socket.on(
-        "user_offline",
-        (data)=>{
-
-
-            const user =
-            presenceService.removeUser(
-                data.userId
             );
 
 
 
-            if(!user){
-
-                return;
-
-            }
 
 
 
-            console.log(
-                "[Presence] User offline:",
-                user
-            );
 
 
 
+            /**
+             * 推送Session
+             */
             io.emit(
-                "admin_presence_update",
+
+                "admin_session_update",
+
                 {
 
-                    type:"offline",
 
-                    user:user
+                    type:
+                    "create",
+
+
+
+                    session:
+                    session
+
+
 
                 }
+
             );
 
 
+
+
         }
+
     );
 
 
 
 
 
+
+
+
+
     /**
-     * Socket断开保护
-     *
-     * 浏览器异常关闭
-     * 网络中断
+     * 用户主动离开
      */
     socket.on(
-        "disconnect",
+
+        "user_offline",
+
         ()=>{
 
 
-            const user =
-            presenceService.removeUserBySocket(
-                socket.id
-            );
-
-
-
-            if(!user){
-
-                return;
-
-            }
-
-
-
-            console.log(
-                "[Presence] Socket offline:",
-                user
-            );
-
-
-
-            io.emit(
-                "admin_presence_update",
-                {
-
-                    type:"offline",
-
-                    user:user
-
-                }
-            );
+            handleOffline();
 
 
         }
+
     );
 
 
+
+
+
+
+
+
+
+    /**
+     * Socket断开
+     */
+    socket.on(
+
+        "disconnect",
+
+        ()=>{
+
+
+            handleOffline();
+
+
+        }
+
+    );
+
+
+
+
+
+
+
+
+
+    async function handleOffline(){
+
+
+
+        const time =
+        MeridianTime.now();
+
+
+
+
+
+
+        const user =
+        presenceService.removeUserBySocket(
+
+            socket.id
+
+        );
+
+
+
+
+
+
+        if(!user){
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+        const session =
+
+        await sessionService.offline(
+
+            user.userId,
+
+            time
+
+        );
+
+
+
+
+
+
+        console.log(
+
+            "[Presence] User offline:",
+
+            user
+
+        );
+
+
+
+
+
+
+
+        console.log(
+
+            "[Session] Offline:",
+
+            session
+
+        );
+
+
+
+
+
+
+
+
+
+        io.emit(
+
+            "admin_presence_update",
+
+            {
+
+
+                type:
+                "offline",
+
+
+
+                user:
+                user,
+
+
+
+                session:
+                session
+
+
+
+            }
+
+        );
+
+
+
+
+
+
+
+
+        io.emit(
+
+            "admin_session_update",
+
+            {
+
+
+                type:
+                "update",
+
+
+
+                session:
+                session
+
+
+
+            }
+
+        );
+
+
+
+
+    }
+
+
+
+
+
+
+
 }
+
+
+
+
 
 
 

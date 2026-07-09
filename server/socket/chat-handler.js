@@ -1,19 +1,22 @@
 /**
  * Meridian Chat Handler
  *
- * Socket 聊天事件处理
- *
- * Version: v1.1.0
+ * Version:
+ * v1.2.1
  *
  * Features:
- * - Message Timestamp
  * - Message ID
- * - Message Deduplication
+ * - Deduplication
+ * - MongoDB Message Storage
+ * - MongoDB Session Update
+ * - Unread Message Counter
  */
+
 
 
 const MeridianTime =
 require("../utils/time");
+
 
 
 const messageService =
@@ -21,11 +24,15 @@ require("../services/message-service");
 
 
 
+const sessionService =
+require("../services/session-service");
 
 
-/**
- * 创建消息ID
- */
+
+
+
+
+
 function createMessageId(){
 
 
@@ -42,7 +49,9 @@ function createMessageId(){
         +
 
         Math.random()
+
         .toString(36)
+
         .substring(2,8)
 
     );
@@ -54,10 +63,19 @@ function createMessageId(){
 
 
 
+
+
+
+
 function registerChatHandler(
+
     io,
+
     socket
+
 ){
+
+
 
 
 
@@ -67,40 +85,70 @@ function registerChatHandler(
      * 用户发送消息
      */
     socket.on(
+
         "user_message",
-        (data)=>{
+
+        async(data)=>{
+
 
 
             const payload = {
 
 
+
                 messageId:
+
                 data.messageId
+
                 ||
+
                 createMessageId(),
 
 
-                socketId:
-                socket.id,
 
 
                 userId:
+
                 data.userId,
 
 
+
+
+                sessionId:
+
+                data.userId,
+
+
+
+
+                socketId:
+
+                socket.id,
+
+
+
+
                 message:
+
                 data.message,
 
 
-                page:
-                data.page,
+
+
+                type:
+
+                "text",
+
+
 
 
                 time:
-                data.time
-                ||
-                MeridianTime.now()
 
+                data.time
+
+                ||
+
+                MeridianTime.now()
 
             };
 
@@ -108,24 +156,19 @@ function registerChatHandler(
 
 
 
-            /**
-             * 消息去重检查
-             */
+
+
             if(
+
                 messageService.isDuplicate(
+
                     payload.messageId
+
                 )
+
             ){
 
-
-                console.log(
-                    "Duplicate user message ignored:",
-                    payload.messageId
-                );
-
-
                 return;
-
 
             }
 
@@ -133,26 +176,140 @@ function registerChatHandler(
 
 
 
-            console.log(
-                "User message:",
-                payload
-            );
+
+
+            /**
+             * 保存用户消息
+             */
+            await messageService.saveMessage({
+
+
+
+                ...payload,
+
+
+                sender:
+
+                "user"
+
+
+            });
+
+
+
 
 
 
 
 
             /**
-             * 发送后台
+             * 更新Session消息信息
              */
-            io.emit(
-                "admin_user_message",
-                payload
+            await sessionService.updateMessage(
+
+                payload.userId,
+
+                payload.message
+
             );
 
 
+
+
+
+
+
+
+            /**
+             * 增加未读数量
+             *
+             * Phase 1.5
+             */
+            const session =
+
+            await sessionService.incrementUnread(
+
+                payload.userId
+
+            );
+
+
+
+
+
+
+
+
+            console.log(
+
+                "[Message Saved]",
+
+                payload
+
+            );
+
+
+
+
+
+
+
+
+            /**
+             * 更新后台Session
+             */
+            io.emit(
+
+                "admin_session_update",
+
+                {
+
+
+                    type:
+
+                    "update",
+
+
+
+                    session:
+
+                    session
+
+
+
+                }
+
+            );
+
+
+
+
+
+
+
+
+
+            /**
+             * 推送后台
+             */
+            io.emit(
+
+                "admin_user_message",
+
+                payload
+
+            );
+
+
+
         }
+
     );
+
+
+
+
+
 
 
 
@@ -164,14 +321,23 @@ function registerChatHandler(
      * 客服回复
      */
     socket.on(
+
         "admin_reply",
-        (data)=>{
+
+        async(data)=>{
+
+
+
 
 
             if(
+
                 !data.socketId
+
                 ||
+
                 !data.message
+
             ){
 
                 return;
@@ -182,30 +348,99 @@ function registerChatHandler(
 
 
 
+
+
+            const sessions =
+
+            await sessionService.getSessions();
+
+
+
+
+
+
+            const session =
+
+            sessions.find(
+
+                item =>
+
+                item.socketId === data.socketId
+
+            );
+
+
+
+
+
+
+            if(!session){
+
+                return;
+
+            }
+
+
+
+
+
+
+
+
             const payload = {
 
 
+
                 messageId:
-                data.messageId
-                ||
+
                 createMessageId(),
 
 
 
+
+                userId:
+
+                session.userId,
+
+
+
+
+                sessionId:
+
+                session.userId,
+
+
+
+
                 socketId:
+
                 data.socketId,
 
 
 
+
                 message:
+
                 data.message,
 
 
 
+
+                type:
+
+                "text",
+
+
+
+
                 time:
+
                 data.time
+
                 ||
+
                 MeridianTime.now()
+
 
 
             };
@@ -215,24 +450,19 @@ function registerChatHandler(
 
 
 
-            /**
-             * 消息去重检查
-             */
+
+
             if(
+
                 messageService.isDuplicate(
+
                     payload.messageId
+
                 )
+
             ){
 
-
-                console.log(
-                    "Duplicate admin message ignored:",
-                    payload.messageId
-                );
-
-
                 return;
-
 
             }
 
@@ -240,10 +470,26 @@ function registerChatHandler(
 
 
 
-            console.log(
-                "Admin reply:",
-                payload
-            );
+
+
+
+            /**
+             * 保存客服消息
+             */
+            await messageService.saveMessage({
+
+
+
+                ...payload,
+
+
+                sender:
+
+                "admin"
+
+
+            });
+
 
 
 
@@ -252,15 +498,88 @@ function registerChatHandler(
 
 
             /**
-             * 给用户
+             * 更新Session
+             */
+            const updatedSession =
+
+            await sessionService.updateMessage(
+
+                session.userId,
+
+                payload.message
+
+            );
+
+
+
+
+
+
+
+
+
+            io.emit(
+
+                "admin_session_update",
+
+                {
+
+
+                    type:
+
+                    "update",
+
+
+
+                    session:
+
+                    updatedSession
+
+
+
+                }
+
+            );
+
+
+
+
+
+
+
+
+            console.log(
+
+                "Admin reply:",
+
+                payload
+
+            );
+
+
+
+
+
+
+
+
+            /**
+             * 发送给用户
              */
             io.to(
+
                 data.socketId
+
             )
+
             .emit(
+
                 "admin_reply",
+
                 payload
+
             );
+
 
 
 
@@ -269,17 +588,27 @@ function registerChatHandler(
 
 
             /**
-             * 当前后台回显
+             * 同步后台窗口
              */
             socket.emit(
+
                 "admin_reply",
+
                 payload
+
             );
+
+
 
 
 
         }
+
     );
+
+
+
+
 
 
 
@@ -289,5 +618,8 @@ function registerChatHandler(
 
 
 
+
+
 module.exports =
+
 registerChatHandler;

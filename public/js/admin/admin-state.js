@@ -3,67 +3,131 @@
  *
  * 后台状态管理
  *
- * Version: v1.1.0
+ * Version:
+ * v1.2.5
+ *
+ * Features:
+ * - Online Users
+ * - Offline Users
+ * - Sessions
+ * - Current Conversation
+ * - Conversation Store
+ * - Current User Persistence
  */
+
 
 
 window.MeridianAdminState = {
 
 
-    /**
-     * 在线用户
-     */
+
     onlineUsers: [],
 
 
-
-    /**
-     * 离线用户
-     */
     offlineUsers: [],
 
 
+    sessions: [],
 
-    /**
-     * 当前聊天用户
-     */
+
+
     currentUser:null,
 
 
 
+    currentConversationId:null,
 
 
-    /**
-     * 添加在线用户
-     */
-    addOnlineUser(user){
+
+    storageKey:
+
+    "meridian_current_session",
 
 
-        this.removeOfflineUser(
-            user.userId
+
+
+
+
+
+    init(){
+
+
+
+        const saved =
+
+        localStorage.getItem(
+
+            this.storageKey
+
         );
 
 
 
-        const exists =
-        this.onlineUsers.find(
-
-            item =>
-            item.userId === user.userId
-
-        );
 
 
 
-        if(!exists){
+        if(!saved){
+
+            return;
+
+        }
 
 
-            this.onlineUsers.push(
-                user
+
+
+
+
+        try{
+
+
+
+            const data =
+
+            JSON.parse(saved);
+
+
+
+
+
+            this.currentConversationId =
+
+            data.userId;
+
+
+
+
+
+
+            this.currentUser = {
+
+
+                userId:
+
+                data.userId
+
+
+
+            };
+
+
+
+        }
+
+        catch(error){
+
+
+
+            console.error(
+
+                "Restore session failed",
+
+                error
+
             );
 
 
         }
+
 
 
     },
@@ -72,40 +136,198 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 用户离线
-     */
-    addOfflineUser(user){
 
 
-        this.removeOnlineUser(
-            user.userId
+
+
+    saveCurrentSession(){
+
+
+
+        if(
+
+            !this.currentUser
+
+            ||
+
+            !this.currentUser.userId
+
+        ){
+
+            return;
+
+        }
+
+
+
+
+
+
+
+        localStorage.setItem(
+
+            this.storageKey,
+
+            JSON.stringify({
+
+
+                userId:
+
+                this.currentUser.userId
+
+
+
+            })
+
         );
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 根据userId恢复最新Session
+     */
+    restoreSessionUser(){
+
+
+
+        if(
+
+            !this.currentUser
+
+            ||
+
+            !this.currentUser.userId
+
+        ){
+
+            return null;
+
+        }
+
+
+
+
+
+
+
+        const session =
+
+        this.sessions.find(
+
+            item=>
+
+            item.userId ===
+
+            this.currentUser.userId
+
+        );
+
+
+
+
+
+
+
+
+        if(!session){
+
+            return null;
+
+        }
+
+
+
+
+
+
+
+
+        this.currentUser = {
+
+
+            userId:
+
+            session.userId,
+
+
+
+            socketId:
+
+            session.socketId,
+
+
+
+            status:
+
+            session.status
+
+
+
+        };
+
+
+
+
+
+
+
+
+        return session;
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    addOnlineUser(user){
+
+
+
+        this.removeOfflineUser(
+
+            user.userId
+
+        );
+
+
+
 
 
 
         const exists =
-        this.offlineUsers.find(
 
-            item =>
-            item.userId === user.userId
+        this.onlineUsers.find(
+
+            item=>
+
+            item.userId===user.userId
 
         );
 
 
 
-        if(!exists){
 
 
-            this.offlineUsers.push(
 
-                user
+        if(exists){
 
-            );
-
-
-        }
-        else{
 
 
             Object.assign(
@@ -119,6 +341,19 @@ window.MeridianAdminState = {
 
         }
 
+        else{
+
+
+            this.onlineUsers.push(
+
+                user
+
+            );
+
+
+        }
+
+
 
     },
 
@@ -126,17 +361,89 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 删除在线用户
-     */
+
+
+
+
+    addOfflineUser(user){
+
+
+
+        this.removeOnlineUser(
+
+            user.userId
+
+        );
+
+
+
+
+
+
+        const exists =
+
+        this.offlineUsers.find(
+
+            item=>
+
+            item.userId===user.userId
+
+        );
+
+
+
+
+
+
+        if(exists){
+
+
+
+            Object.assign(
+
+                exists,
+
+                user
+
+            );
+
+
+        }
+
+        else{
+
+
+            this.offlineUsers.push(
+
+                user
+
+            );
+
+
+        }
+
+
+
+    },
+
+
+
+
+
+
+
+
+
     removeOnlineUser(userId){
 
 
         this.onlineUsers =
+
         this.onlineUsers.filter(
 
-            user =>
-            user.userId !== userId
+            item=>
+
+            item.userId!==userId
 
         );
 
@@ -147,17 +454,20 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 删除离线用户
-     */
+
+
+
+
     removeOfflineUser(userId){
 
 
         this.offlineUsers =
+
         this.offlineUsers.filter(
 
-            user =>
-            user.userId !== userId
+            item=>
+
+            item.userId!==userId
 
         );
 
@@ -168,13 +478,80 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 获取在线用户
-     */
-    getOnlineUsers(){
 
 
-        return this.onlineUsers;
+
+
+    updateSession(session){
+
+
+
+        const exists =
+
+        this.sessions.find(
+
+            item=>
+
+            item.userId===session.userId
+
+        );
+
+
+
+
+
+
+        if(exists){
+
+
+
+            Object.assign(
+
+                exists,
+
+                session
+
+            );
+
+
+        }
+
+        else{
+
+
+            this.sessions.push(
+
+                session
+
+            );
+
+
+        }
+
+
+
+
+
+
+
+
+        if(
+
+            window.MeridianConversationStore
+
+        ){
+
+
+
+            MeridianConversationStore.updateSession(
+
+                session
+
+            );
+
+
+        }
+
 
 
     },
@@ -183,13 +560,93 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 获取离线用户
-     */
-    getOfflineUsers(){
 
 
-        return this.offlineUsers;
+
+
+    getSessions(){
+
+
+        return this.sessions;
+
+
+    },
+
+
+
+
+
+
+
+
+
+    selectSession(session){
+
+
+
+        this.currentUser = {
+
+
+            userId:
+
+            session.userId,
+
+
+
+            socketId:
+
+            session.socketId,
+
+
+
+            status:
+
+            session.status
+
+
+
+        };
+
+
+
+
+
+
+        this.currentConversationId =
+
+        session.userId;
+
+
+
+
+
+
+        this.saveCurrentSession();
+
+
+
+
+
+
+
+
+        if(
+
+            window.MeridianConversationStore
+
+        ){
+
+
+
+            MeridianConversationStore.createConversation(
+
+                session
+
+            );
+
+
+        }
+
 
 
     },
@@ -198,16 +655,7 @@ window.MeridianAdminState = {
 
 
 
-    /**
-     * 当前聊天用户
-     */
-    setCurrentUser(user){
 
-
-        this.currentUser = user;
-
-
-    },
 
 
 
@@ -217,7 +665,25 @@ window.MeridianAdminState = {
         return this.currentUser;
 
 
+    },
+
+
+
+
+
+
+
+
+
+    getCurrentConversationId(){
+
+
+        return this.currentConversationId;
+
+
     }
+
+
 
 
 

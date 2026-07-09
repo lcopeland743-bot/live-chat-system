@@ -1,51 +1,115 @@
 /**
  * Meridian Admin UI
  *
- * 后台界面渲染
+ * 多会话工作台
  *
- * Version: v1.1.0
+ * Version:
+ * v1.2.6
+ *
+ * Features:
+ * - Conversation Switching
+ * - MongoDB History Loading
+ * - Session Rendering
+ * - Auto Current Conversation Restore
+ * - History Recovery
  */
+
 
 
 window.MeridianAdminUI = {
 
 
 
+    historyLoaded:{},
+
+
+
+
+
+
+
     init(){
 
 
+
         this.messages =
+
         document.getElementById(
+
             "adminMessages"
+
         );
+
+
+
+
+
+
+
+        this.sessions =
+
+        document.getElementById(
+
+            "sessions"
+
+        );
+
+
+
+
 
 
 
         this.onlineUsers =
+
         document.getElementById(
+
             "onlineUsers"
+
         );
+
+
+
+
 
 
 
         this.offlineUsers =
+
         document.getElementById(
+
             "offlineUsers"
+
         );
+
+
+
+
 
 
 
         this.input =
+
         document.getElementById(
+
             "adminReplyInput"
+
         );
+
+
+
+
 
 
 
         this.sendButton =
+
         document.getElementById(
+
             "adminSendBtn"
+
         );
+
 
 
     },
@@ -54,25 +118,43 @@ window.MeridianAdminUI = {
 
 
 
+
+
+
+
     /**
-     * 绑定发送
+     * 自动恢复当前聊天
      */
-    bindSend(callback){
+    async restoreCurrentSession(){
 
 
 
-        if(this.sendButton){
+        const current =
+
+        MeridianAdminState
+
+        .getCurrentUser();
 
 
-            this.sendButton.onclick =
-            ()=>{
 
 
-                callback();
 
 
-            };
 
+
+        if(
+
+            !current
+
+            ||
+
+            !current.userId
+
+        ){
+
+
+
+            return;
 
         }
 
@@ -80,28 +162,167 @@ window.MeridianAdminUI = {
 
 
 
-        if(this.input){
 
 
-            this.input.addEventListener(
 
-                "keydown",
+        /**
+         * 使用最新Session
+         *
+         * 更新socketId
+         */
+        const session =
 
-                (event)=>{
+        MeridianAdminState
 
-
-                    if(
-                        event.key === "Enter"
-                    ){
-
-
-                        event.preventDefault();
+        .restoreSessionUser();
 
 
-                        callback();
 
 
-                    }
+
+
+
+
+        if(!session){
+
+
+
+            return;
+
+        }
+
+
+
+
+
+
+
+
+        MeridianAdminState.selectSession(
+
+            session
+
+        );
+
+
+
+
+
+
+
+
+        await this.loadHistory(
+
+            session.userId
+
+        );
+
+
+
+
+
+
+
+
+        this.renderConversation(
+
+            session.userId
+
+        );
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    async loadHistory(userId){
+
+
+
+        if(
+
+            !window.MeridianHistoryLoader
+
+        ){
+
+            return;
+
+        }
+
+
+
+
+
+
+
+
+        if(
+
+            this.historyLoaded[userId]
+
+        ){
+
+            return;
+
+        }
+
+
+
+
+
+
+
+
+        try{
+
+
+
+            const messages =
+
+            await MeridianHistoryLoader.load(
+
+                userId
+
+            );
+
+
+
+
+
+
+
+
+            messages.forEach(
+
+                msg=>{
+
+
+
+                    MeridianConversationStore.addMessage(
+    userId,
+    {
+        messageId: msg.messageId,
+
+        message: msg.content,
+
+        type:
+        msg.sender==="admin"
+        ?
+        "admin"
+        :
+        "user",
+
+        time: msg.createdAt
+    }
+);
+
 
 
                 }
@@ -109,7 +330,33 @@ window.MeridianAdminUI = {
             );
 
 
+
+
+
+
+
+
+            this.historyLoaded[userId]=true;
+
+
+
         }
+
+        catch(error){
+
+
+
+            console.error(
+
+                "History load failed:",
+
+                error
+
+            );
+
+
+        }
+
 
 
     },
@@ -118,166 +365,417 @@ window.MeridianAdminUI = {
 
 
 
-    /**
-     * 获取输入
-     */
-    getInputMessage(){
-
-
-        if(!this.input){
-
-            return "";
-
-        }
-
-
-        return this.input.value.trim();
-
-
-    },
 
 
 
 
+    renderConversation(userId){
 
-    /**
-     * 清空输入
-     */
-    clearInput(){
-
-
-        if(this.input){
-
-
-            this.input.value="";
-
-
-        }
-
-
-    },
-
-
-
-
-
-    /**
-     * 消息显示
-     */
-    addMessage(
-        message,
-        type,
-        time
-    ){
 
 
         if(!this.messages){
 
+
+
             return;
+
 
         }
 
 
 
-        const div =
-        document.createElement(
-            "div"
+
+
+
+
+
+        const messages =
+
+        MeridianConversationStore
+
+        .getMessages(
+
+            userId
+
         );
 
 
 
-        div.className =
-        "message " + type;
 
 
 
-        div.innerHTML = `
-
-            <div class="message-content">
-
-                ${message}
-
-            </div>
 
 
-            ${
-                time
-                ?
+        this.messages.innerHTML="";
+
+
+
+
+
+
+
+
+        messages.forEach(
+
+            msg=>{
+
+
+
+                const div =
+
+                document.createElement(
+
+                    "div"
+
+                );
+
+
+
+
+
+
+
+                div.className=
+
+                "message "+msg.type;
+
+
+
+
+
+
+
+
+                div.innerHTML=
+
                 `
-                <div class="message-time">
 
-                ${MeridianTime.format(time)}
+                <div>
+
+                ${msg.message}
 
                 </div>
-                `
-                :
-                ""
+
+
+                <small>
+
+                ${msg.time||""}
+
+                </small>
+
+                `;
+
+
+
+
+
+
+
+
+                this.messages.appendChild(
+
+                    div
+
+                );
+
+
+
             }
 
-
-        `;
-
-
-
-        this.messages.appendChild(
-            div
         );
+
+
+
+
+
 
 
 
         this.messages.scrollTop =
+
         this.messages.scrollHeight;
 
 
+
     },
+    renderSessions(){
+
+
+
+        if(!this.sessions){
+
+
+            return;
+
+
+        }
 
 
 
 
 
-    /**
-     * 用户进入
-     */
-    addEnter(data){
 
 
-        this.addMessage(
 
-            `
-            用户进入:
-            ${data.userId}
-            `,
+        const sessions =
 
-            "system",
+        MeridianAdminState
 
-            data.time
+        .getSessions();
+
+
+
+
+
+
+
+
+        this.sessions.innerHTML="";
+
+
+
+
+
+
+
+
+        sessions.forEach(
+
+            session=>{
+
+
+
+                const div =
+
+                document.createElement(
+
+                    "div"
+
+                );
+
+
+
+
+
+
+
+
+                div.className =
+
+                "session-item";
+
+
+
+
+
+
+
+
+                div.style.cursor =
+
+                "pointer";
+
+
+
+
+
+
+
+
+                div.innerHTML =
+
+                `
+
+                <b>
+
+                ${session.userId}
+
+                </b>
+
+
+                <br>
+
+
+                状态:
+
+                ${session.status}
+
+                `;
+
+
+
+
+
+
+
+
+                div.onclick =
+
+                async()=>{
+
+
+
+                    MeridianAdminState.selectSession(
+
+                        session
+
+                    );
+
+
+
+
+
+
+
+
+                    await this.loadHistory(
+
+                        session.userId
+
+                    );
+
+
+
+
+
+
+
+
+                    this.renderConversation(
+
+                        session.userId
+
+                    );
+
+
+
+
+
+
+
+
+                    this.highlightSession(
+
+                        div
+
+                    );
+
+
+
+                };
+
+
+
+
+
+
+
+
+                this.sessions.appendChild(
+
+                    div
+
+                );
+
+
+
+            }
 
         );
 
 
+
+
+
+
+
+
+
+        /**
+         * Session恢复完成
+         *
+         * 自动恢复当前客户
+         */
+        this.restoreCurrentSession();
+
+
+
     },
 
 
 
 
 
-    /**
-     * 在线用户
-     */
+
+
+
+
+    highlightSession(item){
+
+
+
+        document
+
+        .querySelectorAll(
+
+            ".session-item"
+
+        )
+
+        .forEach(
+
+            el=>{
+
+
+                el.style.border=
+
+                "1px solid #eee";
+
+
+            }
+
+        );
+
+
+
+
+
+
+
+
+        item.style.border=
+
+        "2px solid #409eff";
+
+
+
+    },
+
+
+
+
+
+
+
+
+
     renderOnlineUsers(){
 
 
 
         if(!this.onlineUsers){
 
+
+
             return;
+
 
         }
 
 
 
-        const users =
-        MeridianAdminState.getOnlineUsers();
+
+
 
 
 
@@ -286,71 +784,56 @@ window.MeridianAdminUI = {
 
 
 
-        if(users.length===0){
-
-
-            this.onlineUsers.innerHTML =
-            "<div>暂无在线用户</div>";
-
-
-            return;
-
-
-        }
 
 
 
 
-        users.forEach(
+        MeridianAdminState.onlineUsers
+
+        .forEach(
 
             user=>{
 
 
-                const item =
+
+                const div =
+
                 document.createElement(
+
                     "div"
+
                 );
 
 
 
-                item.className =
-                "online-user";
 
 
 
-                item.innerHTML = `
 
-                    🟢 ${user.userId}
 
-                    <br>
+                div.innerHTML=
 
-                    <small>
+                `🟢 ${user.userId}`;
 
-                    在线时间:
-                    ${
-                    user.connectedAt
-                    ?
-                    MeridianTime.format(
-                        user.connectedAt
-                    )
-                    :
-                    ""
-                    }
 
-                    </small>
 
-                `;
+
+
 
 
 
                 this.onlineUsers.appendChild(
-                    item
+
+                    div
+
                 );
+
 
 
             }
 
         );
+
 
 
     },
@@ -360,23 +843,26 @@ window.MeridianAdminUI = {
 
 
 
-    /**
-     * 离线用户
-     */
+
+
+
     renderOfflineUsers(){
 
 
 
         if(!this.offlineUsers){
 
+
+
             return;
+
 
         }
 
 
 
-        const users =
-        MeridianAdminState.getOfflineUsers();
+
+
 
 
 
@@ -386,14 +872,79 @@ window.MeridianAdminUI = {
 
 
 
-        if(users.length===0){
 
 
-            this.offlineUsers.innerHTML =
-            "<div>暂无离线用户</div>";
+
+        MeridianAdminState.offlineUsers
+
+        .forEach(
+
+            user=>{
 
 
-            return;
+
+                const div =
+
+                document.createElement(
+
+                    "div"
+
+                );
+
+
+
+
+
+
+
+
+                div.innerHTML=
+
+                `⚫ ${user.userId}`;
+
+
+
+
+
+
+
+
+                this.offlineUsers.appendChild(
+
+                    div
+
+                );
+
+
+
+            }
+
+        );
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    bindSend(callback){
+
+
+
+        if(this.sendButton){
+
+
+
+            this.sendButton.onclick =
+
+            callback;
+
 
 
         }
@@ -403,60 +954,95 @@ window.MeridianAdminUI = {
 
 
 
-        users.forEach(
-
-            user=>{
 
 
-                const item =
-                document.createElement(
-                    "div"
-                );
+        if(this.input){
 
 
 
-                item.className =
-                "offline-user";
+            this.input.addEventListener(
+
+                "keydown",
+
+                e=>{
 
 
 
-                item.innerHTML = `
+                    if(e.key==="Enter"){
 
-                    ⚫ ${user.userId}
 
-                    <br>
 
-                    <small>
+                        callback();
 
-                    最后在线:
 
-                    ${
-                    user.lastSeen
-                    ?
-                    MeridianTime.format(
-                        user.lastSeen
-                    )
-                    :
-                    ""
+
                     }
 
-                    </small>
-
-                `;
 
 
+                }
 
-                this.offlineUsers.appendChild(
-                    item
-                );
+            );
 
 
-            }
 
-        );
+        }
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    getInputMessage(){
+
+
+
+        return this.input
+
+        ?
+
+        this.input.value.trim()
+
+        :
+
+        "";
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    clearInput(){
+
+
+
+        if(this.input){
+
+
+
+            this.input.value="";
+
+        }
+
 
 
     }
+
+
 
 
 

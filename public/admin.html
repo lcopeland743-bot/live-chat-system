@@ -1,74 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+Meridian Admin
+</title>
+
+
+<style>
+
+
+body{
+
+    margin:0;
+
+    font-family:
+    Arial,
+    sans-serif;
+
+    background:#f5f5f5;
+
+}
+
+
+
+.admin-container{
+
+    width:100%;
+
+    max-width:1200px;
+
+    margin:20px auto;
+
+    background:white;
+
+    padding:20px;
+
+    box-sizing:border-box;
+
+}
+
+
+
+h1{
+
+    margin-top:0;
+
+}
+
+
+
+
+
+.admin-layout{
+
+
+    display:flex;
+
+    gap:20px;
+
+
+}
+
+
+
+
+
+.admin-sidebar{
+
+
+    width:280px;
+
+
+}
+
+
+
+
+
+.admin-panel{
+
+
+    border:1px solid #ddd;
+
+    padding:15px;
+
+    margin-bottom:15px;
+
+    background:#fafafa;
+
+
+}
+
+
+
+
+
+.admin-panel h2{
+
+
+    font-size:18px;
+
+    margin-top:0;
+
+
+}
+
+
+
+
+
+#onlineUsers,
+#offlineUsers,
+#sessions{
+
+
+    font-size:14px;
+
+
+}
+
+
+
+
+
+.session-item,
+.online-user,
+.offline-user{
+
+
+    padding:10px;
+
+    margin-bottom:8px;
+
+    background:white;
+
+    border:1px solid #eee;
+
+
+}
+
+
+
+
+
+
+.admin-chat{
+
+
+    flex:1;
+
+
+}
+
+
+
+
+
+
+.admin-messages{
+
+
+    height:500px;
+
+    overflow-y:auto;
+
+    border:1px solid #ddd;
+
+    padding:15px;
+
+    background:#fff;
+
+
+}
+
+
+
+
+
+
+.message{
+
+
+    padding:10px;
+
+    margin-bottom:10px;
+
+    border-radius:5px;
+
+
+}
+
+
+
+
+
+.message-time{
+
+
+    font-size:12px;
+
+    color:#888;
+
+    margin-top:5px;
+
+
+}
+
+
+
+
+
+.message.user{
+
+
+    background:#eef6ff;
+
+
+}
+
+
+
+
+
+.message.admin{
+
+
+    background:#eaffea;
+
+
+}
+
+
+
+
+
+.message.system{
+
+
+    background:#f3f3f3;
+
+
+}
+
+
+
+
+
+
+.admin-input{
+
+
+    display:flex;
+
+    margin-top:15px;
+
+    gap:10px;
+
+
+}
+
+
+
+
+
+.admin-input input{
+
+
+    flex:1;
+
+    height:38px;
+
+    padding:0 10px;
+
+    font-size:14px;
+
+
+}
+
+
+
+
+
+.admin-input button{
+
+
+    width:80px;
+
+    cursor:pointer;
+
+
+}
+
+
+
+</style>
+
+
+</head>
+
+
+
+
+
+
+<body>
+
+
+
 <div class="admin-container">
 
-  <h1>Meridian Admin</h1>
 
-
-
-  <!-- 在线访客 -->
-
-  <div class="admin-online">
-
-    <h2>在线访客</h2>
-
-    <div id="onlineUsers">
-
-    </div>
-
-  </div>
+<h1>
+Meridian Admin
+</h1>
 
 
 
 
 
-  <!-- 离线访客 -->
-
-  <div class="admin-offline">
-
-    <h2>离线访客</h2>
-
-    <div id="offlineUsers">
-
-    </div>
-
-  </div>
+<div class="admin-layout">
 
 
 
 
 
-  <!-- 聊天消息 -->
+<!-- 左侧访客区域 -->
 
-  <div id="adminMessages" class="admin-messages">
-
-  </div>
+<div class="admin-sidebar">
 
 
 
 
 
-  <!-- 回复区域 -->
-
-  <div class="admin-input">
-
-    <input
-      id="adminReplyInput"
-      type="text"
-      placeholder="输入回复内容"
-    />
+<div class="admin-panel">
 
 
-    <button id="adminSendBtn">
-      发送
-    </button>
+<h2>
+访客会话
+</h2>
 
 
-  </div>
+<div id="sessions">
+
+</div>
 
 
 </div>
 
 
 
+
+
+
+
+<div class="admin-panel">
+
+
+<h2>
+在线访客
+</h2>
+
+
+<div id="onlineUsers">
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="admin-panel">
+
+
+<h2>
+离线访客
+</h2>
+
+
+<div id="offlineUsers">
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- 右侧聊天区域 -->
+
+<div class="admin-chat">
+
+
+
+
+
+<div id="adminMessages"
+class="admin-messages">
+
+</div>
+
+
+
+
+
+
+
+<div class="admin-input">
+
+
+<input
+
+id="adminReplyInput"
+
+type="text"
+
+placeholder="输入回复内容"
+
+/>
+
+
+
+<button
+
+id="adminSendBtn"
+
+>
+
+发送
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+</div>
 
 
 <script src="/socket.io/socket.io.js"></script>
@@ -81,10 +489,30 @@
 <script src="/js/core/time.js"></script>
 
 
+
+
+<script src="/js/admin/conversation-store.js"></script>
+
+<script src="/js/admin/history-loader.js"></script>
+
+
 <script src="/js/admin/admin-state.js"></script>
+
 
 <script src="/js/admin/admin-ui.js"></script>
 
+
 <script src="/js/admin/admin-socket.js"></script>
 
+
 <script src="/js/admin/admin.js"></script>
+
+
+
+
+
+
+
+</body>
+
+</html>

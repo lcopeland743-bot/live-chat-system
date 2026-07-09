@@ -1,20 +1,56 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
+/**
+ * Meridian Chat SDK Server
+ *
+ * Version:
+ * v1.2.3
+ *
+ * Features:
+ * - Express
+ * - Socket.IO
+ * - MongoDB
+ * - Presence
+ * - Chat
+ * - Message History API
+ * - Session Restore API
+ * - Admin State Restore API
+ */
+
+
+
+const express =
+require("express");
+
+
+const http =
+require("http");
+
+
+const path =
+require("path");
+
+
+const {Server} =
+require("socket.io");
+
+
+
 
 
 const config =
 require("./server/config/server-config");
 
 
-const MeridianTime =
-require("./server/utils/time");
 
 
 
-const registerChatHandler =
-require("./server/socket/chat-handler");
+const {
+    connectDatabase
+}
+=
+require("./server/database/connection");
+
+
+
 
 
 const registerPresenceHandler =
@@ -22,7 +58,43 @@ require("./server/socket/presence-handler");
 
 
 
-const app = express();
+
+
+const registerChatHandler =
+require("./server/socket/chat-handler");
+
+
+
+
+
+
+
+const messageRoute =
+require("./server/routes/message-route");
+
+
+
+const sessionRoute =
+require("./server/routes/session-route");
+
+
+
+const adminStateRoute =
+require("./server/routes/admin-state-route");
+
+
+
+
+
+
+
+
+
+const app =
+express();
+
+
+
 
 
 const server =
@@ -30,169 +102,291 @@ http.createServer(app);
 
 
 
+
+
 const io =
-new Server(server);
+new Server(
+
+    server,
+
+    {
+
+        cors:
+
+        config.socket.cors
+
+    }
+
+);
+
+
+
+
+
+
 
 
 
 app.use(
+
+    express.json()
+
+);
+
+
+
+
+
+
+
+
+
+app.use(
+
     express.static(
+
         path.join(
+
             __dirname,
+
             "public"
+
         )
+
     )
+
 );
 
 
 
+
+
+
+
+
+
+/**
+ * Message History API
+ */
+app.use(
+
+    "/api/messages",
+
+    messageRoute
+
+);
+
+
+
+
+
+
+
+
+
+/**
+ * Session Restore API
+ */
+app.use(
+
+    "/api/sessions",
+
+    sessionRoute
+
+);
+
+
+
+
+
+
+
+
+
+/**
+ * Admin State Restore API
+ */
+app.use(
+
+    "/api/admin/state",
+
+    adminStateRoute
+
+);
+
+
+
+
+
+
+
+
+
 app.get(
+
     "/",
+
     (req,res)=>{
 
 
         res.sendFile(
+
             path.join(
+
                 __dirname,
-                "public",
-                "index.html"
+
+                "public/index.html"
+
             )
+
         );
 
 
     }
+
 );
+
+
+
+
+
+
 
 
 
 app.get(
+
     "/admin",
+
     (req,res)=>{
 
 
         res.sendFile(
+
             path.join(
+
                 __dirname,
-                "public",
-                "admin.html"
+
+                "public/admin.html"
+
             )
+
         );
 
 
     }
+
 );
+
+
+
+
 
 
 
 
 
 io.on(
+
     "connection",
+
     (socket)=>{
 
 
+
         console.log(
+
             "Socket connected:",
+
             socket.id
+
         );
 
 
 
-        /**
-         * 注册聊天模块
-         */
-        registerChatHandler(
-            io,
-            socket
-        );
 
 
 
-        /**
-         * 注册在线状态模块
-         */
+
+
         registerPresenceHandler(
+
             io,
+
             socket
+
         );
 
 
 
 
 
-        /**
-         * 用户进入记录
-         *
-         * 暂时保留
-         */
-        socket.on(
-            "user_enter",
-            (data)=>{
-
-
-                const payload = {
-
-
-                    socketId:
-                    socket.id,
-
-
-                    userId:
-                    data.userId,
-
-
-                    page:
-                    data.page,
-
-
-                    referrer:
-                    data.referrer,
-
-
-                    time:
-                    data.time
-                    ||
-                    MeridianTime.now()
-
-
-                };
 
 
 
-                console.log(
-                    "User entered:",
-                    payload
-                );
+        registerChatHandler(
 
+            io,
 
+            socket
 
-                io.emit(
-                    "admin_user_enter",
-                    payload
-                );
-
-
-            }
         );
 
 
 
     }
+
 );
 
 
 
 
 
-server.listen(
-    config.port,
-    ()=>{
 
 
-        console.log(
-            `${config.appName} running on port ${config.port}`
-        );
 
 
-    }
-);
+async function startServer(){
+
+
+
+    await connectDatabase();
+
+
+
+
+
+
+
+    server.listen(
+
+        config.port,
+
+        ()=>{
+
+
+            console.log(
+
+                "Meridian Chat SDK running on port",
+
+                config.port
+
+            );
+
+
+        }
+
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
+startServer();

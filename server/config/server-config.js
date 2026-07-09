@@ -1,41 +1,93 @@
 /**
  * Meridian Server Configuration
  *
- * 后端统一配置中心
+ * Version:
+ * v1.2.0
+ *
+ * Features:
+ * - Server Config
+ * - MongoDB Config
  */
 
 
-const config = {
+
+module.exports = {
+
 
 
     /**
-     * Server Port
+     * 服务端口
+     */
+    port:
+    process.env.PORT
+    ||
+    3000,
+
+
+
+
+
+
+
+    /**
+     * MongoDB 配置
      *
-     * Render 会自动提供 PORT
-     * 本地默认 3000
+     * 当前先使用环境变量
+     *
+     * 后续部署服务器时：
+     * 修改环境变量即可
      */
-    port: process.env.PORT || 3000,
+    mongodb:{
+
+
+        uri:
+
+        process.env.MONGODB_URI
+
+        ||
+
+        "mongodb://127.0.0.1:27017/meridian_chat"
+
+
+
+    },
+
+
+
+
+
 
 
 
     /**
-     * Environment
+     * Socket配置
      */
-    env: process.env.NODE_ENV || "development",
+    socket:{
+
+
+        cors:{
+
+
+            origin:"*",
+
+
+            methods:[
+
+                "GET",
+
+                "POST"
+
+            ]
+
+
+        }
+
+
+    }
 
 
 
-    /**
-     * Server Information
-     */
-    appName: "Meridian Chat SDK",
-
-    version: "1.1.0"
 
 
 
 };
-
-
-
-module.exports = config;

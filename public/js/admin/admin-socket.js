@@ -1,54 +1,265 @@
 /**
  * Meridian Admin Socket
  *
- * 后台 Socket 通信
+ * 多会话消息管理
  *
- * Version: v1.1.0
+ * Version:
+ * v1.2.7
+ *
+ * Features:
+ * - Admin State Restore
+ * - Session Restore
+ * - Online Offline Restore
+ * - History Restore Trigger
+ * - Conversation Store
+ * - Message Isolation
+ * - MessageId Complete Support
  */
 
 
+
 window.MeridianAdminSocket = {
+
 
 
     socket:null,
 
 
 
+
+
+
+
+    async loadAdminState(){
+
+
+
+        try{
+
+
+
+            const response =
+
+            await fetch(
+
+                "/api/admin/state"
+
+            );
+
+
+
+
+
+
+
+            const result =
+
+            await response.json();
+
+
+
+
+
+
+
+            if(
+
+                !result.success
+
+            ){
+
+                return;
+
+            }
+
+
+
+
+
+
+
+            result.sessions.forEach(
+
+                session=>{
+
+
+                    MeridianAdminState.updateSession(
+
+                        session
+
+                    );
+
+
+                }
+
+            );
+
+
+
+
+
+
+
+
+            MeridianAdminState.onlineUsers =
+
+            result.onlineUsers || [];
+
+
+
+
+
+
+
+
+            MeridianAdminState.offlineUsers =
+
+            result.offlineUsers || [];
+
+
+
+
+
+
+
+
+            MeridianAdminUI.renderSessions();
+
+            MeridianAdminUI.renderOnlineUsers();
+
+            MeridianAdminUI.renderOfflineUsers();
+
+
+
+
+
+
+
+
+
+            setTimeout(
+
+                ()=>{
+
+
+                    if(
+
+                        MeridianAdminUI.restoreCurrentSession
+
+                    ){
+
+                        MeridianAdminUI.restoreCurrentSession();
+
+                    }
+
+
+
+                },
+
+
+                300
+
+            );
+
+
+
+
+
+
+
+
+            console.log(
+
+                "Admin state restored:",
+
+                result
+
+            );
+
+
+
+        }
+
+        catch(error){
+
+
+
+            console.error(
+
+                "Admin state restore failed:",
+
+                error
+
+            );
+
+
+
+        }
+
+
+
+    },
+
+
+
+
+
+
+
+
+
     init(){
 
 
-        this.socket = io();
+
+        this.socket =
+
+        io();
+
+
+
+
 
 
 
         const EVENTS =
+
         window.MERIDIAN_EVENTS;
 
 
 
-        /**
-         * 用户进入
-         */
+
+
+
+
+
+
         this.socket.on(
 
-            EVENTS.ADMIN_USER_ENTER,
+            "connect",
 
-            (data)=>{
+            ()=>{
 
 
-                MeridianAdminState.setCurrentUser(
-                    data
+                console.log(
+
+                    "Admin socket connected"
+
                 );
 
 
-                MeridianAdminUI.addEnter(
-                    data
-                );
+
+                this.loadAdminState();
+
 
 
             }
 
         );
+
+
+
+
 
 
 
@@ -64,20 +275,75 @@ window.MeridianAdminSocket = {
             (data)=>{
 
 
-                MeridianAdminState.setCurrentUser(
-                    data
+
+                MeridianConversationStore.addMessage(
+
+                    data.userId,
+
+                    {
+
+
+                        messageId:
+
+                        data.messageId,
+
+
+
+                        message:
+
+                        data.message,
+
+
+
+                        type:
+
+                        "user",
+
+
+
+                        time:
+
+                        data.time
+
+
+                    }
+
                 );
 
 
-                MeridianAdminUI.addMessage(
 
-                    data.message,
 
-                    "user",
 
-                    data.time
 
-                );
+
+                const current =
+
+                MeridianAdminState
+
+                .getCurrentConversationId();
+
+
+
+
+
+
+
+                if(
+
+                    current === data.userId
+
+                ){
+
+
+                    MeridianAdminUI.renderConversation(
+
+                        data.userId
+
+                    );
+
+
+                }
+
 
 
             }
@@ -88,8 +354,12 @@ window.MeridianAdminSocket = {
 
 
 
+
+
+
+
         /**
-         * 客服回复回显
+         * 客服回复消息
          */
         this.socket.on(
 
@@ -98,41 +368,11 @@ window.MeridianAdminSocket = {
             (data)=>{
 
 
-                MeridianAdminUI.addMessage(
-
-                    data.message,
-
-                    "admin",
-
-                    data.time
-
-                );
-
-
-            }
-
-        );
-
-
-
-
-
-
-
-        /**
-         * Presence状态更新
-         */
-        this.socket.on(
-
-            EVENTS.ADMIN_PRESENCE_UPDATE,
-
-            (data)=>{
-
 
                 if(
-                    !data
-                    ||
-                    !data.user
+
+                    !data.userId
+
                 ){
 
                     return;
@@ -143,12 +383,123 @@ window.MeridianAdminSocket = {
 
 
 
-                /**
-                 * 在线
-                 */
+
+
+                MeridianConversationStore.addMessage(
+
+                    data.userId,
+
+                    {
+
+
+                        messageId:
+
+                        data.messageId,
+
+
+
+                        message:
+
+                        data.message,
+
+
+
+                        type:
+
+                        "admin",
+
+
+
+                        time:
+
+                        data.time
+
+
+                    }
+
+                );
+
+
+
+
+
+
+
+                const current =
+
+                MeridianAdminState
+
+                .getCurrentConversationId();
+
+
+
+
+
+
+
                 if(
-                    data.type === "online"
+
+                    current === data.userId
+
                 ){
+
+
+                    MeridianAdminUI.renderConversation(
+
+                        data.userId
+
+                    );
+
+
+                }
+
+
+
+            }
+
+        );
+
+
+
+
+
+
+
+
+
+        /**
+         * 在线状态更新
+         */
+        this.socket.on(
+
+            EVENTS.ADMIN_PRESENCE_UPDATE,
+
+            (data)=>{
+
+
+
+                if(
+
+                    !data.user
+
+                ){
+
+                    return;
+
+                }
+
+
+
+
+
+
+
+                if(
+
+                    data.type==="online"
+
+                ){
+
 
 
                     MeridianAdminState.addOnlineUser(
@@ -165,12 +516,14 @@ window.MeridianAdminSocket = {
 
 
 
-                /**
-                 * 离线
-                 */
+
+
                 if(
-                    data.type === "offline"
+
+                    data.type==="offline"
+
                 ){
+
 
 
                     MeridianAdminState.addOfflineUser(
@@ -186,19 +539,11 @@ window.MeridianAdminSocket = {
 
 
 
+
+
                 MeridianAdminUI.renderOnlineUsers();
 
-
-
-                if(
-                    MeridianAdminUI.renderOfflineUsers
-                ){
-
-
-                    MeridianAdminUI.renderOfflineUsers();
-
-
-                }
+                MeridianAdminUI.renderOfflineUsers();
 
 
 
@@ -210,6 +555,60 @@ window.MeridianAdminSocket = {
 
 
 
+
+
+
+
+        /**
+         * Session更新
+         */
+        this.socket.on(
+
+            "admin_session_update",
+
+            (data)=>{
+
+
+
+                if(
+
+                    !data.session
+
+                ){
+
+                    return;
+
+                }
+
+
+
+
+
+
+
+                MeridianAdminState.updateSession(
+
+                    data.session
+
+                );
+
+
+
+
+
+
+
+                MeridianAdminUI.renderSessions();
+
+
+
+            }
+
+        );
+
+
+
+
     },
 
 
@@ -217,32 +616,73 @@ window.MeridianAdminSocket = {
 
 
 
+
+
+
     /**
-     * 发送客服回复
+     * 发送客服消息
      */
     sendReply(message){
 
 
 
         const user =
+
         MeridianAdminState.getCurrentUser();
 
 
 
+
+
+
+
         if(
+
             !user
+
             ||
+
             !user.socketId
+
         ){
 
+
+
             console.log(
-                "No active user"
+
+                "No selected conversation"
+
             );
 
 
             return;
 
+
         }
+
+
+
+
+
+
+
+
+        const messageId =
+
+        "msg_" +
+
+        Date.now() +
+
+        "_" +
+
+        Math.random()
+
+        .toString(36)
+
+        .substring(2,8);
+
+
+
 
 
 
@@ -254,16 +694,35 @@ window.MeridianAdminSocket = {
 
             {
 
+
+                messageId:
+
+                messageId,
+
+
+
                 socketId:
+
                 user.socketId,
 
 
+
+                userId:
+
+                user.userId,
+
+
+
                 message:
+
                 message,
 
 
+
                 time:
+
                 MeridianTime.now()
+
 
 
             }
