@@ -4,16 +4,13 @@
  * MongoDB Conversation Manager
  *
  * Version:
- * v2.0.0
+ * v2.0.1
  *
  * Features:
- * - Create Conversation
- * - Update Message Metadata
- * - Unread Management
- * - Agent Assignment Foundation
- * - Conversation Status
- * - Offline Session
- * - Query Sessions
+ * - Conversation Management
+ * - Message Metadata
+ * - Unread Support
+ * - Multi Agent Foundation
  */
 
 
@@ -24,16 +21,16 @@ require("../database/models/session-model");
 
 
 
-/**
- * 创建 Session
- */
+
+
+
+
 async function createSession(data){
 
 
     const session =
 
     await Session.findOneAndUpdate(
-
 
         {
 
@@ -44,39 +41,26 @@ async function createSession(data){
 
         {
 
-
             userId:data.userId,
 
 
             customerId:
-            data.customerId
-            ||
-            null,
+            data.customerId || null,
 
 
             socketId:
-            data.socketId
-            ||
-            null,
+            data.socketId || null,
 
 
-            status:
-            "online",
+            status:"online",
 
 
             page:
-            data.page
-            ||
-            "",
+            data.page || "",
 
 
             connectedAt:
-            data.time
-            ||
-            new Date(),
-
-
-            lastSeen:null,
+            data.time || new Date(),
 
 
             conversationStatus:
@@ -88,22 +72,16 @@ async function createSession(data){
 
         {
 
-
             new:true,
-
 
             upsert:true
 
-
         }
-
 
     );
 
 
-
     return session;
-
 
 }
 
@@ -116,12 +94,7 @@ async function createSession(data){
 
 
 /**
- * 更新最后消息
- *
- * sender:
- *
- * user
- * admin
+ * 更新消息信息
  */
 async function updateMessage(
 
@@ -134,14 +107,9 @@ async function updateMessage(
 ){
 
 
-
-    const session =
-
-    await Session.findOneAndUpdate(
-
+    return await Session.findOneAndUpdate(
 
         {
-
 
             userId:userId
 
@@ -150,50 +118,33 @@ async function updateMessage(
 
         {
 
-
-            lastMessage:
-            message,
+            lastMessage:message,
 
 
-            lastMessageAt:
-            new Date(),
+            lastMessageAt:new Date(),
 
 
-            lastSender:
-            sender,
+            lastSender:sender,
 
 
             $inc:{
-
 
                 messageCount:1
 
-
             }
-
-
 
         },
 
 
         {
-
 
             new:true,
 
-
             upsert:true
-
 
         }
 
-
     );
-
-
-
-    return session;
-
 
 }
 
@@ -205,22 +156,12 @@ async function updateMessage(
 
 
 
-/**
- * 增加未读数量
- */
-async function incrementUnread(
-
-    userId
-
-){
-
+async function incrementUnread(userId){
 
 
     return await Session.findOneAndUpdate(
 
-
         {
-
 
             userId:userId
 
@@ -228,31 +169,23 @@ async function incrementUnread(
 
 
         {
-
 
             $inc:{
 
-
                 unreadCount:1
 
-
             }
-
 
         },
 
 
         {
 
-
             new:true
-
 
         }
 
-
     );
-
 
 }
 
@@ -264,22 +197,12 @@ async function incrementUnread(
 
 
 
-/**
- * 清除未读
- */
-async function clearUnread(
-
-    userId
-
-){
-
+async function clearUnread(userId){
 
 
     return await Session.findOneAndUpdate(
 
-
         {
-
 
             userId:userId
 
@@ -288,24 +211,18 @@ async function clearUnread(
 
         {
 
-
             unreadCount:0
-
 
         },
 
 
         {
 
-
             new:true
-
 
         }
 
-
     );
-
 
 }
 
@@ -319,8 +236,6 @@ async function clearUnread(
 
 /**
  * 分配客服
- *
- * Multi Agent Foundation
  */
 async function assignAgent(
 
@@ -328,17 +243,14 @@ async function assignAgent(
 
     agentId,
 
-    agentName
+    agentName=""
 
 ){
 
 
-
     return await Session.findOneAndUpdate(
 
-
         {
-
 
             userId:userId
 
@@ -347,35 +259,24 @@ async function assignAgent(
 
         {
 
-
-            assignedAgentId:
-            agentId,
+            assignedAgentId:agentId,
 
 
-            assignedAgentName:
-            agentName
-            ||
-            "",
+            assignedAgentName:agentName,
 
 
-            conversationStatus:
-            "assigned"
-
+            conversationStatus:"assigned"
 
         },
 
 
         {
 
-
             new:true
-
 
         }
 
-
     );
-
 
 }
 
@@ -388,21 +289,18 @@ async function assignAgent(
 
 
 /**
- * 关闭会话
+ * 释放客服
  */
-async function closeConversation(
+async function releaseAgent(
 
     userId
 
 ){
 
 
-
     return await Session.findOneAndUpdate(
 
-
         {
-
 
             userId:userId
 
@@ -411,25 +309,24 @@ async function closeConversation(
 
         {
 
+            assignedAgentId:null,
 
-            conversationStatus:
-            "closed"
 
+            assignedAgentName:"",
+
+
+            conversationStatus:"unassigned"
 
         },
 
 
         {
 
-
             new:true
-
 
         }
 
-
     );
-
 
 }
 
@@ -442,8 +339,38 @@ async function closeConversation(
 
 
 /**
- * 用户离线
+ * 获取客服负责的客户
  */
+async function getAgentSessions(
+
+    agentId
+
+){
+
+
+    return await Session.find({
+
+        assignedAgentId:agentId
+
+    })
+
+    .sort({
+
+        updatedAt:-1
+
+    });
+
+
+}
+
+
+
+
+
+
+
+
+
 async function offline(
 
     userId,
@@ -453,12 +380,9 @@ async function offline(
 ){
 
 
-
     return await Session.findOneAndUpdate(
 
-
         {
-
 
             userId:userId
 
@@ -467,31 +391,23 @@ async function offline(
 
         {
 
-
-            status:
-            "offline",
+            status:"offline",
 
 
             lastSeen:
-            time
-            ||
-            new Date()
 
+            time || new Date()
 
         },
 
 
         {
 
-
             new:true
-
 
         }
 
-
     );
-
 
 }
 
@@ -503,25 +419,57 @@ async function offline(
 
 
 
-/**
- * 获取全部会话
- *
- * 最新活动排序
- */
-async function getSessions(){
+async function closeConversation(
 
+    userId
+
+){
+
+
+    return await Session.findOneAndUpdate(
+
+        {
+
+            userId:userId
+
+        },
+
+
+        {
+
+            conversationStatus:"closed"
+
+        },
+
+
+        {
+
+            new:true
+
+        }
+
+    );
+
+}
+
+
+
+
+
+
+
+
+
+async function getSessions(){
 
 
     return await Session.find()
 
     .sort({
 
-
         updatedAt:-1
 
-
     });
-
 
 
 }
@@ -534,9 +482,6 @@ async function getSessions(){
 
 
 
-/**
- * 根据用户查询
- */
 async function getSessionByUserId(
 
     userId
@@ -544,15 +489,11 @@ async function getSessionByUserId(
 ){
 
 
-
     return await Session.findOne({
-
 
         userId:userId
 
-
     });
-
 
 
 }
@@ -583,10 +524,16 @@ module.exports = {
     assignAgent,
 
 
-    closeConversation,
+    releaseAgent,
+
+
+    getAgentSessions,
 
 
     offline,
+
+
+    closeConversation,
 
 
     getSessions,

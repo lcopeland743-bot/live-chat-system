@@ -91,6 +91,13 @@ const adminStateRoute =
 require("./server/routes/admin-state-route");
 
 
+const agentRoute =
+require("./server/routes/agent-route");
+
+
+const sessionAgentRoute =
+require("./server/routes/session-agent-route");
+
 
 
 
@@ -222,6 +229,29 @@ app.use(
 
 );
 
+
+/**
+ * Agent Management API
+ */
+app.use(
+
+    "/api/agents",
+
+    agentRoute
+
+);
+
+
+/**
+ * Session Agent Assignment API
+ */
+app.use(
+
+    "/api/session-agent",
+
+    sessionAgentRoute
+
+);
 
 
 
