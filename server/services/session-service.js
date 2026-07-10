@@ -1,25 +1,24 @@
 /**
  * Meridian Session Service
  *
- * MongoDB Session Manager
+ * MongoDB Conversation Manager
  *
  * Version:
- * v1.2.1
+ * v2.0.0
  *
  * Features:
- * - Create Session
- * - Update Message
- * - Update Unread Count
+ * - Create Conversation
+ * - Update Message Metadata
+ * - Unread Management
+ * - Agent Assignment Foundation
+ * - Conversation Status
  * - Offline Session
  * - Query Sessions
  */
 
 
-
 const Session =
 require("../database/models/session-model");
-
-
 
 
 
@@ -31,7 +30,6 @@ require("../database/models/session-model");
 async function createSession(data){
 
 
-
     const session =
 
     await Session.findOneAndUpdate(
@@ -39,19 +37,21 @@ async function createSession(data){
 
         {
 
-            userId:
-            data.userId
-
+            userId:data.userId
 
         },
-
 
 
         {
 
 
-            userId:
-            data.userId,
+            userId:data.userId,
+
+
+            customerId:
+            data.customerId
+            ||
+            null,
 
 
             socketId:
@@ -76,13 +76,14 @@ async function createSession(data){
             new Date(),
 
 
-            lastSeen:
-            null
+            lastSeen:null,
 
+
+            conversationStatus:
+            "unassigned"
 
 
         },
-
 
 
         {
@@ -97,10 +98,7 @@ async function createSession(data){
         }
 
 
-
     );
-
-
 
 
 
@@ -118,13 +116,20 @@ async function createSession(data){
 
 
 /**
- * 更新消息
+ * 更新最后消息
+ *
+ * sender:
+ *
+ * user
+ * admin
  */
 async function updateMessage(
 
     userId,
 
-    message
+    message,
+
+    sender="user"
 
 ){
 
@@ -135,14 +140,12 @@ async function updateMessage(
     await Session.findOneAndUpdate(
 
 
-
         {
+
 
             userId:userId
 
-
         },
-
 
 
         {
@@ -150,6 +153,14 @@ async function updateMessage(
 
             lastMessage:
             message,
+
+
+            lastMessageAt:
+            new Date(),
+
+
+            lastSender:
+            sender,
 
 
             $inc:{
@@ -165,7 +176,6 @@ async function updateMessage(
         },
 
 
-
         {
 
 
@@ -178,11 +188,7 @@ async function updateMessage(
         }
 
 
-
     );
-
-
-
 
 
 
@@ -200,10 +206,7 @@ async function updateMessage(
 
 
 /**
- * 增加未读消息数量
- *
- * Phase 1.5
- * Unread Message System
+ * 增加未读数量
  */
 async function incrementUnread(
 
@@ -213,10 +216,7 @@ async function incrementUnread(
 
 
 
-    const session =
-
-    await Session.findOneAndUpdate(
-
+    return await Session.findOneAndUpdate(
 
 
         {
@@ -224,9 +224,7 @@ async function incrementUnread(
 
             userId:userId
 
-
         },
-
 
 
         {
@@ -241,9 +239,7 @@ async function incrementUnread(
             }
 
 
-
         },
-
 
 
         {
@@ -255,15 +251,184 @@ async function incrementUnread(
         }
 
 
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 清除未读
+ */
+async function clearUnread(
+
+    userId
+
+){
+
+
+
+    return await Session.findOneAndUpdate(
+
+
+        {
+
+
+            userId:userId
+
+        },
+
+
+        {
+
+
+            unreadCount:0
+
+
+        },
+
+
+        {
+
+
+            new:true
+
+
+        }
+
 
     );
 
 
+}
 
 
 
 
-    return session;
+
+
+
+
+
+/**
+ * 分配客服
+ *
+ * Multi Agent Foundation
+ */
+async function assignAgent(
+
+    userId,
+
+    agentId,
+
+    agentName
+
+){
+
+
+
+    return await Session.findOneAndUpdate(
+
+
+        {
+
+
+            userId:userId
+
+        },
+
+
+        {
+
+
+            assignedAgentId:
+            agentId,
+
+
+            assignedAgentName:
+            agentName
+            ||
+            "",
+
+
+            conversationStatus:
+            "assigned"
+
+
+        },
+
+
+        {
+
+
+            new:true
+
+
+        }
+
+
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 关闭会话
+ */
+async function closeConversation(
+
+    userId
+
+){
+
+
+
+    return await Session.findOneAndUpdate(
+
+
+        {
+
+
+            userId:userId
+
+        },
+
+
+        {
+
+
+            conversationStatus:
+            "closed"
+
+
+        },
+
+
+        {
+
+
+            new:true
+
+
+        }
+
+
+    );
 
 
 }
@@ -289,10 +454,7 @@ async function offline(
 
 
 
-    const session =
-
-    await Session.findOneAndUpdate(
-
+    return await Session.findOneAndUpdate(
 
 
         {
@@ -300,9 +462,7 @@ async function offline(
 
             userId:userId
 
-
         },
-
 
 
         {
@@ -321,7 +481,6 @@ async function offline(
         },
 
 
-
         {
 
 
@@ -331,16 +490,7 @@ async function offline(
         }
 
 
-
     );
-
-
-
-
-
-
-
-    return session;
 
 
 }
@@ -354,28 +504,24 @@ async function offline(
 
 
 /**
- * 获取全部Session
+ * 获取全部会话
+ *
+ * 最新活动排序
  */
 async function getSessions(){
 
 
 
-    const sessions =
-
-    await Session.find()
+    return await Session.find()
 
     .sort({
 
+
         updatedAt:-1
+
 
     });
 
-
-
-
-
-
-    return sessions;
 
 
 }
@@ -401,7 +547,9 @@ async function getSessionByUserId(
 
     return await Session.findOne({
 
+
         userId:userId
+
 
     });
 
@@ -427,6 +575,15 @@ module.exports = {
 
 
     incrementUnread,
+
+
+    clearUnread,
+
+
+    assignAgent,
+
+
+    closeConversation,
 
 
     offline,

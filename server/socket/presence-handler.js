@@ -1,25 +1,25 @@
 /**
  * Meridian Presence Handler
  *
+ * 实时状态同步
+ *
  * Version:
- * v1.2.0
+ * v2.0.0
  *
  * Features:
- * - Presence Online
- * - Presence Offline
- * - MongoDB Session
+ * - Unified Presence
+ * - Session Sync
+ * - Socket Online Tracking
+ * - Offline Recovery
  */
-
 
 
 const presenceService =
 require("../services/presence-service");
 
 
-
 const sessionService =
 require("../services/session-service");
-
 
 
 const MeridianTime =
@@ -32,10 +32,15 @@ require("../utils/time");
 
 
 
+
 function registerPresenceHandler(
+
     io,
+
     socket
+
 ){
+
 
 
 
@@ -54,6 +59,7 @@ function registerPresenceHandler(
 
 
             const time =
+
             MeridianTime.now();
 
 
@@ -61,23 +67,75 @@ function registerPresenceHandler(
 
 
 
+
+            /**
+             * 清理旧连接
+             */
+            const oldUser =
+
+            presenceService.getUser(
+
+                data.userId
+
+            );
+
+
+
+
+
+
+
+            if(oldUser){
+
+
+
+                presenceService.removeUser(
+
+                    data.userId
+
+                );
+
+
+            }
+
+
+
+
+
+
+
+
+            /**
+             * 创建在线状态
+             */
             const user =
+
             presenceService.addUser({
 
+
+
                 userId:
+
                 data.userId,
 
 
+
                 socketId:
+
                 socket.id,
 
 
+
                 page:
+
                 data.page,
 
 
+
                 connectedAt:
+
                 time
+
 
 
             });
@@ -88,6 +146,10 @@ function registerPresenceHandler(
 
 
 
+
+            /**
+             * 创建/更新Session
+             */
             const session =
 
             await sessionService.createSession({
@@ -95,26 +157,31 @@ function registerPresenceHandler(
 
 
                 userId:
+
                 data.userId,
 
 
 
                 socketId:
+
                 socket.id,
 
 
 
                 page:
+
                 data.page,
 
 
 
                 time:
+
                 time
 
 
 
             });
+
 
 
 
@@ -124,7 +191,7 @@ function registerPresenceHandler(
 
             console.log(
 
-                "[Presence] User online:",
+                "[Presence] Online:",
 
                 user
 
@@ -138,7 +205,7 @@ function registerPresenceHandler(
 
             console.log(
 
-                "[Session] Created:",
+                "[Session] Updated:",
 
                 session
 
@@ -152,44 +219,7 @@ function registerPresenceHandler(
 
 
             /**
-             * 推送在线状态
-             */
-            io.emit(
-
-                "admin_presence_update",
-
-                {
-
-
-                    type:
-                    "online",
-
-
-
-                    user:
-                    user,
-
-
-
-                    session:
-                    session
-
-
-
-                }
-
-            );
-
-
-
-
-
-
-
-
-
-            /**
-             * 推送Session
+             * 通知后台
              */
             io.emit(
 
@@ -199,11 +229,13 @@ function registerPresenceHandler(
 
 
                     type:
-                    "create",
+
+                    "update",
 
 
 
                     session:
+
                     session
 
 
@@ -211,7 +243,6 @@ function registerPresenceHandler(
                 }
 
             );
-
 
 
 
@@ -282,6 +313,7 @@ function registerPresenceHandler(
 
 
         const time =
+
         MeridianTime.now();
 
 
@@ -289,12 +321,17 @@ function registerPresenceHandler(
 
 
 
+
         const user =
-        presenceService.removeUserBySocket(
+
+        presenceService
+
+        .removeUserBySocket(
 
             socket.id
 
         );
+
 
 
 
@@ -308,6 +345,7 @@ function registerPresenceHandler(
 
 
         }
+
 
 
 
@@ -329,9 +367,10 @@ function registerPresenceHandler(
 
 
 
+
         console.log(
 
-            "[Presence] User offline:",
+            "[Presence] Offline:",
 
             user
 
@@ -358,40 +397,6 @@ function registerPresenceHandler(
 
 
 
-
-        io.emit(
-
-            "admin_presence_update",
-
-            {
-
-
-                type:
-                "offline",
-
-
-
-                user:
-                user,
-
-
-
-                session:
-                session
-
-
-
-            }
-
-        );
-
-
-
-
-
-
-
-
         io.emit(
 
             "admin_session_update",
@@ -400,11 +405,13 @@ function registerPresenceHandler(
 
 
                 type:
+
                 "update",
 
 
 
                 session:
+
                 session
 
 
@@ -415,9 +422,7 @@ function registerPresenceHandler(
 
 
 
-
     }
-
 
 
 
@@ -433,4 +438,5 @@ function registerPresenceHandler(
 
 
 module.exports =
+
 registerPresenceHandler;

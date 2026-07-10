@@ -1,17 +1,18 @@
 /**
  * Meridian Admin UI
  *
- * 多会话工作台
+ * 企业会话工作台
  *
  * Version:
- * v1.2.6
+ * v2.0.0
  *
  * Features:
- * - Conversation Switching
- * - MongoDB History Loading
- * - Session Rendering
- * - Auto Current Conversation Restore
+ * - All Conversations
+ * - Session Management
  * - History Recovery
+ * - Conversation Switching
+ * - Unread Foundation
+ * - Multi Agent Foundation
  */
 
 
@@ -60,34 +61,6 @@ window.MeridianAdminUI = {
 
 
 
-        this.onlineUsers =
-
-        document.getElementById(
-
-            "onlineUsers"
-
-        );
-
-
-
-
-
-
-
-        this.offlineUsers =
-
-        document.getElementById(
-
-            "offlineUsers"
-
-        );
-
-
-
-
-
-
-
         this.input =
 
         document.getElementById(
@@ -123,7 +96,7 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 自动恢复当前聊天
+     * 恢复当前聊天
      */
     async restoreCurrentSession(){
 
@@ -141,7 +114,6 @@ window.MeridianAdminUI = {
 
 
 
-
         if(
 
             !current
@@ -151,8 +123,6 @@ window.MeridianAdminUI = {
             !current.userId
 
         ){
-
-
 
             return;
 
@@ -164,12 +134,6 @@ window.MeridianAdminUI = {
 
 
 
-
-        /**
-         * 使用最新Session
-         *
-         * 更新socketId
-         */
         const session =
 
         MeridianAdminState
@@ -182,15 +146,11 @@ window.MeridianAdminUI = {
 
 
 
-
         if(!session){
-
-
 
             return;
 
         }
-
 
 
 
@@ -210,13 +170,11 @@ window.MeridianAdminUI = {
 
 
 
-
         await this.loadHistory(
 
             session.userId
 
         );
-
 
 
 
@@ -262,7 +220,6 @@ window.MeridianAdminUI = {
 
 
 
-
         if(
 
             this.historyLoaded[userId]
@@ -272,7 +229,6 @@ window.MeridianAdminUI = {
             return;
 
         }
-
 
 
 
@@ -298,7 +254,6 @@ window.MeridianAdminUI = {
 
 
 
-
             messages.forEach(
 
                 msg=>{
@@ -306,29 +261,51 @@ window.MeridianAdminUI = {
 
 
                     MeridianConversationStore.addMessage(
-    userId,
-    {
-        messageId: msg.messageId,
 
-        message: msg.content,
+                        userId,
 
-        type:
-        msg.sender==="admin"
-        ?
-        "admin"
-        :
-        "user",
+                        {
 
-        time: msg.createdAt
-    }
-);
+                            messageId:
+
+                            msg.messageId,
+
+
+
+                            message:
+
+                            msg.content,
+
+
+
+                            type:
+
+                            msg.sender==="admin"
+
+                            ?
+
+                            "admin"
+
+                            :
+
+                            "user",
+
+
+
+                            time:
+
+                            msg.createdAt
+
+
+                        }
+
+                    );
 
 
 
                 }
 
             );
-
 
 
 
@@ -375,13 +352,9 @@ window.MeridianAdminUI = {
 
         if(!this.messages){
 
-
-
             return;
 
-
         }
-
 
 
 
@@ -405,9 +378,7 @@ window.MeridianAdminUI = {
 
 
 
-
         this.messages.innerHTML="";
-
 
 
 
@@ -435,10 +406,9 @@ window.MeridianAdminUI = {
 
 
 
-                div.className=
+                div.className =
 
                 "message "+msg.type;
-
 
 
 
@@ -459,12 +429,11 @@ window.MeridianAdminUI = {
 
                 <small>
 
-                ${msg.time||""}
+                ${msg.time || ""}
 
                 </small>
 
                 `;
-
 
 
 
@@ -490,7 +459,6 @@ window.MeridianAdminUI = {
 
 
 
-
         this.messages.scrollTop =
 
         this.messages.scrollHeight;
@@ -498,18 +466,27 @@ window.MeridianAdminUI = {
 
 
     },
+
+
+
+
+
+
+
+
+
+    /**
+     * 全部会话列表
+     */
     renderSessions(){
 
 
 
         if(!this.sessions){
 
-
             return;
 
-
         }
-
 
 
 
@@ -529,9 +506,7 @@ window.MeridianAdminUI = {
 
 
 
-
         this.sessions.innerHTML="";
-
 
 
 
@@ -559,8 +534,7 @@ window.MeridianAdminUI = {
 
 
 
-
-                div.className =
+                div.className=
 
                 "session-item";
 
@@ -570,8 +544,7 @@ window.MeridianAdminUI = {
 
 
 
-
-                div.style.cursor =
+                div.style.cursor=
 
                 "pointer";
 
@@ -581,24 +554,109 @@ window.MeridianAdminUI = {
 
 
 
+                const statusIcon =
 
-                div.innerHTML =
+                session.status==="online"
+
+                ?
+
+                "🟢"
+
+                :
+
+                "⚫";
+
+
+
+
+
+
+
+                const time =
+
+                session.lastMessageAt
+
+                ?
+
+                new Date(
+
+                    session.lastMessageAt
+
+                )
+
+                .toLocaleString()
+
+                :
+
+                "";
+
+
+
+
+
+
+
+                const unread =
+
+                session.unreadCount > 0
+
+                ?
 
                 `
 
+                <span>
+
+                🔴${session.unreadCount}
+
+                </span>
+
+                `
+
+                :
+
+                "";
+
+
+
+
+
+
+
+                div.innerHTML=
+
+                `
+
+                <div>
+
+
                 <b>
+
+                ${statusIcon}
 
                 ${session.userId}
 
                 </b>
 
 
-                <br>
+                </div>
 
 
-                状态:
+                <div>
 
-                ${session.status}
+
+                ${session.lastMessage || "暂无消息"}
+
+                </div>
+
+
+                <small>
+
+                ${time}
+
+                ${unread}
+
+                </small>
+
 
                 `;
 
@@ -608,8 +666,7 @@ window.MeridianAdminUI = {
 
 
 
-
-                div.onclick =
+                div.onclick=
 
                 async()=>{
 
@@ -620,7 +677,6 @@ window.MeridianAdminUI = {
                         session
 
                     );
-
 
 
 
@@ -640,13 +696,11 @@ window.MeridianAdminUI = {
 
 
 
-
                     this.renderConversation(
 
                         session.userId
 
                     );
-
 
 
 
@@ -663,7 +717,6 @@ window.MeridianAdminUI = {
 
 
                 };
-
 
 
 
@@ -689,13 +742,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
-        /**
-         * Session恢复完成
-         *
-         * 自动恢复当前客户
-         */
         this.restoreCurrentSession();
 
 
@@ -742,184 +788,9 @@ window.MeridianAdminUI = {
 
 
 
-
         item.style.border=
 
         "2px solid #409eff";
-
-
-
-    },
-
-
-
-
-
-
-
-
-
-    renderOnlineUsers(){
-
-
-
-        if(!this.onlineUsers){
-
-
-
-            return;
-
-
-        }
-
-
-
-
-
-
-
-
-        this.onlineUsers.innerHTML="";
-
-
-
-
-
-
-
-
-        MeridianAdminState.onlineUsers
-
-        .forEach(
-
-            user=>{
-
-
-
-                const div =
-
-                document.createElement(
-
-                    "div"
-
-                );
-
-
-
-
-
-
-
-
-                div.innerHTML=
-
-                `🟢 ${user.userId}`;
-
-
-
-
-
-
-
-
-                this.onlineUsers.appendChild(
-
-                    div
-
-                );
-
-
-
-            }
-
-        );
-
-
-
-    },
-
-
-
-
-
-
-
-
-
-    renderOfflineUsers(){
-
-
-
-        if(!this.offlineUsers){
-
-
-
-            return;
-
-
-        }
-
-
-
-
-
-
-
-
-        this.offlineUsers.innerHTML="";
-
-
-
-
-
-
-
-
-        MeridianAdminState.offlineUsers
-
-        .forEach(
-
-            user=>{
-
-
-
-                const div =
-
-                document.createElement(
-
-                    "div"
-
-                );
-
-
-
-
-
-
-
-
-                div.innerHTML=
-
-                `⚫ ${user.userId}`;
-
-
-
-
-
-
-
-
-                this.offlineUsers.appendChild(
-
-                    div
-
-                );
-
-
-
-            }
-
-        );
 
 
 
@@ -941,14 +812,13 @@ window.MeridianAdminUI = {
 
 
 
-            this.sendButton.onclick =
+            this.sendButton.onclick=
 
             callback;
 
 
 
         }
-
 
 
 

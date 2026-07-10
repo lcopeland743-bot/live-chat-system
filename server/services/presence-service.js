@@ -1,15 +1,16 @@
 /**
  * Meridian Presence Service
  *
- * 用户在线状态管理
+ * 实时连接状态管理
  *
  * Version:
- * v1.2.3
+ * v2.0.0
  *
  * Features:
- * - Online Users
- * - Offline Users
- * - Presence Restore
+ * - Real Time Online Tracking
+ * - Socket Presence
+ * - Session Separation
+ * - Heartbeat Foundation
  */
 
 
@@ -22,24 +23,12 @@ class PresenceService {
 
 
         /**
-         * 在线用户
+         * 当前在线用户
          *
          * Key:
          * userId
          */
         this.users = new Map();
-
-
-
-
-
-        /**
-         * 离线用户
-         *
-         * Key:
-         * userId
-         */
-        this.offlineUsers = new Map();
 
 
 
@@ -89,13 +78,15 @@ class PresenceService {
 
             connectedAt:
 
-            userData.connectedAt,
+            userData.connectedAt
+            ||
+            new Date().toISOString(),
 
 
 
             lastSeen:
 
-            null
+            new Date().toISOString()
 
 
 
@@ -107,24 +98,6 @@ class PresenceService {
 
 
 
-        /**
-         * 从离线列表移除
-         */
-        this.offlineUsers.delete(
-
-            user.userId
-
-        );
-
-
-
-
-
-
-
-        /**
-         * 加入在线
-         */
         this.users.set(
 
             user.userId,
@@ -154,9 +127,10 @@ class PresenceService {
 
 
     /**
-     * 获取用户
+     * 获取在线用户
      */
     getUser(userId){
+
 
 
         return (
@@ -165,13 +139,35 @@ class PresenceService {
 
             ||
 
-            this.offlineUsers.get(userId)
-
-            ||
-
             null
 
         );
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 判断是否在线
+     */
+    hasUser(userId){
+
+
+
+        return this.users.has(
+
+            userId
+
+        );
+
 
 
     }
@@ -231,9 +227,7 @@ class PresenceService {
 
         user.lastSeen =
 
-        new Date()
-
-        .toISOString();
+        new Date().toISOString();
 
 
 
@@ -241,30 +235,9 @@ class PresenceService {
 
 
 
-
-        /**
-         * 删除在线
-         */
         this.users.delete(
 
             userId
-
-        );
-
-
-
-
-
-
-
-        /**
-         * 保存离线
-         */
-        this.offlineUsers.set(
-
-            userId,
-
-            user
 
         );
 
@@ -289,7 +262,7 @@ class PresenceService {
 
 
     /**
-     * 根据socket删除
+     * 根据Socket删除
      */
     removeUserBySocket(socketId){
 
@@ -339,6 +312,8 @@ class PresenceService {
 
 
 
+
+
         return null;
 
 
@@ -354,7 +329,64 @@ class PresenceService {
 
 
     /**
-     * 获取在线用户
+     * 更新最后活动时间
+     *
+     * Heartbeat Foundation
+     */
+    updateLastSeen(userId){
+
+
+
+        const user =
+
+        this.users.get(
+
+            userId
+
+        );
+
+
+
+
+
+
+
+        if(user){
+
+
+
+            user.lastSeen =
+
+            new Date()
+
+            .toISOString();
+
+
+
+        }
+
+
+
+
+
+
+
+        return user;
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取全部在线用户
      */
     getOnlineUsers(){
 
@@ -367,29 +399,6 @@ class PresenceService {
         );
 
 
-    }
-
-
-
-
-
-
-
-
-
-    /**
-     * 获取离线用户
-     */
-    getOfflineUsers(){
-
-
-
-        return Array.from(
-
-            this.offlineUsers.values()
-
-        );
-
 
     }
 
@@ -402,28 +411,16 @@ class PresenceService {
 
 
     /**
-     * 获取全部状态
+     * 清理内存状态
+     *
+     * Server Restart
      */
-    getAllUsers(){
+    clear(){
 
 
 
-        return {
+        this.users.clear();
 
-
-            onlineUsers:
-
-            this.getOnlineUsers(),
-
-
-
-            offlineUsers:
-
-            this.getOfflineUsers()
-
-
-
-        };
 
 
     }

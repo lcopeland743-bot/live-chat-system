@@ -2,17 +2,18 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v1.2.3
+ * v2.0.0
  *
  * Features:
  * - Express
  * - Socket.IO
  * - MongoDB
- * - Presence
+ * - Unified Presence
  * - Chat
  * - Message History API
  * - Session Restore API
  * - Admin State Restore API
+ * - Session Cleanup
  */
 
 
@@ -48,6 +49,13 @@ const {
 }
 =
 require("./server/database/connection");
+
+
+
+
+
+const sessionCleanupService =
+require("./server/services/session-cleanup-service");
 
 
 
@@ -351,6 +359,16 @@ async function startServer(){
 
 
     await connectDatabase();
+
+
+
+
+
+
+
+    await sessionCleanupService
+
+    .cleanupOnlineSessions();
 
 
 
