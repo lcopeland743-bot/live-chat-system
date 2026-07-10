@@ -4,15 +4,15 @@
  * 企业会话工作台
  *
  * Version:
- * v2.0.0
+ * v2.0.2
  *
  * Features:
  * - All Conversations
  * - Session Management
  * - History Recovery
  * - Conversation Switching
- * - Unread Foundation
  * - Multi Agent Foundation
+ * - Rich Message Renderer
  */
 
 
@@ -43,10 +43,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
-
-
         this.sessions =
 
         document.getElementById(
@@ -57,10 +53,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
-
-
         this.input =
 
         document.getElementById(
@@ -68,10 +60,6 @@ window.MeridianAdminUI = {
             "adminReplyInput"
 
         );
-
-
-
-
 
 
 
@@ -95,9 +83,6 @@ window.MeridianAdminUI = {
 
 
 
-    /**
-     * 恢复当前聊天
-     */
     async restoreCurrentSession(){
 
 
@@ -107,8 +92,6 @@ window.MeridianAdminUI = {
         MeridianAdminState
 
         .getCurrentUser();
-
-
 
 
 
@@ -132,15 +115,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
         const session =
 
         MeridianAdminState
 
         .restoreSessionUser();
-
-
 
 
 
@@ -156,15 +135,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
         MeridianAdminState.selectSession(
 
             session
 
         );
-
-
 
 
 
@@ -180,14 +155,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
         this.renderConversation(
 
             session.userId
 
         );
-
 
 
     },
@@ -204,11 +176,7 @@ window.MeridianAdminUI = {
 
 
 
-        if(
-
-            !window.MeridianHistoryLoader
-
-        ){
+        if(!window.MeridianHistoryLoader){
 
             return;
 
@@ -218,19 +186,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
-        if(
-
-            this.historyLoaded[userId]
-
-        ){
+        if(this.historyLoaded[userId]){
 
             return;
 
         }
-
-
 
 
 
@@ -247,8 +207,6 @@ window.MeridianAdminUI = {
                 userId
 
             );
-
-
 
 
 
@@ -278,17 +236,15 @@ window.MeridianAdminUI = {
 
 
 
-                            type:
+                            sender:
 
-                            msg.sender==="admin"
+                            msg.sender,
 
-                            ?
 
-                            "admin"
 
-                            :
+                            messageType:
 
-                            "user",
+                            msg.type || "text",
 
 
 
@@ -302,12 +258,9 @@ window.MeridianAdminUI = {
                     );
 
 
-
                 }
 
             );
-
-
 
 
 
@@ -360,8 +313,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
         const messages =
 
         MeridianConversationStore
@@ -376,11 +327,7 @@ window.MeridianAdminUI = {
 
 
 
-
-
         this.messages.innerHTML="";
-
-
 
 
 
@@ -404,38 +351,95 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 div.className =
 
-                "message "+msg.type;
+                "message "
+
+                +
+
+                (
+
+                    msg.sender==="admin"
+
+                    ?
+
+                    "admin"
+
+                    :
+
+                    "user"
+
+                );
 
 
 
 
 
+                const content =
+
+                document.createElement(
+
+                    "div"
+
+                );
 
 
-                div.innerHTML=
-
-                `
-
-                <div>
-
-                ${msg.message}
-
-                </div>
 
 
-                <small>
 
-                ${msg.time || ""}
+                content.className =
 
-                </small>
-
-                `;
+                "message-content";
 
 
+
+
+
+                this.renderMessage(
+
+                    content,
+
+                    msg
+
+                );
+
+
+
+
+
+                const time =
+
+                document.createElement(
+
+                    "small"
+
+                );
+
+
+
+                time.textContent =
+
+                msg.time || "";
+
+
+
+
+
+                div.appendChild(
+
+                    content
+
+                );
+
+
+
+
+
+                div.appendChild(
+
+                    time
+
+                );
 
 
 
@@ -452,8 +456,6 @@ window.MeridianAdminUI = {
             }
 
         );
-
-
 
 
 
@@ -476,8 +478,256 @@ window.MeridianAdminUI = {
 
 
     /**
-     * 全部会话列表
+     * Rich Message Renderer
+     *
+     * 支持:
+     *
+     * text
+     * link
+     * image
+     * file
      */
+    renderMessage(
+
+        container,
+
+        msg
+
+    ){
+
+
+
+        const type =
+
+        msg.messageType
+
+        ||
+
+        msg.type
+
+        ||
+
+        "text";
+
+
+
+
+
+        const content =
+
+        msg.message
+
+        ||
+
+        msg.content
+
+        ||
+
+        "";
+
+
+
+
+
+
+
+
+
+        if(type==="link"){
+
+
+
+            const a =
+
+            document.createElement(
+
+                "a"
+
+            );
+
+
+
+            a.href = content;
+
+
+
+            a.target = "_blank";
+
+
+
+            a.rel =
+
+            "noopener noreferrer";
+
+
+
+            a.textContent = content;
+
+
+
+            a.style.cursor =
+
+            "pointer";
+
+
+
+            a.style.textDecoration =
+
+            "underline";
+
+
+
+            container.appendChild(
+
+                a
+
+            );
+
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+
+
+
+        if(type==="image"){
+
+
+
+            const img =
+
+            document.createElement(
+
+                "img"
+
+            );
+
+
+
+            img.src = content;
+
+
+
+            img.style.maxWidth =
+
+            "300px";
+
+
+
+            img.style.cursor =
+
+            "pointer";
+
+
+
+            img.onclick = ()=>{
+
+
+                window.open(
+
+                    content,
+
+                    "_blank"
+
+                );
+
+
+            };
+
+
+
+            container.appendChild(
+
+                img
+
+            );
+
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+
+
+
+        if(type==="file"){
+
+
+
+            const a =
+
+            document.createElement(
+
+                "a"
+
+            );
+
+
+
+            a.href = content;
+
+
+
+            a.target="_blank";
+
+
+
+            a.textContent =
+
+            "📎 文件";
+
+
+
+            container.appendChild(
+
+                a
+
+            );
+
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+
+
+
+        container.textContent = content;
+
+
+
+    },
+
+
+
+
+
+
+
+
+
     renderSessions(){
 
 
@@ -487,8 +737,6 @@ window.MeridianAdminUI = {
             return;
 
         }
-
-
 
 
 
@@ -504,11 +752,7 @@ window.MeridianAdminUI = {
 
 
 
-
-
         this.sessions.innerHTML="";
-
-
 
 
 
@@ -532,8 +776,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 div.className=
 
                 "session-item";
@@ -542,13 +784,9 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 div.style.cursor=
 
                 "pointer";
-
-
 
 
 
@@ -565,8 +803,6 @@ window.MeridianAdminUI = {
                 :
 
                 "⚫";
-
-
 
 
 
@@ -589,8 +825,6 @@ window.MeridianAdminUI = {
                 :
 
                 "";
-
-
 
 
 
@@ -620,14 +854,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 div.innerHTML=
 
                 `
 
                 <div>
-
 
                 <b>
 
@@ -637,12 +868,10 @@ window.MeridianAdminUI = {
 
                 </b>
 
-
                 </div>
 
 
                 <div>
-
 
                 ${session.lastMessage || "暂无消息"}
 
@@ -664,8 +893,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 div.onclick=
 
                 async()=>{
@@ -682,8 +909,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
                     await this.loadHistory(
 
                         session.userId
@@ -694,15 +919,11 @@ window.MeridianAdminUI = {
 
 
 
-
-
                     this.renderConversation(
 
                         session.userId
 
                     );
-
-
 
 
 
@@ -722,8 +943,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
                 this.sessions.appendChild(
 
                     div
@@ -735,8 +954,6 @@ window.MeridianAdminUI = {
             }
 
         );
-
-
 
 
 
@@ -786,8 +1003,6 @@ window.MeridianAdminUI = {
 
 
 
-
-
         item.style.border=
 
         "2px solid #409eff";
@@ -819,8 +1034,6 @@ window.MeridianAdminUI = {
 
 
         }
-
-
 
 
 

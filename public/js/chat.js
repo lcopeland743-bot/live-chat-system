@@ -26,17 +26,16 @@
         MeridianSocket.onAdminReply((data) => {
 
 
-            MeridianChatUI.addMessage(
+    MeridianChatUI.addMessage(
 
-                data.message,
+        data,
 
-                "admin"
+        "admin"
 
-            );
+    );
 
 
-        });
-
+});
 
 
         MeridianLogger.info(

@@ -2,9 +2,10 @@
  * Meridian Chat Handler
  *
  * Version:
- * v1.2.1
+ * v2.0.2
  *
  * Features:
+ * - Rich Message Support
  * - Message ID
  * - Deduplication
  * - MongoDB Message Storage
@@ -53,6 +54,61 @@ function createMessageId(){
         .toString(36)
 
         .substring(2,8)
+
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
+function normalizeContent(data){
+
+
+
+    return (
+
+        data.content
+
+        ||
+
+        data.message
+
+        ||
+
+        ""
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+function normalizeType(data){
+
+
+
+    return (
+
+        data.type
+
+        ||
+
+        "text"
 
     );
 
@@ -128,16 +184,47 @@ function registerChatHandler(
 
 
 
+                /**
+                 * 兼容旧版本
+                 */
                 message:
 
-                data.message,
+                normalizeContent(data),
+
+
+
+
+                /**
+                 * v2.0.2
+                 */
+                content:
+
+                normalizeContent(data),
 
 
 
 
                 type:
 
-                "text",
+                normalizeType(data),
+
+
+
+
+                metadata:
+
+                data.metadata
+
+                ||
+
+                {},
+
+
+
+
+                messageStatus:
+
+                "sent",
 
 
 
@@ -203,13 +290,13 @@ function registerChatHandler(
 
 
             /**
-             * 更新Session消息信息
+             * 更新Session
              */
             await sessionService.updateMessage(
 
                 payload.userId,
 
-                payload.message
+                payload.content
 
             );
 
@@ -221,9 +308,7 @@ function registerChatHandler(
 
 
             /**
-             * 增加未读数量
-             *
-             * Phase 1.5
+             * 未读数量
              */
             const session =
 
@@ -290,7 +375,7 @@ function registerChatHandler(
 
 
             /**
-             * 推送后台
+             * 推送后台消息
              */
             io.emit(
 
@@ -336,7 +421,15 @@ function registerChatHandler(
 
                 ||
 
-                !data.message
+                !(
+
+                    data.message
+
+                    ||
+
+                    data.content
+
+                )
 
             ){
 
@@ -421,14 +514,39 @@ function registerChatHandler(
 
                 message:
 
-                data.message,
+                normalizeContent(data),
+
+
+
+
+                content:
+
+                normalizeContent(data),
 
 
 
 
                 type:
 
-                "text",
+                normalizeType(data),
+
+
+
+
+                metadata:
+
+                data.metadata
+
+                ||
+
+                {},
+
+
+
+
+                messageStatus:
+
+                "sent",
 
 
 
@@ -506,7 +624,7 @@ function registerChatHandler(
 
                 session.userId,
 
-                payload.message
+                payload.content
 
             );
 
@@ -564,7 +682,7 @@ function registerChatHandler(
 
 
             /**
-             * 发送给用户
+             * 推送用户端
              */
             io.to(
 

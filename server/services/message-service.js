@@ -4,12 +4,13 @@
  * MongoDB Message Manager
  *
  * Version:
- * v1.2.0
+ * v2.0.2
  *
  * Features:
  * - Save Message
  * - Duplicate Check
  * - Query History
+ * - Rich Message Support
  */
 
 
@@ -23,15 +24,44 @@ require("../database/models/message-model");
 
 
 
+
+
 /**
  * 临时消息去重缓存
- *
- * 用于防止短时间重复提交
  *
  * 后续可迁移 Redis
  */
 const recentMessages =
 new Set();
+
+
+
+
+
+
+
+
+
+/**
+ * 支持的消息类型
+ */
+const allowedTypes = [
+
+
+    "text",
+
+
+    "image",
+
+
+    "link",
+
+
+    "file"
+
+
+];
+
 
 
 
@@ -52,14 +82,20 @@ function isDuplicate(
 
 
     if(
+
         recentMessages.has(
+
             messageId
+
         )
+
     ){
 
         return true;
 
     }
+
+
 
 
 
@@ -75,8 +111,10 @@ function isDuplicate(
 
 
 
+
+
     /**
-     * 5分钟后释放
+     * 5分钟释放
      */
     setTimeout(
 
@@ -102,7 +140,49 @@ function isDuplicate(
 
 
 
+
+
     return false;
+
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 消息类型处理
+ */
+function normalizeType(
+
+    type
+
+){
+
+
+
+    if(
+
+        allowedTypes.includes(type)
+
+    ){
+
+        return type;
+
+    }
+
+
+
+
+
+
+
+    return "text";
 
 
 }
@@ -128,58 +208,177 @@ async function saveMessage(data){
 
 
 
+        /**
+         * 消息ID
+         */
         messageId:
+
         data.messageId,
 
 
 
+
+
+
+
+        /**
+         * 会话ID
+         */
         sessionId:
+
         data.sessionId
+
         ||
+
         data.userId,
 
 
 
+
+
+
+
+        /**
+         * 用户ID
+         */
         userId:
+
         data.userId,
 
 
 
+
+
+
+
+        /**
+         * Socket
+         */
         socketId:
+
         data.socketId
+
         ||
+
         null,
 
 
 
+
+
+
+
+        /**
+         * 发送者
+         */
         sender:
+
         data.sender
+
         ||
+
         "user",
 
 
 
 
+
+
+
+        /**
+         * 消息类型
+         */
         type:
-        data.type
-        ||
-        "text",
+
+        normalizeType(
+
+            data.type
+
+            ||
+
+            "text"
+
+        ),
 
 
 
 
+
+
+
+        /**
+         * 消息内容
+         *
+         * text:
+         * 文字
+         *
+         * image:
+         * 图片URL
+         *
+         * link:
+         * 链接URL
+         *
+         * file:
+         * 文件URL
+         */
         content:
+
         data.content
+
         ||
+
         data.message
+
         ||
+
         "",
 
 
 
-        createdAt:
-        data.time
+
+
+
+
+        /**
+         * 扩展数据
+         */
+        metadata:
+
+        data.metadata
+
         ||
+
+        {},
+
+
+
+
+
+
+
+        /**
+         * 消息状态
+         */
+        messageStatus:
+
+        data.messageStatus
+
+        ||
+
+        "sent",
+
+
+
+
+
+
+
+        createdAt:
+
+        data.time
+
+        ||
+
         new Date()
 
 
@@ -216,9 +415,7 @@ async function getMessages(
 
 
 
-    const messages =
-
-    await Message.find({
+    return await Message.find({
 
 
         userId:userId
@@ -231,14 +428,6 @@ async function getMessages(
         createdAt:1
 
     });
-
-
-
-
-
-
-
-    return messages;
 
 
 }

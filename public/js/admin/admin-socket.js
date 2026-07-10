@@ -4,7 +4,7 @@
  * 多会话消息管理
  *
  * Version:
- * v1.2.7
+ * v2.0.2
  *
  * Features:
  * - Admin State Restore
@@ -14,6 +14,7 @@
  * - Conversation Store
  * - Message Isolation
  * - MessageId Complete Support
+ * - Rich Message Sync
  */
 
 
@@ -23,6 +24,8 @@ window.MeridianAdminSocket = {
 
 
     socket:null,
+
+
 
 
 
@@ -50,13 +53,9 @@ window.MeridianAdminSocket = {
 
 
 
-
-
             const result =
 
             await response.json();
-
-
 
 
 
@@ -100,7 +99,6 @@ window.MeridianAdminSocket = {
 
 
 
-
             MeridianAdminState.onlineUsers =
 
             result.onlineUsers || [];
@@ -111,11 +109,9 @@ window.MeridianAdminSocket = {
 
 
 
-
             MeridianAdminState.offlineUsers =
 
             result.offlineUsers || [];
-
 
 
 
@@ -153,14 +149,12 @@ window.MeridianAdminSocket = {
                     }
 
 
-
                 },
 
 
                 300
 
             );
-
 
 
 
@@ -267,6 +261,8 @@ window.MeridianAdminSocket = {
 
         /**
          * 用户消息
+         *
+         * Rich Message Sync
          */
         this.socket.on(
 
@@ -283,6 +279,7 @@ window.MeridianAdminSocket = {
                     {
 
 
+
                         messageId:
 
                         data.messageId,
@@ -291,11 +288,43 @@ window.MeridianAdminSocket = {
 
                         message:
 
-                        data.message,
+                        data.content
+
+                        ||
+
+                        data.message
+
+                        ||
+
+                        "",
 
 
 
-                        type:
+                        content:
+
+                        data.content
+
+                        ||
+
+                        data.message
+
+                        ||
+
+                        "",
+
+
+
+                        messageType:
+
+                        data.type
+
+                        ||
+
+                        "text",
+
+
+
+                        sender:
 
                         "user",
 
@@ -304,6 +333,7 @@ window.MeridianAdminSocket = {
                         time:
 
                         data.time
+
 
 
                     }
@@ -360,6 +390,8 @@ window.MeridianAdminSocket = {
 
         /**
          * 客服回复消息
+         *
+         * Rich Message Sync
          */
         this.socket.on(
 
@@ -392,6 +424,7 @@ window.MeridianAdminSocket = {
                     {
 
 
+
                         messageId:
 
                         data.messageId,
@@ -400,11 +433,43 @@ window.MeridianAdminSocket = {
 
                         message:
 
-                        data.message,
+                        data.content
+
+                        ||
+
+                        data.message
+
+                        ||
+
+                        "",
 
 
 
-                        type:
+                        content:
+
+                        data.content
+
+                        ||
+
+                        data.message
+
+                        ||
+
+                        "",
+
+
+
+                        messageType:
+
+                        data.type
+
+                        ||
+
+                        "text",
+
+
+
+                        sender:
 
                         "admin",
 
@@ -413,6 +478,7 @@ window.MeridianAdminSocket = {
                         time:
 
                         data.time
+
 
 
                     }
@@ -621,6 +687,8 @@ window.MeridianAdminSocket = {
 
     /**
      * 发送客服消息
+     *
+     * Rich Message Compatible
      */
     sendReply(message){
 
@@ -688,11 +756,13 @@ window.MeridianAdminSocket = {
 
 
 
+
         this.socket.emit(
 
             window.MERIDIAN_EVENTS.ADMIN_REPLY,
 
             {
+
 
 
                 messageId:
@@ -716,6 +786,18 @@ window.MeridianAdminSocket = {
                 message:
 
                 message,
+
+
+
+                content:
+
+                message,
+
+
+
+                type:
+
+                "text",
 
 
 

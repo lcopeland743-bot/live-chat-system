@@ -4,7 +4,15 @@
  * MongoDB Message Schema
  *
  * Version:
- * v1.2.0
+ * v2.0.2
+ *
+ * Features:
+ * - Text Message
+ * - Image Message
+ * - Link Message
+ * - File Message
+ * - Message Metadata
+ * - Message Status
  */
 
 
@@ -134,9 +142,12 @@ new mongoose.Schema(
 
             enum:[
 
+
                 "user",
 
+
                 "admin"
+
 
             ],
 
@@ -145,7 +156,6 @@ new mongoose.Schema(
 
 
         },
-
 
 
 
@@ -167,6 +177,24 @@ new mongoose.Schema(
             type:String,
 
 
+            enum:[
+
+
+                "text",
+
+
+                "image",
+
+
+                "link",
+
+
+                "file"
+
+
+            ],
+
+
             default:"text"
 
 
@@ -180,6 +208,18 @@ new mongoose.Schema(
 
         /**
          * 消息内容
+         *
+         * text:
+         * 普通文字
+         *
+         * image:
+         * 图片URL
+         *
+         * link:
+         * 网页URL
+         *
+         * file:
+         * 文件URL
          */
         content:{
 
@@ -198,9 +238,80 @@ new mongoose.Schema(
 
 
 
+        /**
+         * 扩展数据
+         *
+         * 图片:
+         * {
+         * width,
+         * height,
+         * size
+         * }
+         *
+         * 链接:
+         * {
+         * title,
+         * preview
+         * }
+         */
+        metadata:{
+
+
+            type:Object,
+
+
+            default:{}
+
+
+        },
+
+
+
+
+
+
 
         /**
-         * 消息时间
+         * 消息状态
+         *
+         * sent
+         * delivered
+         * read
+         */
+        messageStatus:{
+
+
+            type:String,
+
+
+            enum:[
+
+
+                "sent",
+
+
+                "delivered",
+
+
+                "read"
+
+
+            ],
+
+
+            default:"sent"
+
+
+        },
+
+
+
+
+
+
+
+        /**
+         * 创建时间
          */
         createdAt:{
 
@@ -245,6 +356,23 @@ messageSchema.index({
     sessionId:1,
 
     createdAt:1
+
+});
+
+
+
+
+
+
+
+
+
+/**
+ * 类型查询优化
+ */
+messageSchema.index({
+
+    type:1
 
 });
 
