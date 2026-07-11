@@ -25,9 +25,7 @@ window.MeridianSocket = {
 
 
             MeridianLogger.error(
-
                 "Socket.io not loaded"
-
             );
 
 
@@ -40,13 +38,12 @@ window.MeridianSocket = {
 
 
 
+
         if (!EVENTS) {
 
 
             MeridianLogger.error(
-
                 "MERIDIAN_EVENTS not loaded"
-
             );
 
 
@@ -61,10 +58,9 @@ window.MeridianSocket = {
 
 
         this.socket = io(
-
             config.socket.url
-
         );
+
 
 
 
@@ -89,6 +85,7 @@ window.MeridianSocket = {
                     }
 
                 );
+
 
 
 
@@ -147,6 +144,7 @@ window.MeridianSocket = {
 
 
 
+
         this.socket.on(
 
             "disconnect",
@@ -170,6 +168,7 @@ window.MeridianSocket = {
 
 
 
+
         return this.socket;
 
 
@@ -184,11 +183,7 @@ window.MeridianSocket = {
 
 
     /**
-     * 消息类型检测
-     *
-     * text
-     * link
-     * image
+     * 判断消息类型
      */
     detectMessageType(message){
 
@@ -200,18 +195,20 @@ window.MeridianSocket = {
 
         ){
 
-            return "text";
+
+            return (
+
+                message.type
+
+                ||
+
+                "text"
+
+            );
+
 
         }
 
-
-
-
-
-
-        const urlPattern =
-
-        /^https?:\/\/.+/i;
 
 
 
@@ -220,11 +217,28 @@ window.MeridianSocket = {
 
         if(
 
-            !urlPattern.test(message)
+            /^https?:\/\/.+/i.test(message)
 
         ){
 
-            return "text";
+
+
+            if(
+
+                /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(message)
+
+            ){
+
+
+                return "image";
+
+
+            }
+
+
+
+            return "link";
+
 
         }
 
@@ -233,31 +247,8 @@ window.MeridianSocket = {
 
 
 
-        const imagePattern =
 
-        /\.(jpg|jpeg|png|gif|webp|svg)$/i;
-
-
-
-
-
-
-        if(
-
-            imagePattern.test(message)
-
-        ){
-
-            return "image";
-
-        }
-
-
-
-
-
-
-        return "link";
+        return "text";
 
 
     },
@@ -270,12 +261,23 @@ window.MeridianSocket = {
 
 
 
+    /**
+     * 发送消息
+     *
+     * 支持:
+     *
+     * string
+     *
+     * object
+     */
     sendMessage(message){
 
 
 
         const EVENTS =
+
         window.MERIDIAN_EVENTS;
+
 
 
 
@@ -293,7 +295,6 @@ window.MeridianSocket = {
             );
 
 
-
             return;
 
 
@@ -304,68 +305,169 @@ window.MeridianSocket = {
 
 
 
-        const type =
 
-        this.detectMessageType(
-
-            message
-
-        );
+        let payload;
 
 
 
 
 
 
-        const payload = {
 
 
-            userId:
+        /**
+         * Object Message
+         *
+         * image/link/text
+         */
+        if(
 
-            window.MeridianConfig.user.id,
+            typeof message === "object"
 
-
-
-            /**
-             * 保留旧字段
-             */
-            message:
-
-            message,
+        ){
 
 
 
-            /**
-             * v2.0.2 新字段
-             */
-            type:
-
-            type,
+            payload = {
 
 
 
-            content:
+                userId:
 
-            message,
-
-
-
-            metadata:{},
+                window.MeridianConfig.user.id,
 
 
 
-            page:
+                message:
 
-            window.MeridianConfig.user.page,
+                message.content
 
+                ||
 
-
-            time:
-
-            MeridianTime.now()
+                "",
 
 
-        };
+
+                content:
+
+                message.content
+
+                ||
+
+                "",
+
+
+
+                type:
+
+                message.type
+
+                ||
+
+                "text",
+
+
+
+                metadata:
+
+                message.metadata
+
+                ||
+
+                {},
+
+
+
+                page:
+
+                window.MeridianConfig.user.page,
+
+
+
+                time:
+
+                MeridianTime.now()
+
+
+
+            };
+
+
+
+        }
+
+
+
+
+
+
+
+        /**
+         * Legacy String Message
+         */
+        else{
+
+
+
+            const type =
+
+            this.detectMessageType(
+
+                message
+
+            );
+
+
+
+
+
+
+            payload = {
+
+
+
+                userId:
+
+                window.MeridianConfig.user.id,
+
+
+
+                message:
+
+                message,
+
+
+
+                content:
+
+                message,
+
+
+
+                type:type,
+
+
+
+                metadata:{},
+
+
+
+                page:
+
+                window.MeridianConfig.user.page,
+
+
+
+                time:
+
+                MeridianTime.now()
+
+
+
+            };
+
+
+        }
 
 
 
@@ -398,7 +500,9 @@ window.MeridianSocket = {
 
 
         const EVENTS =
+
         window.MERIDIAN_EVENTS;
+
 
 
 
@@ -418,6 +522,7 @@ window.MeridianSocket = {
 
 
 
+
         this.socket.on(
 
             EVENTS.ADMIN_REPLY,
@@ -426,7 +531,8 @@ window.MeridianSocket = {
 
 
 
-                const payload = {
+                callback({
+
 
 
                     type:
@@ -477,14 +583,7 @@ window.MeridianSocket = {
 
 
 
-                };
-
-
-
-
-
-
-                callback(payload);
+                });
 
 
 

@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.0.0
+ * v2.0.3
  *
  * Features:
  * - Express
@@ -13,7 +13,10 @@
  * - Message History API
  * - Session Restore API
  * - Admin State Restore API
+ * - Agent Management
+ * - Session Agent Assignment
  * - Session Cleanup
+ * - Image Upload
  */
 
 
@@ -100,6 +103,14 @@ require("./server/routes/session-agent-route");
 
 
 
+/**
+ * Image Upload Route
+ */
+const uploadRoute =
+require("./server/routes/upload-route");
+
+
+
 
 
 
@@ -156,6 +167,9 @@ app.use(
 
 
 
+/**
+ * Public Static
+ */
 app.use(
 
     express.static(
@@ -165,6 +179,39 @@ app.use(
             __dirname,
 
             "public"
+
+        )
+
+    )
+
+);
+
+
+
+
+
+
+
+
+
+/**
+ * Uploaded Files Access
+ *
+ * /uploads/xxx.png
+ */
+app.use(
+
+    "/uploads",
+
+    express.static(
+
+        path.join(
+
+            __dirname,
+
+            "server",
+
+            "uploads"
 
         )
 
@@ -230,6 +277,13 @@ app.use(
 );
 
 
+
+
+
+
+
+
+
 /**
  * Agent Management API
  */
@@ -242,6 +296,13 @@ app.use(
 );
 
 
+
+
+
+
+
+
+
 /**
  * Session Agent Assignment API
  */
@@ -252,6 +313,26 @@ app.use(
     sessionAgentRoute
 
 );
+
+
+
+
+
+
+
+
+
+/**
+ * Image Upload API
+ */
+app.use(
+
+    "/api/upload",
+
+    uploadRoute
+
+);
+
 
 
 
@@ -324,6 +405,11 @@ app.get(
 
 
 
+/**
+ * Socket.IO
+ *
+ * 保持原架构
+ */
 io.on(
 
     "connection",
