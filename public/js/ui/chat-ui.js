@@ -351,14 +351,6 @@ window.MeridianChatUI = {
 
   },
 
-
-
-
-
-
-
-
-
   open(){
 
 
@@ -954,6 +946,110 @@ window.MeridianChatUI = {
 
 
   }
+
+
+};
+
+/**
+ *
+ * Meridian External Control API
+ *
+ * Version:
+ * v1.2.0
+ *
+ */
+
+
+window.MeridianChat = {
+
+
+    open(){
+
+
+        if(window.MeridianChatUI){
+
+
+            window.MeridianChatUI.open();
+
+
+        }
+
+
+    },
+
+
+
+
+
+    close(){
+
+
+        if(window.MeridianChatUI){
+
+
+            window.MeridianChatUI.close();
+
+
+        }
+
+
+    },
+
+
+
+
+
+    toggle(){
+
+
+        const panel =
+
+        document.getElementById(
+
+            "meridianChatPanel"
+
+        );
+
+
+
+
+
+        if(!panel){
+
+            return;
+
+        }
+
+
+
+
+
+        if(
+
+            panel.classList.contains(
+
+                "active"
+
+            )
+
+        ){
+
+
+            window.MeridianChatUI.close();
+
+
+        }
+
+        else{
+
+
+            window.MeridianChatUI.open();
+
+
+        }
+
+
+    }
 
 
 };

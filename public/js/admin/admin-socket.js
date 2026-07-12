@@ -121,9 +121,13 @@ window.MeridianAdminSocket = {
 
             MeridianAdminUI.renderSessions();
 
-            MeridianAdminUI.renderOnlineUsers();
+            if(
+    MeridianAdminUI.renderOnlineUsers
+){
 
-            MeridianAdminUI.renderOfflineUsers();
+    MeridianAdminUI.renderOnlineUsers();
+
+}
 
 
 
@@ -607,9 +611,13 @@ window.MeridianAdminSocket = {
 
 
 
-                MeridianAdminUI.renderOnlineUsers();
+                if(
+    MeridianAdminUI.renderOnlineUsers
+){
 
-                MeridianAdminUI.renderOfflineUsers();
+    MeridianAdminUI.renderOnlineUsers();
+
+}
 
 
 
@@ -690,16 +698,23 @@ window.MeridianAdminSocket = {
      *
      * Rich Message Compatible
      */
+        /**
+     * 发送客服消息
+     *
+     * Rich Message Compatible v2.0.10
+     *
+     * 支持：
+     * text
+     * image
+     * file
+     * link
+     */
     sendReply(message){
-
 
 
         const user =
 
         MeridianAdminState.getCurrentUser();
-
-
-
 
 
 
@@ -714,23 +729,15 @@ window.MeridianAdminSocket = {
 
         ){
 
-
-
             console.log(
 
                 "No selected conversation"
 
             );
 
-
             return;
 
-
         }
-
-
-
-
 
 
 
@@ -753,6 +760,42 @@ window.MeridianAdminSocket = {
 
 
 
+        /*
+         *
+         * Rich Message 判断
+         *
+         */
+
+        let type = "text";
+
+        let content = message;
+
+        let text = message;
+
+
+
+        if(
+
+            typeof message === "object"
+
+            &&
+
+            message.type
+
+        ){
+
+
+            type = message.type;
+
+
+            content = message.content;
+
+
+            text = message.content;
+
+
+        }
+
 
 
 
@@ -764,8 +807,8 @@ window.MeridianAdminSocket = {
             {
 
 
-
                 messageId:
+
 
                 messageId,
 
@@ -785,19 +828,19 @@ window.MeridianAdminSocket = {
 
                 message:
 
-                message,
+                text,
 
 
 
                 content:
 
-                message,
+                content,
 
 
 
                 type:
 
-                "text",
+                type,
 
 
 
@@ -812,9 +855,7 @@ window.MeridianAdminSocket = {
         );
 
 
-
-    }
-
+       }
 
 
 };

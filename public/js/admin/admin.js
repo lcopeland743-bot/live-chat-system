@@ -46,10 +46,23 @@
 
 
 
-        /**
-         * 初始化后台Socket
-         */
-        window.MeridianAdminSocket.init();
+       /**
+ * 初始化后台Socket
+ */
+window.MeridianAdminSocket.init();
+
+
+
+/**
+ * 初始化后台上传模块
+ */
+if(
+    window.MeridianAdminUpload
+){
+
+    window.MeridianAdminUpload.init();
+
+}
 
 
 

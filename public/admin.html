@@ -12,471 +12,212 @@ Meridian Admin
 </title>
 
 
-<style>
-
-
-body{
-
-    margin:0;
-
-    font-family:
-    Arial,
-    sans-serif;
-
-    background:#f5f5f5;
-
-}
-
-
-
-.admin-container{
-
-    width:100%;
-
-    max-width:1200px;
-
-    margin:20px auto;
-
-    background:white;
-
-    padding:20px;
-
-    box-sizing:border-box;
-
-}
-
-
-
-h1{
-
-    margin-top:0;
-
-}
-
-
-
-
-
-.admin-layout{
-
-
-    display:flex;
-
-    gap:20px;
-
-
-}
-
-
-
-
-
-.admin-sidebar{
-
-
-    width:280px;
-
-
-}
-
-
-
-
-
-.admin-panel{
-
-
-    border:1px solid #ddd;
-
-    padding:15px;
-
-    margin-bottom:15px;
-
-    background:#fafafa;
-
-
-}
-
-
-
-
-
-.admin-panel h2{
-
-
-    font-size:18px;
-
-    margin-top:0;
-
-
-}
-
-
-
-
-
-#onlineUsers,
-#offlineUsers,
-#sessions{
-
-
-    font-size:14px;
-
-
-}
-
-
-
-
-
-.session-item,
-.online-user,
-.offline-user{
-
-
-    padding:10px;
-
-    margin-bottom:8px;
-
-    background:white;
-
-    border:1px solid #eee;
-
-
-}
-
-
-
-
-
-
-.admin-chat{
-
-
-    flex:1;
-
-
-}
-
-
-
-
-
-
-.admin-messages{
-
-
-    height:500px;
-
-    overflow-y:auto;
-
-    border:1px solid #ddd;
-
-    padding:15px;
-
-    background:#fff;
-
-
-}
-
-
-
-
-
-
-.message{
-
-
-    padding:10px;
-
-    margin-bottom:10px;
-
-    border-radius:5px;
-
-
-}
-
-
-
-
-
-.message-time{
-
-
-    font-size:12px;
-
-    color:#888;
-
-    margin-top:5px;
-
-
-}
-
-
-
-
-
-.message.user{
-
-
-    background:#eef6ff;
-
-
-}
-
-
-
-
-
-.message.admin{
-
-
-    background:#eaffea;
-
-
-}
-
-
-
-
-
-.message.system{
-
-
-    background:#f3f3f3;
-
-
-}
-
-
-
-
-
-
-.admin-input{
-
-
-    display:flex;
-
-    margin-top:15px;
-
-    gap:10px;
-
-
-}
-
-
-
-
-
-.admin-input input{
-
-
-    flex:1;
-
-    height:38px;
-
-    padding:0 10px;
-
-    font-size:14px;
-
-
-}
-
-
-
-
-
-.admin-input button{
-
-
-    width:80px;
-
-    cursor:pointer;
-
-
-}
-
-
-
-</style>
+<link rel="stylesheet" href="/css/admin.css">
 
 
 </head>
 
 
-
-
-
-
 <body>
-
 
 
 <div class="admin-container">
 
 
-<h1>
-Meridian Admin
-</h1>
+    <header class="admin-header">
+
+        <h1>
+            Meridian Admin
+        </h1>
+
+    </header>
+
+
+
+    <main class="admin-layout">
+
+
+
+        <!-- 左侧访客区域 -->
+
+        <aside class="admin-sidebar">
+
+
+            <section class="admin-panel">
+
+
+                <h2>
+                    访客会话
+                </h2>
+
+
+                <div id="sessions">
+
+                </div>
+
+
+            </section>
+
+
+
+
+            <section class="admin-panel">
+
+
+                <h2>
+                    在线访客
+                </h2>
+
+
+                <div id="onlineUsers">
+
+                </div>
+
+
+            </section>
 
 
 
 
 
-<div class="admin-layout">
+            <section class="admin-panel">
+
+
+                <h2>
+                    离线访客
+                </h2>
+
+
+                <div id="offlineUsers">
+
+                </div>
+
+
+            </section>
+
+
+
+        </aside>
 
 
 
 
 
-<!-- 左侧访客区域 -->
-
-<div class="admin-sidebar">
+        <!-- 右侧聊天区域 -->
 
 
+        <section class="admin-chat">
 
 
 
-<div class="admin-panel">
+            <div 
+            id="adminMessages"
+            class="admin-messages">
+
+            </div>
 
 
-<h2>
-访客会话
-</h2>
 
 
-<div id="sessions">
+
+            <div class="admin-input">
+
+
+
+                <!-- 图片上传 -->
+
+                <button
+
+                id="adminImageBtn"
+
+                type="button">
+
+                📷
+
+                </button>
+
+
+
+
+                <!-- 文件上传 -->
+
+                <button
+
+                id="adminFileBtn"
+
+                type="button">
+
+                📎
+
+                </button>
+
+
+
+
+                <input
+
+                id="adminReplyInput"
+
+                type="text"
+
+                placeholder="输入回复内容"
+
+                />
+
+
+
+                <button
+
+                id="adminSendBtn"
+
+                >
+
+                发送
+
+                </button>
+
+
+
+
+                <input
+
+                id="adminImageInput"
+
+                type="file"
+
+                accept="image/*"
+
+                hidden>
+
+
+                <input
+
+                id="adminFileInput"
+
+                type="file"
+
+                hidden>
+
+
+
+            </div>
+
+
+
+        </section>
+
+
+
+
+
+    </main>
+
+
 
 </div>
 
 
-</div>
 
-
-
-
-
-
-
-<div class="admin-panel">
-
-
-<h2>
-在线访客
-</h2>
-
-
-<div id="onlineUsers">
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-<div class="admin-panel">
-
-
-<h2>
-离线访客
-</h2>
-
-
-<div id="offlineUsers">
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- 右侧聊天区域 -->
-
-<div class="admin-chat">
-
-
-
-
-
-<div id="adminMessages"
-class="admin-messages">
-
-</div>
-
-
-
-
-
-
-
-<div class="admin-input">
-
-
-<input
-
-id="adminReplyInput"
-
-type="text"
-
-placeholder="输入回复内容"
-
-/>
-
-
-
-<button
-
-id="adminSendBtn"
-
->
-
-发送
-
-</button>
-
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-</div>
-
-
-
-
-
-</div>
 
 
 <script src="/socket.io/socket.io.js"></script>
@@ -487,7 +228,6 @@ id="adminSendBtn"
 <script src="/js/core/logger.js"></script>
 
 <script src="/js/core/time.js"></script>
-
 
 
 
@@ -502,6 +242,17 @@ id="adminSendBtn"
 <script src="/js/admin/admin-ui.js"></script>
 
 
+<!-- 公共上传模块 -->
+
+<script src="/js/upload.js"></script>
+
+
+<!-- 后台上传控制模块 -->
+
+<script src="/js/admin/admin-upload.js"></script>
+
+
+
 <script src="/js/admin/admin-socket.js"></script>
 
 
@@ -509,10 +260,7 @@ id="adminSendBtn"
 
 
 
-
-
-
-
 </body>
+
 
 </html>
