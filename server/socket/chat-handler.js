@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.0.2
+ * v2.1.1
  *
  * Features:
  * - Rich Message Support
@@ -11,27 +11,27 @@
  * - MongoDB Message Storage
  * - MongoDB Session Update
  * - Unread Message Counter
+ * - Investor Profile Auto Reply
  */
-
-
 
 const MeridianTime =
 require("../utils/time");
-
 
 
 const messageService =
 require("../services/message-service");
 
 
-
 const sessionService =
 require("../services/session-service");
 
 
+const briefingAutoReplyService =
+require("../services/briefing-auto-reply-service");
 
 
-
+const activeChoiceUsers =
+new Set();
 
 
 function createMessageId(){
@@ -39,7 +39,9 @@ function createMessageId(){
 
     return (
 
-        "msg_" +
+        "msg_"
+
+        +
 
         Date.now()
 
@@ -61,15 +63,7 @@ function createMessageId(){
 }
 
 
-
-
-
-
-
-
-
 function normalizeContent(data){
-
 
 
     return (
@@ -87,19 +81,10 @@ function normalizeContent(data){
     );
 
 
-
 }
 
 
-
-
-
-
-
-
-
 function normalizeType(data){
-
 
 
     return (
@@ -116,11 +101,423 @@ function normalizeType(data){
 }
 
 
+function createPayload(
+
+    data,
+
+    defaults={}
+
+){
+
+
+    const content =
+
+    normalizeContent(data);
 
 
 
+    return {
 
 
+        messageId:
+
+        data.messageId
+
+        ||
+
+        createMessageId(),
+
+
+        userId:
+
+        defaults.userId
+
+        ||
+
+        data.userId,
+
+
+        sessionId:
+
+        defaults.sessionId
+
+        ||
+
+        data.sessionId
+
+        ||
+
+        data.userId,
+
+
+        socketId:
+
+        defaults.socketId
+
+        ||
+
+        data.socketId
+
+        ||
+
+        null,
+
+
+        message:
+
+        content,
+
+
+        content:
+
+        content,
+
+
+        type:
+
+        normalizeType(data),
+
+
+        metadata:
+
+        data.metadata
+
+        ||
+
+        {},
+
+
+        sender:
+
+        defaults.sender
+
+        ||
+
+        data.sender
+
+        ||
+
+        "user",
+
+
+        messageStatus:
+
+        "sent",
+
+
+        time:
+
+        data.time
+
+        ||
+
+        MeridianTime.now()
+
+
+    };
+
+
+}
+
+
+function emitSessionUpdate(
+
+    io,
+
+    session
+
+){
+
+
+    io.emit(
+
+        "admin_session_update",
+
+        {
+
+
+            type:
+
+            "update",
+
+
+            session:
+
+            session
+
+
+        }
+
+    );
+
+
+}
+
+
+function emitAdminConversationMessage(
+
+    io,
+
+    payload
+
+){
+
+
+    io.emit(
+
+        "admin_user_message",
+
+        payload
+
+    );
+
+
+}
+
+
+async function saveAutomatedReply(
+
+    io,
+
+    targetSocketId,
+
+    userId,
+
+    message
+
+){
+
+
+    const payload =
+
+    createPayload(
+
+        {
+
+
+            type:
+
+            message.type,
+
+
+            content:
+
+            message.content,
+
+
+            message:
+
+            message.content,
+
+
+            metadata:
+
+            message.metadata,
+
+
+            time:
+
+            MeridianTime.now()
+
+
+        },
+
+        {
+
+
+            userId:
+
+            userId,
+
+
+            sessionId:
+
+            userId,
+
+
+            socketId:
+
+            targetSocketId,
+
+
+            sender:
+
+            "admin"
+
+
+        }
+
+    );
+
+
+
+    await messageService.saveMessage(
+
+        payload
+
+    );
+
+
+
+    const sessionPreview =
+
+    payload.type === "link-card"
+
+    ?
+
+    (
+
+        payload.metadata.title
+
+        ||
+
+        "Your briefing is ready."
+
+    )
+
+    :
+
+    payload.content;
+
+
+
+    const updatedSession =
+
+    await sessionService.updateMessage(
+
+        userId,
+
+        sessionPreview,
+
+        "admin"
+
+    );
+
+
+
+    emitSessionUpdate(
+
+        io,
+
+        updatedSession
+
+    );
+
+
+
+    io.to(
+
+        targetSocketId
+
+    )
+
+    .emit(
+
+        "admin_reply",
+
+        payload
+
+    );
+
+
+
+    emitAdminConversationMessage(
+
+        io,
+
+        payload
+
+    );
+
+
+
+    console.log(
+
+        "[Automated Reply Saved]",
+
+        {
+
+
+            messageId:
+
+            payload.messageId,
+
+
+            userId:
+
+            payload.userId,
+
+
+            type:
+
+            payload.type,
+
+
+            choiceId:
+
+            payload.metadata.choiceId
+
+        }
+
+    );
+
+
+}
+
+
+async function sendBriefingAutoReply(
+
+    io,
+
+    targetSocketId,
+
+    userId,
+
+    choiceId
+
+){
+
+
+    const messages =
+
+    briefingAutoReplyService
+
+    .createAutoReplyMessages(
+
+        choiceId
+
+    );
+
+
+
+    for(
+
+        const message
+
+        of
+
+        messages
+
+    ){
+
+
+        await saveAutomatedReply(
+
+            io,
+
+            targetSocketId,
+
+            userId,
+
+            message
+
+        );
+
+
+    }
+
+
+}
 
 
 function registerChatHandler(
@@ -130,11 +527,6 @@ function registerChatHandler(
     socket
 
 ){
-
-
-
-
-
 
 
     /**
@@ -147,259 +539,275 @@ function registerChatHandler(
         async(data)=>{
 
 
+            let lockedChoiceUserId =
 
-            const payload = {
+            null;
 
 
 
-                messageId:
+            try{
 
-                data.messageId
 
-                ||
+                const payload =
 
-                createMessageId(),
+                createPayload(
 
+                    data,
 
+                    {
 
 
-                userId:
+                        userId:
 
-                data.userId,
+                        data.userId,
 
 
+                        sessionId:
 
+                        data.userId,
 
-                sessionId:
 
-                data.userId,
+                        socketId:
 
+                        socket.id,
 
 
+                        sender:
 
-                socketId:
+                        "user"
 
-                socket.id,
 
+                    }
 
+                );
 
 
-                /**
-                 * 兼容旧版本
-                 */
-                message:
 
-                normalizeContent(data),
+                if(
 
+                    !payload.userId
 
+                    ||
 
+                    !payload.content
 
-                /**
-                 * v2.0.2
-                 */
-                content:
+                ){
 
-                normalizeContent(data),
 
-
-
-
-                type:
-
-                normalizeType(data),
-
-
-
-
-                metadata:
-
-                data.metadata
-
-                ||
-
-                {},
-
-
-
-
-                messageStatus:
-
-                "sent",
-
-
-
-
-                time:
-
-                data.time
-
-                ||
-
-                MeridianTime.now()
-
-            };
-
-
-
-
-
-
-
-            if(
-
-                messageService.isDuplicate(
-
-                    payload.messageId
-
-                )
-
-            ){
-
-                return;
-
-            }
-
-
-
-
-
-
-
-            /**
-             * 保存用户消息
-             */
-            await messageService.saveMessage({
-
-
-
-                ...payload,
-
-
-                sender:
-
-                "user"
-
-
-            });
-
-
-
-
-
-
-
-
-            /**
-             * 更新Session
-             */
-            await sessionService.updateMessage(
-
-                payload.userId,
-
-                payload.content
-
-            );
-
-
-
-
-
-
-
-
-            /**
-             * 未读数量
-             */
-            const session =
-
-            await sessionService.incrementUnread(
-
-                payload.userId
-
-            );
-
-
-
-
-
-
-
-
-            console.log(
-
-                "[Message Saved]",
-
-                payload
-
-            );
-
-
-
-
-
-
-
-
-            /**
-             * 更新后台Session
-             */
-            io.emit(
-
-                "admin_session_update",
-
-                {
-
-
-                    type:
-
-                    "update",
-
-
-
-                    session:
-
-                    session
-
+                    return;
 
 
                 }
 
-            );
+
+
+                if(
+
+                    messageService.isDuplicate(
+
+                        payload.messageId
+
+                    )
+
+                ){
+
+
+                    return;
+
+
+                }
 
 
 
+                const choice =
+
+                briefingAutoReplyService
+
+                .getChoiceFromPayload(
+
+                    payload
+
+                );
 
 
 
+                if(choice){
+
+
+                    if(
+
+                        activeChoiceUsers.has(
+
+                            payload.userId
+
+                        )
+
+                    ){
+
+
+                        return;
+
+
+                    }
 
 
 
-            /**
-             * 推送后台消息
-             */
-            io.emit(
+                    activeChoiceUsers.add(
 
-                "admin_user_message",
+                        payload.userId
 
-                payload
+                    );
 
-            );
 
+
+                    lockedChoiceUserId =
+
+                    payload.userId;
+
+
+
+                    const alreadySelected =
+
+                    await messageService
+
+                    .hasInvestorProfileChoice(
+
+                        payload.userId
+
+                    );
+
+
+
+                    if(alreadySelected){
+
+
+                        return;
+
+
+                    }
+
+
+                }
+
+
+
+                await messageService.saveMessage(
+
+                    payload
+
+                );
+
+
+
+                await sessionService.updateMessage(
+
+                    payload.userId,
+
+                    payload.content,
+
+                    "user"
+
+                );
+
+
+
+                const session =
+
+                await sessionService.incrementUnread(
+
+                    payload.userId
+
+                );
+
+
+
+                console.log(
+
+                    "[Message Saved]",
+
+                    payload
+
+                );
+
+
+
+                emitSessionUpdate(
+
+                    io,
+
+                    session
+
+                );
+
+
+
+                emitAdminConversationMessage(
+
+                    io,
+
+                    payload
+
+                );
+
+
+
+                if(choice){
+
+
+                    await sendBriefingAutoReply(
+
+                        io,
+
+                        socket.id,
+
+                        payload.userId,
+
+                        choice.id
+
+                    );
+
+
+                }
+
+
+            }
+
+            catch(error){
+
+
+                console.error(
+
+                    "[User Message Error]",
+
+                    error
+
+                );
+
+
+            }
+
+            finally{
+
+
+                if(lockedChoiceUserId){
+
+
+                    activeChoiceUsers.delete(
+
+                        lockedChoiceUserId
+
+                    );
+
+
+                }
+
+
+            }
 
 
         }
 
     );
-
-
-
-
-
-
-
-
-
-
 
 
     /**
@@ -412,312 +820,198 @@ function registerChatHandler(
         async(data)=>{
 
 
+            try{
 
 
+                if(
 
-            if(
-
-                !data.socketId
-
-                ||
-
-                !(
-
-                    data.message
+                    !data.socketId
 
                     ||
 
-                    data.content
+                    !(
 
-                )
+                        data.message
 
-            ){
+                        ||
 
-                return;
+                        data.content
 
-            }
+                    )
 
+                ){
 
 
-
-
-
-
-            const sessions =
-
-            await sessionService.getSessions();
-
-
-
-
-
-
-            const session =
-
-            sessions.find(
-
-                item =>
-
-                item.socketId === data.socketId
-
-            );
-
-
-
-
-
-
-            if(!session){
-
-                return;
-
-            }
-
-
-
-
-
-
-
-
-            const payload = {
-
-
-
-                messageId:
-
-                createMessageId(),
-
-
-
-
-                userId:
-
-                session.userId,
-
-
-
-
-                sessionId:
-
-                session.userId,
-
-
-
-
-                socketId:
-
-                data.socketId,
-
-
-
-
-                message:
-
-                normalizeContent(data),
-
-
-
-
-                content:
-
-                normalizeContent(data),
-
-
-
-
-                type:
-
-                normalizeType(data),
-
-
-
-
-                metadata:
-
-                data.metadata
-
-                ||
-
-                {},
-
-
-
-
-                messageStatus:
-
-                "sent",
-
-
-
-
-                time:
-
-                data.time
-
-                ||
-
-                MeridianTime.now()
-
-
-
-            };
-
-
-
-
-
-
-
-
-            if(
-
-                messageService.isDuplicate(
-
-                    payload.messageId
-
-                )
-
-            ){
-
-                return;
-
-            }
-
-
-
-
-
-
-
-
-            /**
-             * 保存客服消息
-             */
-            await messageService.saveMessage({
-
-
-
-                ...payload,
-
-
-                sender:
-
-                "admin"
-
-
-            });
-
-
-
-
-
-
-
-
-            /**
-             * 更新Session
-             */
-            const updatedSession =
-
-            await sessionService.updateMessage(
-
-                session.userId,
-
-                payload.content
-
-            );
-
-
-
-
-
-
-
-
-
-            io.emit(
-
-                "admin_session_update",
-
-                {
-
-
-                    type:
-
-                    "update",
-
-
-
-                    session:
-
-                    updatedSession
-
+                    return;
 
 
                 }
 
-            );
+
+
+                const sessions =
+
+                await sessionService.getSessions();
 
 
 
+                const session =
+
+                sessions.find(
+
+                    item=>
+
+                    item.socketId === data.socketId
+
+                );
 
 
 
+                if(!session){
 
 
-            console.log(
+                    return;
 
-                "Admin reply:",
 
-                payload
-
-            );
-
+                }
 
 
 
+                const payload =
+
+                createPayload(
+
+                    data,
+
+                    {
+
+
+                        userId:
+
+                        session.userId,
+
+
+                        sessionId:
+
+                        session.userId,
+
+
+                        socketId:
+
+                        data.socketId,
+
+
+                        sender:
+
+                        "admin"
+
+
+                    }
+
+                );
 
 
 
+                if(
 
-            /**
-             * 推送用户端
-             */
-            io.to(
+                    messageService.isDuplicate(
 
-                data.socketId
+                        payload.messageId
 
-            )
+                    )
 
-            .emit(
+                ){
 
-                "admin_reply",
 
-                payload
+                    return;
 
-            );
+
+                }
 
 
 
+                await messageService.saveMessage(
+
+                    payload
+
+                );
 
 
 
+                const updatedSession =
+
+                await sessionService.updateMessage(
+
+                    session.userId,
+
+                    payload.content,
+
+                    "admin"
+
+                );
 
 
-            /**
-             * 同步后台窗口
-             */
-            socket.emit(
 
-                "admin_reply",
+                emitSessionUpdate(
 
-                payload
+                    io,
 
-            );
+                    updatedSession
+
+                );
 
 
 
+                console.log(
+
+                    "Admin reply:",
+
+                    payload
+
+                );
+
+
+
+                io.to(
+
+                    data.socketId
+
+                )
+
+                .emit(
+
+                    "admin_reply",
+
+                    payload
+
+                );
+
+
+
+                socket.emit(
+
+                    "admin_reply",
+
+                    payload
+
+                );
+
+
+            }
+
+            catch(error){
+
+
+                console.error(
+
+                    "[Admin Reply Error]",
+
+                    error
+
+                );
+
+
+            }
 
 
         }
@@ -725,19 +1019,8 @@ function registerChatHandler(
     );
 
 
-
-
-
-
-
 }
 
 
-
-
-
-
-
 module.exports =
-
 registerChatHandler;

@@ -4,13 +4,14 @@
  * MongoDB Message Manager
  *
  * Version:
- * v2.0.2
+ * v2.1.0
  *
  * Features:
  * - Save Message
  * - Duplicate Check
  * - Query History
  * - Rich Message Support
+ * - Investor Choice Lookup
  */
 
 
@@ -57,7 +58,10 @@ const allowedTypes = [
     "link",
 
 
-    "file"
+    "file",
+
+
+    "link-card"
 
 
 ];
@@ -320,6 +324,9 @@ async function saveMessage(data){
          *
          * file:
          * 文件URL
+         *
+         * link-card:
+         * 链接URL，卡片信息存储在 metadata
          */
         content:
 
@@ -477,6 +484,50 @@ async function getSessionMessages(
 
 
 
+
+
+/**
+ * 检查用户是否已经选择过投资者类型
+ */
+async function hasInvestorProfileChoice(
+
+    userId
+
+){
+
+
+    const result =
+
+    await Message.exists({
+
+
+        userId:
+
+        userId,
+
+
+        sender:
+
+        "user",
+
+
+        "metadata.interaction":
+
+        "investor-profile"
+
+
+    });
+
+
+
+    return Boolean(result);
+
+
+}
+
+
+
+
 module.exports = {
 
 
@@ -489,7 +540,10 @@ module.exports = {
     getMessages,
 
 
-    getSessionMessages
+    getSessionMessages,
+
+
+    hasInvestorProfileChoice
 
 
 };

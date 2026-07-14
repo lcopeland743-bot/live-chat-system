@@ -4,6 +4,38 @@ window.MeridianChatUI = {
   elements:{},
 
 
+  investorChoices:[
+
+    {
+
+      id:"long-term-investor",
+
+      label:"Long-term Investor"
+
+    },
+
+    {
+
+      id:"short-term-trader",
+
+      label:"Short-term Trader"
+
+    },
+
+    {
+
+      id:"just-exploring",
+
+      label:"Just Exploring"
+
+    }
+
+  ],
+
+
+  investorChoiceLocked:false,
+
+
 
   init(){
 
@@ -242,6 +274,9 @@ window.MeridianChatUI = {
     this.bindEvents();
 
 
+    this.renderInvestorChoices();
+
+
 
   },
 
@@ -347,6 +382,400 @@ window.MeridianChatUI = {
 
     };
 
+
+
+  },
+
+
+  getInvestorChoiceStorageKey(){
+
+
+    const userId =
+
+    window.MeridianConfig
+
+    &&
+
+    window.MeridianConfig.user
+
+    ?
+
+    window.MeridianConfig.user.id
+
+    :
+
+    "anonymous";
+
+
+
+    return (
+
+      "meridian_investor_choice_"
+
+      +
+
+      userId
+
+    );
+
+
+  },
+
+
+
+
+
+  hasStoredInvestorChoice(){
+
+
+    try{
+
+
+      return Boolean(
+
+        window.localStorage.getItem(
+
+          this.getInvestorChoiceStorageKey()
+
+        )
+
+      );
+
+
+    }
+
+    catch(error){
+
+
+      return false;
+
+
+    }
+
+
+  },
+
+
+
+
+
+  storeInvestorChoice(choiceId){
+
+
+    try{
+
+
+      window.localStorage.setItem(
+
+        this.getInvestorChoiceStorageKey(),
+
+        choiceId
+
+      );
+
+
+    }
+
+    catch(error){
+
+
+      console.warn(
+
+        "Investor choice could not be stored locally",
+
+        error
+
+      );
+
+
+    }
+
+
+  },
+
+
+
+
+
+  renderInvestorChoices(){
+
+
+    if(
+
+      !this.elements.messages
+
+      ||
+
+      this.hasStoredInvestorChoice()
+
+      ||
+
+      document.getElementById(
+
+        "meridianInvestorChoices"
+
+      )
+
+    ){
+
+      return;
+
+    }
+
+
+
+    const panel =
+
+    document.createElement("div");
+
+
+
+    panel.id =
+
+    "meridianInvestorChoices";
+
+
+
+    panel.className =
+
+    "meridian-investor-choices";
+
+
+
+    this.investorChoices.forEach(
+
+      choice=>{
+
+
+        const button =
+
+        document.createElement("button");
+
+
+
+        button.type = "button";
+
+
+        button.className =
+
+        "meridian-investor-choice-button";
+
+
+        button.textContent =
+
+        choice.label;
+
+
+        button.onclick = ()=>{
+
+
+          this.handleInvestorChoice(
+
+            choice,
+
+            panel
+
+          );
+
+
+        };
+
+
+
+        panel.appendChild(button);
+
+
+      }
+
+    );
+
+
+
+    this.elements.messages.appendChild(
+
+      panel
+
+    );
+
+
+
+    this.scrollBottom();
+
+
+  },
+
+
+
+
+
+  handleInvestorChoice(
+
+    choice,
+
+    panel
+
+  ){
+
+
+    if(this.investorChoiceLocked){
+
+      return;
+
+    }
+
+
+
+    if(
+
+      !window.MeridianSocket
+
+      ||
+
+      typeof window.MeridianSocket
+      .sendInvestorChoice !== "function"
+
+    ){
+
+
+      console.error(
+
+        "MeridianSocket investor choice support is not loaded"
+
+      );
+
+
+      return;
+
+
+    }
+
+
+
+    this.investorChoiceLocked = true;
+
+
+
+    const buttons =
+
+    panel.querySelectorAll(
+
+      ".meridian-investor-choice-button"
+
+    );
+
+
+
+    buttons.forEach(
+
+      button=>{
+
+
+        button.disabled = true;
+
+
+        if(
+
+          button.textContent === choice.label
+
+        ){
+
+
+          button.classList.add(
+
+            "selected"
+
+          );
+
+
+        }
+
+
+      }
+
+    );
+
+
+
+    const sent =
+
+    window.MeridianSocket
+
+    .sendInvestorChoice(
+
+      choice.id,
+
+      choice.label
+
+    );
+
+
+
+    if(!sent){
+
+
+      this.investorChoiceLocked = false;
+
+
+
+      buttons.forEach(
+
+        button=>{
+
+
+          button.disabled = false;
+
+
+          button.classList.remove(
+
+            "selected"
+
+          );
+
+
+        }
+
+      );
+
+
+
+      return;
+
+
+    }
+
+
+
+    this.addMessage(
+
+      choice.label,
+
+      "user"
+
+    );
+
+
+
+    this.storeInvestorChoice(
+
+      choice.id
+
+    );
+
+
+
+    window.setTimeout(
+
+      ()=>{
+
+
+        panel.remove();
+
+
+      },
+
+      180
+
+    );
 
 
   },
@@ -685,6 +1114,8 @@ window.MeridianChatUI = {
 
     let content="";
 
+    let metadata={};
+
 
 
 
@@ -724,6 +1155,16 @@ window.MeridianChatUI = {
       "";
 
 
+
+      metadata=
+
+      message.metadata
+
+      ||
+
+      {};
+
+
     }
 
 
@@ -751,6 +1192,36 @@ window.MeridianChatUI = {
 
 
 
+
+
+
+
+
+
+    if(type==="link-card"){
+
+
+      this.renderLinkCard(
+
+        container,
+
+        {
+
+          content:content,
+
+          message:content,
+
+          metadata:metadata
+
+        }
+
+      );
+
+
+      return;
+
+
+    }
 
 
 
@@ -932,6 +1403,381 @@ window.MeridianChatUI = {
 
 
 
+
+
+
+  getSafeUrl(value){
+
+
+    if(!value){
+
+      return "";
+
+    }
+
+
+
+    try{
+
+
+      const url =
+      new URL(
+
+        value,
+
+        window.location.origin
+
+      );
+
+
+
+      if(
+
+        url.protocol!=="http:"
+
+        &&
+
+        url.protocol!=="https:"
+
+      ){
+
+        return "";
+
+      }
+
+
+
+      return url.href;
+
+
+    }
+
+    catch(error){
+
+
+      return "";
+
+
+    }
+
+
+  },
+
+
+
+
+
+  ensureLinkBubbleStyles(){
+
+
+    if(
+
+      document.getElementById(
+
+        "meridianWhatsAppBubbleStyles"
+
+      )
+
+    ){
+
+      return;
+
+    }
+
+
+
+    const style =
+
+    document.createElement("style");
+
+
+
+    style.id =
+
+    "meridianWhatsAppBubbleStyles";
+
+
+
+    style.textContent = `
+
+      .meridian-briefing-card{
+
+        width:205px;
+
+        display:flex;
+
+        flex-direction:column;
+
+        align-items:stretch;
+
+        gap:10px;
+
+      }
+
+
+      .meridian-briefing-message{
+
+        color:#111827;
+
+        font-size:14px;
+
+        font-weight:600;
+
+        line-height:1.45;
+
+      }
+
+
+      .meridian-whatsapp-bubble{
+
+        position:relative;
+
+        min-height:54px;
+
+        display:flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        padding:12px 18px;
+
+        border-radius:18px 18px 18px 6px;
+
+        background:#25d366;
+
+        color:#ffffff !important;
+
+        text-decoration:none !important;
+
+        text-align:center;
+
+        font-size:15px;
+
+        font-weight:700;
+
+        line-height:1.3;
+
+        box-shadow:0 7px 18px rgba(37,211,102,.30);
+
+        cursor:pointer;
+
+        transition:transform .15s ease, box-shadow .15s ease;
+
+      }
+
+
+      .meridian-whatsapp-bubble::after{
+
+        content:"";
+
+        position:absolute;
+
+        left:0;
+
+        bottom:-6px;
+
+        width:15px;
+
+        height:15px;
+
+        background:#25d366;
+
+        clip-path:polygon(0 0,100% 0,0 100%);
+
+      }
+
+
+      .meridian-whatsapp-bubble:hover{
+
+        transform:translateY(-1px);
+
+        box-shadow:0 10px 22px rgba(37,211,102,.38);
+
+      }
+
+
+      .meridian-whatsapp-bubble:focus-visible{
+
+        outline:3px solid rgba(37,211,102,.32);
+
+        outline-offset:3px;
+
+      }
+
+    `;
+
+
+
+    document.head.appendChild(style);
+
+
+  },
+
+
+
+
+
+  renderLinkCard(
+
+    container,
+
+    message
+
+  ){
+
+
+    const metadata =
+
+    message.metadata || {};
+
+
+
+    const url =
+
+    this.getSafeUrl(
+
+      metadata.url
+
+      ||
+
+      message.content
+
+      ||
+
+      message.message
+
+      ||
+
+      ""
+
+    );
+
+
+
+    if(!url){
+
+
+      container.textContent =
+
+      message.content
+
+      ||
+
+      message.message
+
+      ||
+
+      "Link unavailable";
+
+
+      return;
+
+
+    }
+
+
+
+    this.ensureLinkBubbleStyles();
+
+
+
+    const wrapper =
+
+    document.createElement("div");
+
+
+
+    wrapper.className =
+
+    "meridian-briefing-card";
+
+
+
+    const intro =
+
+    document.createElement("div");
+
+
+
+    intro.className =
+
+    "meridian-briefing-message";
+
+
+
+    intro.textContent =
+
+    metadata.title
+
+    ||
+
+    "Your briefing is ready.";
+
+
+
+    const bubble =
+
+    document.createElement("a");
+
+
+
+    bubble.className =
+
+    "meridian-whatsapp-bubble";
+
+
+
+    bubble.href = url;
+
+
+
+    bubble.target = "_blank";
+
+
+
+    bubble.rel =
+
+    "noopener noreferrer";
+
+
+
+    bubble.setAttribute(
+
+      "aria-label",
+
+      metadata.buttonText
+
+      ||
+
+      "Claim for free"
+
+    );
+
+
+
+    bubble.textContent =
+
+    metadata.buttonText
+
+    ||
+
+    "Claim for free";
+
+
+
+    wrapper.appendChild(intro);
+
+
+
+    wrapper.appendChild(bubble);
+
+
+
+    container.appendChild(wrapper);
+
+
+  },
 
 
 

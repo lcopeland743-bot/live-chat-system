@@ -284,7 +284,15 @@ window.MeridianSocket = {
 
 
 
-        if(!this.socket){
+        if(
+
+            !this.socket
+
+            ||
+
+            !this.socket.connected
+
+        ){
 
 
 
@@ -295,7 +303,7 @@ window.MeridianSocket = {
             );
 
 
-            return;
+            return false;
 
 
         }
@@ -340,6 +348,10 @@ window.MeridianSocket = {
 
                 message:
 
+                message.message
+
+                ||
+
                 message.content
 
                 ||
@@ -351,6 +363,10 @@ window.MeridianSocket = {
                 content:
 
                 message.content
+
+                ||
+
+                message.message
 
                 ||
 
@@ -482,6 +498,119 @@ window.MeridianSocket = {
             payload
 
         );
+
+
+
+        return true;
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 发送投资者类型选择
+     */
+    sendInvestorChoice(
+
+        choiceId,
+
+        choiceLabel
+
+    ){
+
+
+
+        const allowedChoices = {
+
+
+            "long-term-investor":
+
+            "Long-term Investor",
+
+
+            "short-term-trader":
+
+            "Short-term Trader",
+
+
+            "just-exploring":
+
+            "Just Exploring"
+
+
+        };
+
+
+
+        if(
+
+            !allowedChoices[choiceId]
+
+            ||
+
+            allowedChoices[choiceId]
+
+            !== choiceLabel
+
+        ){
+
+
+            MeridianLogger.error(
+
+                "Invalid investor choice"
+
+            );
+
+
+            return false;
+
+
+        }
+
+
+
+        return this.sendMessage({
+
+
+            type:"text",
+
+
+            content:choiceLabel,
+
+
+            message:choiceLabel,
+
+
+            metadata:{
+
+
+                interaction:
+
+                "investor-profile",
+
+
+                choiceId:
+
+                choiceId,
+
+
+                choiceLabel:
+
+                choiceLabel
+
+
+            }
+
+
+        });
 
 
 

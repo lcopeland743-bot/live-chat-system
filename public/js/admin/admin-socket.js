@@ -4,7 +4,7 @@
  * 多会话消息管理
  *
  * Version:
- * v2.0.2
+ * v2.1.1
  *
  * Features:
  * - Admin State Restore
@@ -328,7 +328,25 @@ window.MeridianAdminSocket = {
 
 
 
+                        metadata:
+
+                        data.metadata
+
+                        ||
+
+                        {},
+
+
+
                         sender:
+
+                        data.sender === "admin"
+
+                        ?
+
+                        "admin"
+
+                        :
 
                         "user",
 
@@ -470,6 +488,16 @@ window.MeridianAdminSocket = {
                         ||
 
                         "text",
+
+
+
+                        metadata:
+
+                        data.metadata
+
+                        ||
+
+                        {},
 
 
 
@@ -696,18 +724,14 @@ window.MeridianAdminSocket = {
     /**
      * 发送客服消息
      *
-     * Rich Message Compatible
-     */
-        /**
-     * 发送客服消息
-     *
-     * Rich Message Compatible v2.0.10
+     * Rich Message Compatible v2.1.0
      *
      * 支持：
      * text
      * image
      * file
      * link
+     * link-card
      */
     sendReply(message){
 
@@ -742,6 +766,37 @@ window.MeridianAdminSocket = {
 
 
 
+        let outgoingMessage = message;
+
+
+
+        if(
+
+            window.MeridianAdminLinkCard
+
+            &&
+
+            typeof window.MeridianAdminLinkCard
+            .normalizeOutgoingMessage === "function"
+
+        ){
+
+
+            outgoingMessage =
+
+            window.MeridianAdminLinkCard
+            .normalizeOutgoingMessage(
+
+                outgoingMessage
+
+            );
+
+
+        }
+
+
+
+
         const messageId =
 
         "msg_" +
@@ -759,43 +814,81 @@ window.MeridianAdminSocket = {
 
 
 
-
-        /*
-         *
-         * Rich Message 判断
-         *
-         */
-
         let type = "text";
 
-        let content = message;
+        let content = outgoingMessage;
 
-        let text = message;
+        let text = outgoingMessage;
+
+        let metadata = {};
 
 
 
         if(
 
-            typeof message === "object"
+            typeof outgoingMessage === "object"
 
             &&
 
-            message.type
+            outgoingMessage
+
+            &&
+
+            outgoingMessage.type
 
         ){
 
 
-            type = message.type;
+            type =
+
+            outgoingMessage.type;
 
 
-            content = message.content;
+            content =
+
+            outgoingMessage.content
+
+            ||
+
+            outgoingMessage.message
+
+            ||
+
+            "";
 
 
-            text = message.content;
+            text =
+
+            outgoingMessage.message
+
+            ||
+
+            outgoingMessage.content
+
+            ||
+
+            "";
+
+
+            metadata =
+
+            outgoingMessage.metadata
+
+            ||
+
+            {};
 
 
         }
 
+
+
+
+        if(!content){
+
+            return;
+
+        }
 
 
 
@@ -809,9 +902,7 @@ window.MeridianAdminSocket = {
 
                 messageId:
 
-
                 messageId,
-
 
 
                 socketId:
@@ -819,11 +910,9 @@ window.MeridianAdminSocket = {
                 user.socketId,
 
 
-
                 userId:
 
                 user.userId,
-
 
 
                 message:
@@ -831,11 +920,9 @@ window.MeridianAdminSocket = {
                 text,
 
 
-
                 content:
 
                 content,
-
 
 
                 type:
@@ -843,11 +930,14 @@ window.MeridianAdminSocket = {
                 type,
 
 
+                metadata:
+
+                metadata,
+
 
                 time:
 
                 MeridianTime.now()
-
 
 
             }
@@ -855,7 +945,8 @@ window.MeridianAdminSocket = {
         );
 
 
-       }
+    }
+
 
 
 };

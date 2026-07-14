@@ -2,7 +2,7 @@
  * Meridian Message Adapter
  *
  * Version:
- * v2.0.3
+ * v2.1.0
  *
  * Unified Message Format
  */
@@ -38,7 +38,6 @@ window.MeridianMessageAdapter = {
 
 
 
-
     createLinkMessage(url){
 
 
@@ -66,7 +65,6 @@ window.MeridianMessageAdapter = {
 
 
 
-
     createImageMessage(url){
 
 
@@ -88,6 +86,76 @@ window.MeridianMessageAdapter = {
         };
 
 
+    },
+
+
+
+
+
+    /**
+     * 创建通用链接卡片消息
+     *
+     * options:
+     * - platform
+     * - avatar
+     * - title
+     * - subtitle
+     * - url
+     * - buttonText
+     */
+    createLinkCardMessage(options={}){
+
+
+        const url =
+        String(options.url || "").trim();
+
+
+
+        return {
+
+
+            type:"link-card",
+
+
+            content:url,
+
+
+            message:url,
+
+
+            metadata:{
+
+
+                platform:
+                String(options.platform || "link"),
+
+
+                avatar:
+                String(options.avatar || ""),
+
+
+                title:
+                String(options.title || "打开链接"),
+
+
+                subtitle:
+                String(options.subtitle || ""),
+
+
+                url:url,
+
+
+                buttonText:
+                String(options.buttonText || "打开")
+
+
+            }
+
+
+        };
+
+
     }
+
 
 };
