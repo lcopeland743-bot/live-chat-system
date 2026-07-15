@@ -1,36 +1,23 @@
 /**
  * Meridian Admin UI
  *
- * 企业会话工作台
- *
  * Version:
- * v2.1.0
+ * v2.3.0
  *
  * Features:
- * - All Conversations
- * - Session Management
- * - History Recovery
- * - Conversation Switching
- * - Multi Agent Foundation
+ * - Conversation Management
+ * - AI Message Renderer
+ * - AI Mode Badges
  * - Rich Message Renderer
  */
 
-
-
 window.MeridianAdminUI = {
-
 
 
     historyLoaded:{},
 
 
-
-
-
-
-
     init(){
-
 
 
         this.messages =
@@ -42,7 +29,6 @@ window.MeridianAdminUI = {
         );
 
 
-
         this.sessions =
 
         document.getElementById(
@@ -51,6 +37,23 @@ window.MeridianAdminUI = {
 
         );
 
+
+        this.onlineUsers =
+
+        document.getElementById(
+
+            "onlineUsers"
+
+        );
+
+
+        this.offlineUsers =
+
+        document.getElementById(
+
+            "offlineUsers"
+
+        );
 
 
         this.input =
@@ -62,7 +65,6 @@ window.MeridianAdminUI = {
         );
 
 
-
         this.sendButton =
 
         document.getElementById(
@@ -72,19 +74,10 @@ window.MeridianAdminUI = {
         );
 
 
-
     },
 
 
-
-
-
-
-
-
-
     async restoreCurrentSession(){
-
 
 
         const current =
@@ -92,9 +85,6 @@ window.MeridianAdminUI = {
         MeridianAdminState
 
         .getCurrentUser();
-
-
-
 
 
         if(
@@ -107,12 +97,11 @@ window.MeridianAdminUI = {
 
         ){
 
+
             return;
 
+
         }
-
-
-
 
 
         const session =
@@ -122,17 +111,13 @@ window.MeridianAdminUI = {
         .restoreSessionUser();
 
 
-
-
-
         if(!session){
+
 
             return;
 
+
         }
-
-
-
 
 
         MeridianAdminState.selectSession(
@@ -142,17 +127,11 @@ window.MeridianAdminUI = {
         );
 
 
-
-
-
         await this.loadHistory(
 
             session.userId
 
         );
-
-
-
 
 
         this.renderConversation(
@@ -165,39 +144,28 @@ window.MeridianAdminUI = {
     },
 
 
-
-
-
-
-
-
-
     async loadHistory(userId){
-
 
 
         if(!window.MeridianHistoryLoader){
 
+
             return;
 
+
         }
-
-
-
 
 
         if(this.historyLoaded[userId]){
 
+
             return;
+
 
         }
 
 
-
-
-
         try{
-
 
 
             const messages =
@@ -209,25 +177,23 @@ window.MeridianAdminUI = {
             );
 
 
-
-
-
             messages.forEach(
 
                 msg=>{
 
 
+                    MeridianConversationStore
 
-                    MeridianConversationStore.addMessage(
+                    .addMessage(
 
                         userId,
 
                         {
 
+
                             messageId:
 
                             msg.messageId,
-
 
 
                             message:
@@ -235,17 +201,18 @@ window.MeridianAdminUI = {
                             msg.content,
 
 
-
                             content:
 
                             msg.content,
 
 
-
                             metadata:
 
-                            msg.metadata || {},
+                            msg.metadata
 
+                            ||
+
+                            {},
 
 
                             sender:
@@ -253,11 +220,13 @@ window.MeridianAdminUI = {
                             msg.sender,
 
 
-
                             messageType:
 
-                            msg.type || "text",
+                            msg.type
 
+                            ||
+
+                            "text",
 
 
                             time:
@@ -275,17 +244,14 @@ window.MeridianAdminUI = {
             );
 
 
+            this.historyLoaded[userId] =
 
-
-
-            this.historyLoaded[userId]=true;
-
+            true;
 
 
         }
 
         catch(error){
-
 
 
             console.error(
@@ -300,29 +266,19 @@ window.MeridianAdminUI = {
         }
 
 
-
     },
-
-
-
-
-
-
-
 
 
     renderConversation(userId){
 
 
-
         if(!this.messages){
+
 
             return;
 
+
         }
-
-
-
 
 
         const messages =
@@ -336,19 +292,35 @@ window.MeridianAdminUI = {
         );
 
 
+        this.messages.innerHTML =
 
-
-
-        this.messages.innerHTML="";
-
-
-
+        "";
 
 
         messages.forEach(
 
             msg=>{
 
+
+                const sender =
+
+                msg.sender === "ai"
+
+                ?
+
+                "ai"
+
+                :
+
+                msg.sender === "admin"
+
+                ?
+
+                "admin"
+
+                :
+
+                "user";
 
 
                 const div =
@@ -360,31 +332,57 @@ window.MeridianAdminUI = {
                 );
 
 
-
-
-
                 div.className =
 
                 "message "
 
                 +
 
-                (
+                sender;
 
-                    msg.sender==="admin"
+
+                if(sender === "ai"){
+
+
+                    const label =
+
+                    document.createElement(
+
+                        "div"
+
+                    );
+
+
+                    label.className =
+
+                    "message-ai-label";
+
+
+                    label.textContent =
+
+                    msg.metadata
+
+                    &&
+
+                    msg.metadata.webSearchUsed === true
 
                     ?
 
-                    "admin"
+                    "GPT-5.6 AI · Web Search"
 
                     :
 
-                    "user"
-
-                );
+                    "GPT-5.6 AI";
 
 
+                    div.appendChild(
 
+                        label
+
+                    );
+
+
+                }
 
 
                 const content =
@@ -396,15 +394,9 @@ window.MeridianAdminUI = {
                 );
 
 
-
-
-
                 content.className =
 
                 "message-content";
-
-
-
 
 
                 this.renderMessage(
@@ -416,9 +408,6 @@ window.MeridianAdminUI = {
                 );
 
 
-
-
-
                 const time =
 
                 document.createElement(
@@ -428,13 +417,13 @@ window.MeridianAdminUI = {
                 );
 
 
-
                 time.textContent =
 
-                msg.time || "";
+                msg.time
 
+                ||
 
-
+                "";
 
 
                 div.appendChild(
@@ -444,17 +433,11 @@ window.MeridianAdminUI = {
                 );
 
 
-
-
-
                 div.appendChild(
 
                     time
 
                 );
-
-
-
 
 
                 this.messages.appendChild(
@@ -464,13 +447,9 @@ window.MeridianAdminUI = {
                 );
 
 
-
             }
 
         );
-
-
-
 
 
         this.messages.scrollTop =
@@ -478,27 +457,9 @@ window.MeridianAdminUI = {
         this.messages.scrollHeight;
 
 
-
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * Rich Message Renderer
-     *
-     * 支持:
-     *
-     * text
-     * link
-     * image
-     * file
-     */
     renderMessage(
 
         container,
@@ -506,7 +467,6 @@ window.MeridianAdminUI = {
         msg
 
     ){
-
 
 
         const type =
@@ -522,9 +482,6 @@ window.MeridianAdminUI = {
         "text";
 
 
-
-
-
         const content =
 
         msg.message
@@ -538,7 +495,6 @@ window.MeridianAdminUI = {
         "";
 
 
-
         const metadata =
 
         msg.metadata
@@ -548,14 +504,7 @@ window.MeridianAdminUI = {
         {};
 
 
-
-
-
-
-
-
-
-        if(type==="link-card"){
+        if(type === "link-card"){
 
 
             this.renderLinkCard(
@@ -564,11 +513,21 @@ window.MeridianAdminUI = {
 
                 {
 
-                    content:content,
 
-                    message:content,
+                    content:
 
-                    metadata:metadata
+                    content,
+
+
+                    message:
+
+                    content,
+
+
+                    metadata:
+
+                    metadata
+
 
                 }
 
@@ -581,17 +540,10 @@ window.MeridianAdminUI = {
         }
 
 
+        if(type === "link"){
 
 
-
-
-
-
-        if(type==="link"){
-
-
-
-            const a =
+            const link =
 
             document.createElement(
 
@@ -600,43 +552,41 @@ window.MeridianAdminUI = {
             );
 
 
+            link.href =
 
-            a.href = content;
-
-
-
-            a.target = "_blank";
+            content;
 
 
+            link.target =
 
-            a.rel =
+            "_blank";
+
+
+            link.rel =
 
             "noopener noreferrer";
 
 
+            link.textContent =
 
-            a.textContent = content;
+            content;
 
 
-
-            a.style.cursor =
+            link.style.cursor =
 
             "pointer";
 
 
-
-            a.style.textDecoration =
+            link.style.textDecoration =
 
             "underline";
 
 
-
             container.appendChild(
 
-                a
+                link
 
             );
-
 
 
             return;
@@ -645,18 +595,10 @@ window.MeridianAdminUI = {
         }
 
 
+        if(type === "image"){
 
 
-
-
-
-
-
-        if(type==="image"){
-
-
-
-            const img =
+            const image =
 
             document.createElement(
 
@@ -665,24 +607,22 @@ window.MeridianAdminUI = {
             );
 
 
+            image.src =
 
-            img.src = content;
+            content;
 
 
-
-            img.style.maxWidth =
+            image.style.maxWidth =
 
             "300px";
 
 
-
-            img.style.cursor =
+            image.style.cursor =
 
             "pointer";
 
 
-
-            img.onclick = ()=>{
+            image.onclick = ()=>{
 
 
                 window.open(
@@ -697,13 +637,11 @@ window.MeridianAdminUI = {
             };
 
 
-
             container.appendChild(
 
-                img
+                image
 
             );
-
 
 
             return;
@@ -712,18 +650,10 @@ window.MeridianAdminUI = {
         }
 
 
+        if(type === "file"){
 
 
-
-
-
-
-
-        if(type==="file"){
-
-
-
-            const a =
+            const link =
 
             document.createElement(
 
@@ -732,27 +662,26 @@ window.MeridianAdminUI = {
             );
 
 
+            link.href =
 
-            a.href = content;
-
-
-
-            a.target="_blank";
+            content;
 
 
+            link.target =
 
-            a.textContent =
+            "_blank";
+
+
+            link.textContent =
 
             "📎 文件";
 
 
-
             container.appendChild(
 
-                a
+                link
 
             );
-
 
 
             return;
@@ -761,24 +690,545 @@ window.MeridianAdminUI = {
         }
 
 
+        container.textContent =
+
+        content;
 
 
+        this.renderAiExtras(
 
+            container,
 
+            metadata
 
-
-
-        container.textContent = content;
-
+        );
 
 
     },
 
 
 
+    ensureAiResponseStyles(){
 
 
+        if(
 
+            document.getElementById(
+
+                "meridianAdminAiResponseStyles"
+
+            )
+
+        ){
+
+
+            return;
+
+
+        }
+
+
+        const style =
+
+        document.createElement(
+
+            "style"
+
+        );
+
+
+        style.id =
+
+        "meridianAdminAiResponseStyles";
+
+
+        style.textContent = `
+
+            .admin-ai-message-extras{
+                margin-top:9px;
+                padding-top:8px;
+                border-top:1px solid rgba(15,23,42,.12);
+            }
+
+            .admin-ai-message-sources{
+                display:flex;
+                align-items:center;
+                flex-wrap:wrap;
+                gap:5px;
+                margin-bottom:8px;
+                font-size:11px;
+            }
+
+            .admin-ai-message-source{
+                display:inline-flex;
+                align-items:center;
+                justify-content:flex-start;
+                min-height:22px;
+                max-width:100%;
+                padding:3px 7px;
+                border-radius:999px;
+                background:#eef4ff;
+                color:#1358bf !important;
+                text-decoration:none !important;
+                font-weight:700;
+                line-height:1.25;
+                overflow-wrap:anywhere;
+            }
+
+            .admin-ai-message-search-time{
+                margin:0 0 8px;
+                color:#64748b;
+                font-size:10px;
+                line-height:1.3;
+            }
+
+            .admin-ai-message-whatsapp-intro{
+                margin-bottom:6px;
+                color:#334155;
+                font-size:12px;
+                line-height:1.35;
+            }
+
+            .admin-ai-message-whatsapp-button{
+                min-height:36px;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                padding:7px 12px;
+                border-radius:9px;
+                background:#25d366;
+                color:#ffffff !important;
+                text-decoration:none !important;
+                font-size:12px;
+                font-weight:700;
+            }
+
+        `;
+
+
+        document.head.appendChild(
+
+            style
+
+        );
+
+
+    },
+
+
+    renderAiExtras(
+
+        container,
+
+        metadata
+
+    ){
+
+
+        const sources =
+
+        Array.isArray(metadata.sources)
+
+        ?
+
+        metadata.sources
+
+        .filter(
+
+            source=>{
+
+
+                return (
+
+                    source
+
+                    &&
+
+                    this.getSafeUrl(
+
+                        source.url
+
+                    )
+
+                );
+
+
+            }
+
+        )
+
+        .slice(0,3)
+
+        :
+
+        [];
+
+
+        const searchedAtDate =
+
+        metadata.searchedAt
+
+        ?
+
+        new Date(metadata.searchedAt)
+
+        :
+
+        null;
+
+
+        const searchedAtText =
+
+        searchedAtDate
+
+        &&
+
+        !Number.isNaN(
+
+            searchedAtDate.getTime()
+
+        )
+
+        ?
+
+        searchedAtDate.toLocaleString()
+
+        :
+
+        "";
+
+
+        const whatsapp =
+
+        metadata.whatsapp
+
+        &&
+
+        typeof metadata.whatsapp === "object"
+
+        ?
+
+        metadata.whatsapp
+
+        :
+
+        null;
+
+
+        const whatsappUrl =
+
+        whatsapp
+
+        ?
+
+        this.getSafeUrl(
+
+            whatsapp.url
+
+        )
+
+        :
+
+        "";
+
+
+        if(
+
+            sources.length === 0
+
+            &&
+
+            !searchedAtText
+
+            &&
+
+            !whatsappUrl
+
+        ){
+
+
+            return;
+
+
+        }
+
+
+        this.ensureAiResponseStyles();
+
+
+        const extras =
+
+        document.createElement(
+
+            "div"
+
+        );
+
+
+        extras.className =
+
+        "admin-ai-message-extras";
+
+
+        if(sources.length > 0){
+
+
+            const sourceRow =
+
+            document.createElement(
+
+                "div"
+
+            );
+
+
+            sourceRow.className =
+
+            "admin-ai-message-sources";
+
+
+            const label =
+
+            document.createElement(
+
+                "span"
+
+            );
+
+
+            label.textContent =
+
+            "Sources:";
+
+
+            sourceRow.appendChild(
+
+                label
+
+            );
+
+
+            sources.forEach(
+
+                (source,index)=>{
+
+
+                    const link =
+
+                    document.createElement(
+
+                        "a"
+
+                    );
+
+
+                    link.className =
+
+                    "admin-ai-message-source";
+
+
+                    link.href =
+
+                    this.getSafeUrl(
+
+                        source.url
+
+                    );
+
+
+                    link.target =
+
+                    "_blank";
+
+
+                    link.rel =
+
+                    "noopener noreferrer";
+
+
+                    const sourceTitle =
+
+                    String(
+
+                        source.title
+
+                        ||
+
+                        new URL(link.href).hostname
+
+                    )
+
+                    .trim();
+
+
+                    const visibleTitle =
+
+                    sourceTitle.length > 42
+
+                    ?
+
+                    sourceTitle.slice(0,39) + "..."
+
+                    :
+
+                    sourceTitle;
+
+
+                    link.textContent =
+
+                    `[${index + 1}] ${visibleTitle}`;
+
+
+                    link.title =
+
+                    sourceTitle;
+
+
+                    sourceRow.appendChild(
+
+                        link
+
+                    );
+
+
+                }
+
+            );
+
+
+            extras.appendChild(
+
+                sourceRow
+
+            );
+
+
+        }
+
+
+        if(searchedAtText){
+
+
+            const searchedAt =
+
+            document.createElement(
+
+                "div"
+
+            );
+
+
+            searchedAt.className =
+
+            "admin-ai-message-search-time";
+
+
+            searchedAt.textContent =
+
+            `Checked: ${searchedAtText}`;
+
+
+            extras.appendChild(
+
+                searchedAt
+
+            );
+
+
+        }
+
+
+        if(whatsappUrl){
+
+
+            if(whatsapp.intro){
+
+
+                const intro =
+
+                document.createElement(
+
+                    "div"
+
+                );
+
+
+                intro.className =
+
+                "admin-ai-message-whatsapp-intro";
+
+
+                intro.textContent =
+
+                whatsapp.intro;
+
+
+                extras.appendChild(
+
+                    intro
+
+                );
+
+
+            }
+
+
+            const button =
+
+            document.createElement(
+
+                "a"
+
+            );
+
+
+            button.className =
+
+            "admin-ai-message-whatsapp-button";
+
+
+            button.href =
+
+            whatsappUrl;
+
+
+            button.target =
+
+            "_blank";
+
+
+            button.rel =
+
+            "noopener noreferrer";
+
+
+            button.textContent =
+
+            whatsapp.buttonText
+
+            ||
+
+            "Get full briefing";
+
+
+            extras.appendChild(
+
+                button
+
+            );
+
+
+        }
+
+
+        container.appendChild(
+
+            extras
+
+        );
+
+
+    },
 
 
     getSafeUrl(value){
@@ -786,16 +1236,18 @@ window.MeridianAdminUI = {
 
         if(!value){
 
+
             return "";
 
-        }
 
+        }
 
 
         try{
 
 
             const url =
+
             new URL(
 
                 value,
@@ -805,21 +1257,21 @@ window.MeridianAdminUI = {
             );
 
 
-
             if(
 
-                url.protocol!=="http:"
+                url.protocol !== "http:"
 
                 &&
 
-                url.protocol!=="https:"
+                url.protocol !== "https:"
 
             ){
 
+
                 return "";
 
-            }
 
+            }
 
 
             return url.href;
@@ -839,9 +1291,6 @@ window.MeridianAdminUI = {
     },
 
 
-
-
-
     ensureLinkBubbleStyles(){
 
 
@@ -855,16 +1304,20 @@ window.MeridianAdminUI = {
 
         ){
 
+
             return;
+
 
         }
 
 
-
         const style =
 
-        document.createElement("style");
+        document.createElement(
 
+            "style"
+
+        );
 
 
         style.id =
@@ -872,125 +1325,64 @@ window.MeridianAdminUI = {
         "meridianAdminWhatsAppBubbleStyles";
 
 
-
         style.textContent = `
 
             .meridian-briefing-card{
-
                 width:215px;
-
                 display:flex;
-
                 flex-direction:column;
-
                 align-items:stretch;
-
                 gap:10px;
-
             }
-
 
             .meridian-briefing-message{
-
                 color:#111827;
-
                 font-size:14px;
-
                 font-weight:600;
-
                 line-height:1.45;
-
             }
-
 
             .meridian-whatsapp-bubble{
-
                 position:relative;
-
                 min-height:56px;
-
                 display:flex;
-
                 align-items:center;
-
                 justify-content:center;
-
                 padding:13px 20px;
-
                 border-radius:19px 19px 19px 6px;
-
                 background:#25d366;
-
                 color:#ffffff !important;
-
                 text-decoration:none !important;
-
                 text-align:center;
-
                 font-size:15px;
-
                 font-weight:700;
-
                 line-height:1.3;
-
                 box-shadow:0 7px 18px rgba(37,211,102,.30);
-
                 cursor:pointer;
-
-                transition:transform .15s ease, box-shadow .15s ease;
-
             }
-
 
             .meridian-whatsapp-bubble::after{
-
                 content:"";
-
                 position:absolute;
-
                 left:0;
-
                 bottom:-6px;
-
                 width:15px;
-
                 height:15px;
-
                 background:#25d366;
-
                 clip-path:polygon(0 0,100% 0,0 100%);
-
-            }
-
-
-            .meridian-whatsapp-bubble:hover{
-
-                transform:translateY(-1px);
-
-                box-shadow:0 10px 22px rgba(37,211,102,.38);
-
-            }
-
-
-            .meridian-whatsapp-bubble:focus-visible{
-
-                outline:3px solid rgba(37,211,102,.32);
-
-                outline-offset:3px;
-
             }
 
         `;
 
 
+        document.head.appendChild(
 
-        document.head.appendChild(style);
+            style
+
+        );
 
 
     },
-
-
-
 
 
     renderLinkCard(
@@ -1004,8 +1396,11 @@ window.MeridianAdminUI = {
 
         const metadata =
 
-        message.metadata || {};
+        message.metadata
 
+        ||
+
+        {};
 
 
         const url =
@@ -1027,7 +1422,6 @@ window.MeridianAdminUI = {
             ""
 
         );
-
 
 
         if(!url){
@@ -1052,15 +1446,16 @@ window.MeridianAdminUI = {
         }
 
 
-
         this.ensureLinkBubbleStyles();
-
 
 
         const wrapper =
 
-        document.createElement("div");
+        document.createElement(
 
+            "div"
+
+        );
 
 
         wrapper.className =
@@ -1068,17 +1463,18 @@ window.MeridianAdminUI = {
         "meridian-briefing-card";
 
 
-
         const intro =
 
-        document.createElement("div");
+        document.createElement(
 
+            "div"
+
+        );
 
 
         intro.className =
 
         "meridian-briefing-message";
-
 
 
         intro.textContent =
@@ -1090,11 +1486,13 @@ window.MeridianAdminUI = {
         "Your briefing is ready.";
 
 
-
         const bubble =
 
-        document.createElement("a");
+        document.createElement(
 
+            "a"
+
+        );
 
 
         bubble.className =
@@ -1102,33 +1500,19 @@ window.MeridianAdminUI = {
         "meridian-whatsapp-bubble";
 
 
+        bubble.href =
 
-        bubble.href = url;
+        url;
 
 
+        bubble.target =
 
-        bubble.target = "_blank";
-
+        "_blank";
 
 
         bubble.rel =
 
         "noopener noreferrer";
-
-
-
-        bubble.setAttribute(
-
-            "aria-label",
-
-            metadata.buttonText
-
-            ||
-
-            "Claim for free"
-
-        );
-
 
 
         bubble.textContent =
@@ -1140,35 +1524,204 @@ window.MeridianAdminUI = {
         "Claim for free";
 
 
+        wrapper.appendChild(
 
-        wrapper.appendChild(intro);
+            intro
 
-
-
-        wrapper.appendChild(bubble);
-
+        );
 
 
-        container.appendChild(wrapper);
+        wrapper.appendChild(
+
+            bubble
+
+        );
+
+
+        container.appendChild(
+
+            wrapper
+
+        );
 
 
     },
 
 
+    renderOnlineUsers(){
+
+
+        if(this.onlineUsers){
+
+
+            this.renderPresenceList(
+
+                this.onlineUsers,
+
+                MeridianAdminState.onlineUsers,
+
+                "online-user"
+
+            );
+
+
+        }
+
+
+        if(this.offlineUsers){
+
+
+            this.renderPresenceList(
+
+                this.offlineUsers,
+
+                MeridianAdminState.offlineUsers,
+
+                "offline-user"
+
+            );
+
+
+        }
+
+
+    },
+
+
+    renderPresenceList(
+
+        container,
+
+        users,
+
+        className
+
+    ){
+
+
+        container.innerHTML =
+
+        "";
+
+
+        (
+
+            users
+
+            ||
+
+            []
+
+        )
+
+        .forEach(
+
+            user=>{
+
+
+                const item =
+
+                document.createElement(
+
+                    "div"
+
+                );
+
+
+                item.className =
+
+                className;
+
+
+                item.textContent =
+
+                user.userId
+
+                ||
+
+                "Unknown visitor";
+
+
+                item.onclick = ()=>{
+
+
+                    const session =
+
+                    MeridianAdminState
+
+                    .getSessionByUserId(
+
+                        user.userId
+
+                    );
+
+
+                    if(session){
+
+
+                        MeridianAdminState
+
+                        .selectSession(
+
+                            session
+
+                        );
+
+
+                        this.loadHistory(
+
+                            session.userId
+
+                        )
+
+                        .then(
+
+                            ()=>{
+
+
+                                this.renderConversation(
+
+                                    session.userId
+
+                                );
+
+
+                            }
+
+                        );
+
+
+                    }
+
+
+                };
+
+
+                container.appendChild(
+
+                    item
+
+                );
+
+
+            }
+
+        );
+
+
+    },
 
 
     renderSessions(){
 
 
-
         if(!this.sessions){
+
 
             return;
 
+
         }
-
-
-
 
 
         const sessions =
@@ -1178,19 +1731,14 @@ window.MeridianAdminUI = {
         .getSessions();
 
 
+        this.sessions.innerHTML =
 
-
-
-        this.sessions.innerHTML="";
-
-
-
+        "";
 
 
         sessions.forEach(
 
             session=>{
-
 
 
                 const div =
@@ -1202,28 +1750,14 @@ window.MeridianAdminUI = {
                 );
 
 
-
-
-
-                div.className=
+                div.className =
 
                 "session-item";
 
 
-
-
-
-                div.style.cursor=
-
-                "pointer";
-
-
-
-
-
                 const statusIcon =
 
-                session.status==="online"
+                session.status === "online"
 
                 ?
 
@@ -1232,9 +1766,6 @@ window.MeridianAdminUI = {
                 :
 
                 "⚫";
-
-
-
 
 
                 const time =
@@ -1256,86 +1787,136 @@ window.MeridianAdminUI = {
                 "";
 
 
-
-
-
                 const unread =
 
                 session.unreadCount > 0
 
                 ?
 
-                `
-
-                <span>
-
-                🔴${session.unreadCount}
-
-                </span>
-
-                `
+                `<span>🔴${session.unreadCount}</span>`
 
                 :
 
                 "";
 
 
+                const mode =
+
+                session.aiMode
+
+                ||
+
+                "off";
 
 
+                const takeover =
 
-                div.innerHTML=
+                session.humanTakeover === true
 
-                `
+                ?
 
-                <div>
+                " · HUMAN"
 
-                <b>
+                :
 
-                ${statusIcon}
-
-                ${session.userId}
-
-                </b>
-
-                </div>
+                "";
 
 
-                <div>
+                const conversion =
 
-                ${session.lastMessage || "暂无消息"}
+                session.conversionState
 
-                </div>
+                ||
+
+                {};
 
 
-                <small>
+                const conversionStage =
 
-                ${time}
+                conversion.stage
 
-                ${unread}
+                ||
 
-                </small>
+                "new";
 
+
+                const conversionAsset =
+
+                conversion.asset
+
+                ?
+
+                ` · ${conversion.asset}`
+
+                :
+
+                "";
+
+
+                const conversionFlags =
+
+                conversion.whatsappClicked === true
+
+                ?
+
+                " · WA CLICKED"
+
+                :
+
+                conversion.doNotPush === true
+
+                ?
+
+                " · NO PUSH"
+
+                :
+
+                "";
+
+
+                div.innerHTML = `
+
+                    <div>
+                        <b>
+                            ${statusIcon}
+                            ${session.userId}
+                        </b>
+                    </div>
+
+                    <div>
+                        ${session.lastMessage || "暂无消息"}
+                    </div>
+
+                    <small>
+                        ${time}
+                        ${unread}
+                    </small>
+
+                    <span class="session-ai-badge ai-${mode}">
+                        AI ${mode.toUpperCase()}${takeover}
+                    </span>
+
+                    <span class="session-ai-badge">
+                        ${conversionStage}${conversionAsset}
+                        · CTA ${conversion.ctaShownCount || 0}
+                        ${conversionFlags}
+                    </span>
 
                 `;
 
 
-
-
-
-                div.onclick=
+                div.onclick =
 
                 async()=>{
 
 
+                    MeridianAdminState
 
-                    MeridianAdminState.selectSession(
+                    .selectSession(
 
                         session
 
                     );
-
-
-
 
 
                     await this.loadHistory(
@@ -1345,17 +1926,11 @@ window.MeridianAdminUI = {
                     );
 
 
-
-
-
                     this.renderConversation(
 
                         session.userId
 
                     );
-
-
-
 
 
                     this.highlightSession(
@@ -1365,11 +1940,7 @@ window.MeridianAdminUI = {
                     );
 
 
-
                 };
-
-
-
 
 
                 this.sessions.appendChild(
@@ -1379,31 +1950,18 @@ window.MeridianAdminUI = {
                 );
 
 
-
             }
 
         );
 
 
-
-
-
         this.restoreCurrentSession();
-
 
 
     },
 
 
-
-
-
-
-
-
-
     highlightSession(item){
-
 
 
         document
@@ -1416,10 +1974,10 @@ window.MeridianAdminUI = {
 
         .forEach(
 
-            el=>{
+            element=>{
 
 
-                el.style.border=
+                element.style.border =
 
                 "1px solid #eee";
 
@@ -1429,67 +1987,45 @@ window.MeridianAdminUI = {
         );
 
 
-
-
-
-        item.style.border=
+        item.style.border =
 
         "2px solid #409eff";
-
 
 
     },
 
 
-
-
-
-
-
-
-
     bindSend(callback){
-
 
 
         if(this.sendButton){
 
 
-
-            this.sendButton.onclick=
+            this.sendButton.onclick =
 
             callback;
-
 
 
         }
 
 
-
-
-
         if(this.input){
-
 
 
             this.input.addEventListener(
 
                 "keydown",
 
-                e=>{
+                event=>{
 
 
-
-                    if(e.key==="Enter"){
-
+                    if(event.key === "Enter"){
 
 
                         callback();
 
 
-
                     }
-
 
 
                 }
@@ -1497,23 +2033,13 @@ window.MeridianAdminUI = {
             );
 
 
-
         }
-
 
 
     },
 
 
-
-
-
-
-
-
-
     getInputMessage(){
-
 
 
         return this.input
@@ -1527,35 +2053,24 @@ window.MeridianAdminUI = {
         "";
 
 
-
     },
-
-
-
-
-
-
-
 
 
     clearInput(){
 
 
-
         if(this.input){
 
 
+            this.input.value =
 
-            this.input.value="";
+            "";
+
 
         }
 
 
-
     }
-
-
-
 
 
 };

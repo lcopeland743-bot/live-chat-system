@@ -4,7 +4,7 @@
  * MongoDB Connection Manager
  *
  * Version:
- * v1.2.0
+ * v2.3.2
  */
 
 
@@ -156,10 +156,41 @@ function getConnectionStatus(){
 
 
 
+
+
+
+/**
+ * Close MongoDB cleanly.
+ */
+async function disconnectDatabase(){
+
+
+    if(
+
+        mongoose.connection.readyState !== 0
+
+    ){
+
+
+        await mongoose.disconnect();
+
+
+    }
+
+
+    connected = false;
+
+
+}
+
+
 module.exports = {
 
 
     connectDatabase,
+
+
+    disconnectDatabase,
 
 
     getConnectionStatus

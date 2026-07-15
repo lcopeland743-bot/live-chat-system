@@ -4,542 +4,481 @@
  * MongoDB Conversation Manager
  *
  * Version:
- * v2.0.1
- *
- * Features:
- * - Conversation Management
- * - Message Metadata
- * - Unread Support
- * - Multi Agent Foundation
+ * v2.3.2
  */
-
 
 const Session =
 require("../database/models/session-model");
 
 
+const aiConfig =
+require("../config/ai-config");
 
 
+const conversionStateService =
+require("./conversion-state-service");
 
 
+const dataRetentionConfig =
+require("../config/data-retention-config");
 
 
+function buildConversionUpdate(state) {
+    const normalized =
+        conversionStateService
+        .normalize(state);
 
-async function createSession(data){
+    const update = {
+        "conversionState.stage":
+            normalized.stage,
+        "conversionState.eligibleTurnCount":
+            normalized.eligibleTurnCount,
+        "conversionState.intent":
+            normalized.intent,
+        "conversionState.asset":
+            normalized.asset,
+        "conversionState.investmentHorizon":
+            normalized.investmentHorizon,
+        "conversionState.positionStatus":
+            normalized.positionStatus,
+        "conversionState.entryPlan":
+            normalized.entryPlan,
+        "conversionState.valueDelivered":
+            normalized.valueDelivered,
+        "conversionState.conversionSeedDelivered":
+            normalized.conversionSeedDelivered,
+        "conversionState.reservedValue":
+            normalized.reservedValue,
+        "conversionState.reservedValueType":
+            normalized.reservedValueType,
+        "conversionState.engagementScore":
+            normalized.engagementScore,
+        "conversionState.engagementSignal":
+            normalized.engagementSignal,
+        "conversionState.exitRisk":
+            normalized.exitRisk,
+        "conversionState.ctaShownCount":
+            normalized.ctaShownCount,
+        "conversionState.lastCtaTurn":
+            normalized.lastCtaTurn,
+        "conversionState.lastCtaTrackingId":
+            normalized.lastCtaTrackingId,
+        "conversionState.lastQuestionAsked":
+            normalized.lastQuestionAsked,
+        "conversionState.policyVersion":
+            normalized.policyVersion,
+        "conversionState.promptVersion":
+            normalized.promptVersion,
+        "conversionState.updatedAt":
+            normalized.updatedAt
+            || new Date()
+    };
 
+    if (normalized.doNotPush === true) {
+        update["conversionState.doNotPush"] =
+            true;
+    }
 
-    const session =
+    if (normalized.whatsappClicked === true) {
+        update["conversionState.whatsappClicked"] =
+            true;
+    }
 
-    await Session.findOneAndUpdate(
-
-        {
-
-            userId:data.userId
-
-        },
-
-
-        {
-
-            userId:data.userId,
-
-
-            customerId:
-            data.customerId || null,
-
-
-            socketId:
-            data.socketId || null,
-
-
-            status:"online",
-
-
-            page:
-            data.page || "",
-
-
-            connectedAt:
-            data.time || new Date(),
-
-
-            conversationStatus:
-            "unassigned"
-
-
-        },
-
-
-        {
-
-            new:true,
-
-            upsert:true
-
-        }
-
-    );
-
-
-    return session;
-
+    return update;
 }
 
 
+async function createSession(data) {
+    return await Session.findOneAndUpdate(
+        {
+            userId: data.userId
+        },
+        {
+            $set: {
+                userId: data.userId,
+                customerId:
+                    data.customerId || null,
+                socketId:
+                    data.socketId || null,
+                status: "online",
+                page:
+                    data.page || "",
+                connectedAt:
+                    data.time || new Date(),
+                purgeAt:
+                    null
+            },
+
+            $setOnInsert: {
+                conversationStatus:
+                    "unassigned",
+                aiMode:
+                    aiConfig.defaultMode,
+                humanTakeover:
+                    false,
+                conversionState:
+                    conversionStateService
+                    .createDefaultState()
+            }
+        },
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        }
+    );
+}
 
 
-
-
-
-
-
-/**
- * 更新消息信息
- */
 async function updateMessage(
-
     userId,
-
     message,
-
-    sender="user"
-
-){
-
-
+    sender = "user"
+) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
+            lastMessage: message,
+            lastMessageAt:
+                new Date(),
+            lastSender: sender,
+            purgeAt: null,
 
-            lastMessage:message,
-
-
-            lastMessageAt:new Date(),
-
-
-            lastSender:sender,
-
-
-            $inc:{
-
-                messageCount:1
-
+            $inc: {
+                messageCount: 1
             }
-
         },
-
-
         {
-
-            new:true,
-
-            upsert:true
-
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-async function incrementUnread(userId){
-
-
+async function incrementUnread(userId) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            $inc:{
-
-                unreadCount:1
-
+            $inc: {
+                unreadCount: 1
             }
-
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-async function clearUnread(userId){
-
-
+async function clearUnread(userId) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            unreadCount:0
-
+            unreadCount: 0
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-/**
- * 分配客服
- */
-async function assignAgent(
-
+async function setAiMode(
     userId,
+    mode
+) {
+    const normalizedMode =
+        aiConfig.normalizeMode(mode);
 
+    return await Session.findOneAndUpdate(
+        {
+            userId
+        },
+        {
+            aiMode:
+                normalizedMode,
+            humanTakeover:
+                false,
+            "conversionState.humanTakeover":
+                false,
+            aiUpdatedAt:
+                new Date()
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function setHumanTakeover(
+    userId,
+    enabled = true
+) {
+    const value =
+        Boolean(enabled);
+
+    return await Session.findOneAndUpdate(
+        {
+            userId
+        },
+        {
+            humanTakeover:
+                value,
+            "conversionState.humanTakeover":
+                value,
+            "conversionState.updatedAt":
+                new Date(),
+            aiUpdatedAt:
+                new Date()
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function updateConversionState(
+    userId,
+    state
+) {
+    return await Session.findOneAndUpdate(
+        {
+            userId
+        },
+        {
+            $set:
+                buildConversionUpdate(state)
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function commitConversionStateIfAiActive(
+    userId,
+    state,
+    expectedMode
+) {
+    return await Session.findOneAndUpdate(
+        {
+            userId,
+            aiMode: expectedMode,
+            humanTakeover: false
+        },
+        {
+            $set:
+                buildConversionUpdate(state)
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function setConversionDoNotPush(
+    userId,
+    enabled = true
+) {
+    return await Session.findOneAndUpdate(
+        {
+            userId
+        },
+        {
+            $set: {
+                "conversionState.doNotPush":
+                    Boolean(enabled),
+                "conversionState.updatedAt":
+                    new Date()
+            }
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function markWhatsappClicked(
+    userId,
+    trackingId
+) {
+    return await Session.findOneAndUpdate(
+        {
+            userId,
+            "conversionState.lastCtaTrackingId":
+                trackingId,
+            "conversionState.whatsappClicked":
+                false
+        },
+        {
+            "conversionState.whatsappClicked":
+                true,
+            "conversionState.updatedAt":
+                new Date()
+        },
+        {
+            new: true
+        }
+    );
+}
+
+
+async function assignAgent(
+    userId,
     agentId,
-
-    agentName=""
-
-){
-
-
+    agentName = ""
+) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            assignedAgentId:agentId,
-
-
-            assignedAgentName:agentName,
-
-
-            conversationStatus:"assigned"
-
+            assignedAgentId:
+                agentId,
+            assignedAgentName:
+                agentName,
+            conversationStatus:
+                "assigned"
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-/**
- * 释放客服
- */
-async function releaseAgent(
-
-    userId
-
-){
-
-
+async function releaseAgent(userId) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            assignedAgentId:null,
-
-
-            assignedAgentName:"",
-
-
-            conversationStatus:"unassigned"
-
+            assignedAgentId:
+                null,
+            assignedAgentName:
+                "",
+            conversationStatus:
+                "unassigned"
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-/**
- * 获取客服负责的客户
- */
-async function getAgentSessions(
-
-    agentId
-
-){
-
-
+async function getAgentSessions(agentId) {
     return await Session.find({
-
-        assignedAgentId:agentId
-
+        assignedAgentId:
+            agentId
     })
-
     .sort({
-
-        updatedAt:-1
-
+        updatedAt: -1
     });
-
-
 }
-
-
-
-
-
-
-
 
 
 async function offline(
-
     userId,
-
     time
-
-){
-
-
+) {
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            status:"offline",
-
-
+            status:
+                "offline",
             lastSeen:
-
-            time || new Date()
-
+                time || new Date()
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-async function closeConversation(
-
-    userId
-
-){
-
+async function closeConversation(userId) {
+    const closedAt =
+        new Date();
 
     return await Session.findOneAndUpdate(
-
         {
-
-            userId:userId
-
+            userId
         },
-
-
         {
-
-            conversationStatus:"closed"
-
+            conversationStatus:
+                "closed",
+            aiMode:
+                "off",
+            humanTakeover:
+                true,
+            "conversionState.stage":
+                "closed",
+            "conversionState.humanTakeover":
+                true,
+            "conversionState.updatedAt":
+                closedAt,
+            aiUpdatedAt:
+                closedAt,
+            purgeAt:
+                dataRetentionConfig
+                .calculateClosedSessionPurgeAt(
+                    closedAt
+                )
         },
-
-
         {
-
-            new:true
-
+            new: true
         }
-
     );
-
 }
 
 
-
-
-
-
-
-
-
-async function getSessions(){
-
-
+async function getSessions() {
     return await Session.find()
-
     .sort({
-
-        updatedAt:-1
-
+        updatedAt: -1
     });
-
-
 }
 
 
-
-
-
-
-
-
-
-async function getSessionByUserId(
-
-    userId
-
-){
-
-
+async function getSessionByUserId(userId) {
     return await Session.findOne({
-
-        userId:userId
-
+        userId
     });
-
-
 }
-
-
-
-
-
-
-
 
 
 module.exports = {
-
-
     createSession,
-
-
     updateMessage,
-
-
     incrementUnread,
-
-
     clearUnread,
-
-
+    setAiMode,
+    setHumanTakeover,
+    updateConversionState,
+    commitConversionStateIfAiActive,
+    setConversionDoNotPush,
+    markWhatsappClicked,
     assignAgent,
-
-
     releaseAgent,
-
-
     getAgentSessions,
-
-
     offline,
-
-
     closeConversation,
-
-
     getSessions,
-
-
     getSessionByUserId
-
-
 };

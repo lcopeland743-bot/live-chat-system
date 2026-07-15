@@ -2,24 +2,21 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.1.2
+ * v2.3.2
  *
  * Features:
  * - Express
  * - Socket.IO
  * - MongoDB
  * - Admin Session Authentication
+ * - GPT-5.6 AI Customer Service
+ * - OFF / ASSIST / AUTO AI Modes
+ * - Human Takeover
+ * - Conversation Conversion Engine
+ * - OpenAI Web Search
  * - Protected Admin Pages and APIs
- * - Authenticated Admin Socket
- * - Unified Presence
- * - Chat
- * - Message History API
- * - Session Restore API
- * - Admin State Restore API
- * - Agent Management
- * - Session Agent Assignment
- * - Session Cleanup
- * - Image Upload
+ * - Rich Messages and Uploads
+ * - Data Retention and Automatic Cleanup
  */
 
 require("dotenv").config();
@@ -78,6 +75,10 @@ const sessionCleanupService =
 require("./server/services/session-cleanup-service");
 
 
+const dataRetentionService =
+require("./server/services/data-retention-service");
+
+
 const registerPresenceHandler =
 require("./server/socket/presence-handler");
 
@@ -102,6 +103,10 @@ const adminAuthRoute =
 require("./server/routes/admin-auth-route");
 
 
+const adminAiRoute =
+require("./server/routes/admin-ai-route");
+
+
 const messageRoute =
 require("./server/routes/message-route");
 
@@ -124,6 +129,10 @@ require("./server/routes/session-agent-route");
 
 const uploadRoute =
 require("./server/routes/upload-route");
+
+
+const conversionRoute =
+require("./server/routes/conversion-route");
 
 
 const app =
@@ -163,11 +172,22 @@ new Server(
 
     {
 
+
         cors:
 
         config.socket.cors
 
+
     }
+
+);
+
+
+app.set(
+
+    "io",
+
+    io
 
 );
 
@@ -198,9 +218,6 @@ app.use(
 );
 
 
-/**
- * Authentication API must be available before protected pages.
- */
 app.use(
 
     "/api/admin/auth",
@@ -210,10 +227,6 @@ app.use(
 );
 
 
-/**
- * Protected /admin and /admin.html routes must be registered
- * before public static files.
- */
 app.use(
 
     "/",
@@ -223,10 +236,6 @@ app.use(
 );
 
 
-/**
- * Public static assets.
- * public/admin.html is only a redirect placeholder.
- */
 app.use(
 
     express.static(
@@ -252,10 +261,6 @@ app.use(
 );
 
 
-/**
- * Uploaded files remain public because both visitors and admins
- * currently use the same upload endpoint.
- */
 app.use(
 
     "/uploads",
@@ -308,6 +313,15 @@ app.use(
 
 app.use(
 
+    "/api/admin/ai",
+
+    adminAiRoute
+
+);
+
+
+app.use(
+
     "/api/agents",
 
     agentRoute
@@ -329,6 +343,15 @@ app.use(
     "/api/upload",
 
     uploadRoute
+
+);
+
+
+app.use(
+
+    "/api/conversion",
+
+    conversionRoute
 
 );
 
@@ -360,10 +383,6 @@ app.get(
 );
 
 
-/**
- * Share the same Express session with Socket.IO.
- * Socket.IO 4.6+ supports Express middleware through Engine.IO.
- */
 io.engine.use(
 
     sessionMiddleware
@@ -458,6 +477,29 @@ async function startServer(){
     .cleanupOnlineSessions();
 
 
+    await dataRetentionService
+
+    .initialize()
+
+    .catch(
+
+        error=>{
+
+
+            console.error(
+
+                "[Data Retention] Startup initialization failed:",
+
+                error
+
+            );
+
+
+        }
+
+    );
+
+
     server.listen(
 
         config.port,
@@ -467,7 +509,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.1.2 running on port",
+                "Meridian Chat SDK v2.3.2 running on port",
 
                 config.port
 

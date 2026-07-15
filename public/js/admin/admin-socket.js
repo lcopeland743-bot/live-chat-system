@@ -1,44 +1,27 @@
 /**
  * Meridian Admin Socket
  *
- * 多会话消息管理
- *
  * Version:
- * v2.1.2
+ * v2.3.0
  *
  * Features:
- * - Admin State Restore
- * - Session Restore
- * - Online Offline Restore
- * - History Restore Trigger
- * - Conversation Store
- * - Message Isolation
- * - MessageId Complete Support
+ * - Authenticated Admin Socket
+ * - AI Message Sync
+ * - AI Suggestion Sync
+ * - AI Error Sync
  * - Rich Message Sync
  */
 
-
-
 window.MeridianAdminSocket = {
-
 
 
     socket:null,
 
 
-
-
-
-
-
-
-
     async loadAdminState(){
 
 
-
         try{
-
 
 
             const response =
@@ -50,22 +33,15 @@ window.MeridianAdminSocket = {
                 {
 
 
-                    credentials:
-
-                    "same-origin",
+                    credentials:"same-origin",
 
 
-                    cache:
-
-                    "no-store"
+                    cache:"no-store"
 
 
                 }
 
             );
-
-
-
 
 
             if(
@@ -96,23 +72,13 @@ window.MeridianAdminSocket = {
             await response.json();
 
 
+            if(!result.success){
 
-
-
-            if(
-
-                !result.success
-
-            ){
 
                 return;
 
+
             }
-
-
-
-
-
 
 
             result.sessions.forEach(
@@ -132,47 +98,38 @@ window.MeridianAdminSocket = {
             );
 
 
-
-
-
-
-
             MeridianAdminState.onlineUsers =
 
-            result.onlineUsers || [];
+            result.onlineUsers
 
+            ||
 
-
-
-
+            [];
 
 
             MeridianAdminState.offlineUsers =
 
-            result.offlineUsers || [];
+            result.offlineUsers
 
+            ||
 
-
-
-
+            [];
 
 
             MeridianAdminUI.renderSessions();
 
+
             if(
-    MeridianAdminUI.renderOnlineUsers
-){
 
-    MeridianAdminUI.renderOnlineUsers();
+                MeridianAdminUI.renderOnlineUsers
 
-}
+            ){
 
 
+                MeridianAdminUI.renderOnlineUsers();
 
 
-
-
-
+            }
 
 
             setTimeout(
@@ -186,22 +143,18 @@ window.MeridianAdminSocket = {
 
                     ){
 
+
                         MeridianAdminUI.restoreCurrentSession();
+
 
                     }
 
 
                 },
 
-
                 300
 
             );
-
-
-
-
-
 
 
             console.log(
@@ -213,11 +166,9 @@ window.MeridianAdminSocket = {
             );
 
 
-
         }
 
         catch(error){
-
 
 
             console.error(
@@ -229,23 +180,160 @@ window.MeridianAdminSocket = {
             );
 
 
-
         }
-
 
 
     },
 
 
+    normalizeSender(data){
 
 
+        if(
+
+            data.sender === "ai"
+
+        ){
 
 
+            return "ai";
 
+
+        }
+
+
+        if(
+
+            data.sender === "admin"
+
+        ){
+
+
+            return "admin";
+
+
+        }
+
+
+        return "user";
+
+
+    },
+
+
+    addIncomingMessage(data){
+
+
+        if(!data.userId){
+
+
+            return;
+
+
+        }
+
+
+        MeridianConversationStore.addMessage(
+
+            data.userId,
+
+            {
+
+
+                messageId:
+
+                data.messageId,
+
+
+                message:
+
+                data.content
+
+                ||
+
+                data.message
+
+                ||
+
+                "",
+
+
+                content:
+
+                data.content
+
+                ||
+
+                data.message
+
+                ||
+
+                "",
+
+
+                messageType:
+
+                data.type
+
+                ||
+
+                "text",
+
+
+                metadata:
+
+                data.metadata
+
+                ||
+
+                {},
+
+
+                sender:
+
+                this.normalizeSender(data),
+
+
+                time:
+
+                data.time
+
+
+            }
+
+        );
+
+
+        const current =
+
+        MeridianAdminState
+
+        .getCurrentConversationId();
+
+
+        if(
+
+            current === data.userId
+
+        ){
+
+
+            MeridianAdminUI
+
+            .renderConversation(
+
+                data.userId
+
+            );
+
+
+        }
+
+
+    },
 
 
     init(){
-
 
 
         this.socket =
@@ -256,9 +344,7 @@ window.MeridianAdminSocket = {
             auth:{
 
 
-                clientType:
-
-                "admin"
+                clientType:"admin"
 
 
             },
@@ -270,21 +356,9 @@ window.MeridianAdminSocket = {
         });
 
 
-
-
-
-
-
         const EVENTS =
 
         window.MERIDIAN_EVENTS;
-
-
-
-
-
-
-
 
 
         this.socket.on(
@@ -308,9 +382,6 @@ window.MeridianAdminSocket = {
             }
 
         );
-
-
-
 
 
         this.socket.on(
@@ -362,11 +433,6 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
-
-
-
         this.socket.on(
 
             "connect",
@@ -381,9 +447,7 @@ window.MeridianAdminSocket = {
                 );
 
 
-
                 this.loadAdminState();
-
 
 
             }
@@ -391,146 +455,18 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
-
-
-
-
-
-        /**
-         * 用户消息
-         *
-         * Rich Message Sync
-         */
         this.socket.on(
 
             EVENTS.ADMIN_USER_MESSAGE,
 
-            (data)=>{
+            data=>{
 
 
+                this.addIncomingMessage(
 
-                MeridianConversationStore.addMessage(
-
-                    data.userId,
-
-                    {
-
-
-
-                        messageId:
-
-                        data.messageId,
-
-
-
-                        message:
-
-                        data.content
-
-                        ||
-
-                        data.message
-
-                        ||
-
-                        "",
-
-
-
-                        content:
-
-                        data.content
-
-                        ||
-
-                        data.message
-
-                        ||
-
-                        "",
-
-
-
-                        messageType:
-
-                        data.type
-
-                        ||
-
-                        "text",
-
-
-
-                        metadata:
-
-                        data.metadata
-
-                        ||
-
-                        {},
-
-
-
-                        sender:
-
-                        data.sender === "admin"
-
-                        ?
-
-                        "admin"
-
-                        :
-
-                        "user",
-
-
-
-                        time:
-
-                        data.time
-
-
-
-                    }
+                    data
 
                 );
-
-
-
-
-
-
-
-                const current =
-
-                MeridianAdminState
-
-                .getCurrentConversationId();
-
-
-
-
-
-
-
-                if(
-
-                    current === data.userId
-
-                ){
-
-
-                    MeridianAdminUI.renderConversation(
-
-                        data.userId
-
-                    );
-
-
-                }
-
 
 
             }
@@ -538,154 +474,18 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
-
-
-
-
-
-        /**
-         * 客服回复消息
-         *
-         * Rich Message Sync
-         */
         this.socket.on(
 
             EVENTS.ADMIN_REPLY,
 
-            (data)=>{
+            data=>{
 
 
+                this.addIncomingMessage(
 
-                if(
-
-                    !data.userId
-
-                ){
-
-                    return;
-
-                }
-
-
-
-
-
-
-
-                MeridianConversationStore.addMessage(
-
-                    data.userId,
-
-                    {
-
-
-
-                        messageId:
-
-                        data.messageId,
-
-
-
-                        message:
-
-                        data.content
-
-                        ||
-
-                        data.message
-
-                        ||
-
-                        "",
-
-
-
-                        content:
-
-                        data.content
-
-                        ||
-
-                        data.message
-
-                        ||
-
-                        "",
-
-
-
-                        messageType:
-
-                        data.type
-
-                        ||
-
-                        "text",
-
-
-
-                        metadata:
-
-                        data.metadata
-
-                        ||
-
-                        {},
-
-
-
-                        sender:
-
-                        "admin",
-
-
-
-                        time:
-
-                        data.time
-
-
-
-                    }
+                    data
 
                 );
-
-
-
-
-
-
-
-                const current =
-
-                MeridianAdminState
-
-                .getCurrentConversationId();
-
-
-
-
-
-
-
-                if(
-
-                    current === data.userId
-
-                ){
-
-
-                    MeridianAdminUI.renderConversation(
-
-                        data.userId
-
-                    );
-
-
-                }
-
 
 
             }
@@ -693,46 +493,77 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
-
-
-
-
-
-        /**
-         * 在线状态更新
-         */
         this.socket.on(
 
-            EVENTS.ADMIN_PRESENCE_UPDATE,
+            "admin_ai_suggestion",
 
-            (data)=>{
+            data=>{
 
 
+                if(window.MeridianAdminAI){
 
-                if(
 
-                    !data.user
+                    window.MeridianAdminAI
 
-                ){
+                    .receiveSuggestion(
 
-                    return;
+                        data
+
+                    );
+
 
                 }
 
 
+            }
+
+        );
 
 
+        this.socket.on(
+
+            "admin_ai_error",
+
+            data=>{
 
 
+                if(window.MeridianAdminAI){
 
-                if(
 
-                    data.type==="online"
+                    window.MeridianAdminAI
 
-                ){
+                    .receiveError(
 
+                        data
+
+                    );
+
+
+                }
+
+
+            }
+
+        );
+
+
+        this.socket.on(
+
+            EVENTS.ADMIN_PRESENCE_UPDATE,
+
+            data=>{
+
+
+                if(!data.user){
+
+
+                    return;
+
+
+                }
+
+
+                if(data.type === "online"){
 
 
                     MeridianAdminState.addOnlineUser(
@@ -745,18 +576,7 @@ window.MeridianAdminSocket = {
                 }
 
 
-
-
-
-
-
-
-                if(
-
-                    data.type==="offline"
-
-                ){
-
+                if(data.type === "offline"){
 
 
                     MeridianAdminState.addOfflineUser(
@@ -769,19 +589,17 @@ window.MeridianAdminSocket = {
                 }
 
 
-
-
-
-
-
                 if(
-    MeridianAdminUI.renderOnlineUsers
-){
 
-    MeridianAdminUI.renderOnlineUsers();
+                    MeridianAdminUI.renderOnlineUsers
 
-}
+                ){
 
+
+                    MeridianAdminUI.renderOnlineUsers();
+
+
+                }
 
 
             }
@@ -789,38 +607,20 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
-
-
-
-
-
-        /**
-         * Session更新
-         */
         this.socket.on(
 
             "admin_session_update",
 
-            (data)=>{
+            data=>{
 
 
+                if(!data.session){
 
-                if(
-
-                    !data.session
-
-                ){
 
                     return;
 
+
                 }
-
-
-
-
-
 
 
                 MeridianAdminState.updateSession(
@@ -830,13 +630,37 @@ window.MeridianAdminSocket = {
                 );
 
 
-
-
-
-
-
                 MeridianAdminUI.renderSessions();
 
+
+                const current =
+
+                MeridianAdminState
+
+                .getCurrentConversationId();
+
+
+                if(
+
+                    current === data.session.userId
+
+                    &&
+
+                    window.MeridianAdminAI
+
+                ){
+
+
+                    window.MeridianAdminAI
+
+                    .renderSession(
+
+                        data.session
+
+                    );
+
+
+                }
 
 
             }
@@ -844,38 +668,17 @@ window.MeridianAdminSocket = {
         );
 
 
-
-
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * 发送客服消息
-     *
-     * Rich Message Compatible v2.1.0
-     *
-     * 支持：
-     * text
-     * image
-     * file
-     * link
-     * link-card
-     */
     sendReply(message){
 
 
         const user =
 
-        MeridianAdminState.getCurrentUser();
+        MeridianAdminState
 
-
+        .getCurrentUser();
 
 
         if(
@@ -888,21 +691,50 @@ window.MeridianAdminSocket = {
 
         ){
 
+
             console.log(
 
                 "No selected conversation"
 
             );
 
+
             return;
+
 
         }
 
 
+        let outgoingMessage =
+
+        message;
 
 
-        let outgoingMessage = message;
+        if(
 
+            window.MeridianAdminAI
+
+            &&
+
+            typeof window.MeridianAdminAI
+
+            .decorateOutgoingMessage === "function"
+
+        ){
+
+
+            outgoingMessage =
+
+            window.MeridianAdminAI
+
+            .decorateOutgoingMessage(
+
+                outgoingMessage
+
+            );
+
+
+        }
 
 
         if(
@@ -912,6 +744,7 @@ window.MeridianAdminSocket = {
             &&
 
             typeof window.MeridianAdminLinkCard
+
             .normalizeOutgoingMessage === "function"
 
         ){
@@ -920,6 +753,7 @@ window.MeridianAdminSocket = {
             outgoingMessage =
 
             window.MeridianAdminLinkCard
+
             .normalizeOutgoingMessage(
 
                 outgoingMessage
@@ -930,15 +764,19 @@ window.MeridianAdminSocket = {
         }
 
 
-
-
         const messageId =
 
-        "msg_" +
+        "msg_"
 
-        Date.now() +
+        +
 
-        "_" +
+        Date.now()
+
+        +
+
+        "_"
+
+        +
 
         Math.random()
 
@@ -947,16 +785,24 @@ window.MeridianAdminSocket = {
         .substring(2,8);
 
 
+        let type =
+
+        "text";
 
 
-        let type = "text";
+        let content =
 
-        let content = outgoingMessage;
+        outgoingMessage;
 
-        let text = outgoingMessage;
 
-        let metadata = {};
+        let text =
 
+        outgoingMessage;
+
+
+        let metadata =
+
+        {};
 
 
         if(
@@ -1017,15 +863,13 @@ window.MeridianAdminSocket = {
         }
 
 
-
-
         if(!content){
+
 
             return;
 
+
         }
-
-
 
 
         if(
@@ -1104,8 +948,26 @@ window.MeridianAdminSocket = {
         );
 
 
-    }
+        if(
 
+            metadata.source === "openai-assist"
+
+            &&
+
+            window.MeridianAdminAI
+
+        ){
+
+
+            window.MeridianAdminAI
+
+            .markSuggestionUsed();
+
+
+        }
+
+
+    }
 
 
 };

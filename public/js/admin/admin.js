@@ -2,14 +2,7 @@
  * Meridian Admin Bootstrap
  *
  * Version:
- * v2.1.2
- *
- * Features:
- * - Authentication Check
- * - State Restore
- * - UI Init
- * - Socket Init
- * - Send Binding
+ * v2.2.0
  */
 
 (function(){
@@ -58,6 +51,19 @@
 
 
         window.MeridianAdminUI.init();
+
+
+        if(
+
+            window.MeridianAdminAI
+
+        ){
+
+
+            window.MeridianAdminAI.init();
+
+
+        }
 
 
         window.MeridianAdminSocket.init();
@@ -118,7 +124,7 @@
 
         console.log(
 
-            "Meridian Admin initialized"
+            "Meridian Admin v2.2.0 initialized"
 
         );
 

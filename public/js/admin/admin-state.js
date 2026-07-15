@@ -1,35 +1,32 @@
 /**
  * Meridian Admin State
  *
- * 后台会话状态管理
- *
  * Version:
- * v2.0.0
+ * v2.2.0
  *
  * Features:
  * - Unified Conversation List
- * - Session Management
  * - Current Conversation Restore
- * - Multi Agent Foundation
- * - Unread System Foundation
+ * - AI Mode State
+ * - Human Takeover State
  */
-
-
 
 window.MeridianAdminState = {
 
 
+    sessions:[],
 
-    sessions: [],
 
+    onlineUsers:[],
+
+
+    offlineUsers:[],
 
 
     currentUser:null,
 
 
-
     currentConversationId:null,
-
 
 
     storageKey:
@@ -37,13 +34,7 @@ window.MeridianAdminState = {
     "meridian_current_session",
 
 
-
-
-
-
-
     init(){
-
 
 
         const saved =
@@ -55,25 +46,16 @@ window.MeridianAdminState = {
         );
 
 
-
-
-
-
-
         if(!saved){
 
+
             return;
+
 
         }
 
 
-
-
-
-
-
         try{
-
 
 
             const data =
@@ -81,19 +63,9 @@ window.MeridianAdminState = {
             JSON.parse(saved);
 
 
-
-
-
-
-
             this.currentConversationId =
 
             data.userId;
-
-
-
-
-
 
 
             this.currentUser = {
@@ -107,11 +79,9 @@ window.MeridianAdminState = {
             };
 
 
-
         }
 
         catch(error){
-
 
 
             console.error(
@@ -122,22 +92,14 @@ window.MeridianAdminState = {
 
             );
 
-        }
 
+        }
 
 
     },
 
 
-
-
-
-
-
-
-
     saveCurrentSession(){
-
 
 
         if(
@@ -150,14 +112,11 @@ window.MeridianAdminState = {
 
         ){
 
+
             return;
 
+
         }
-
-
-
-
-
 
 
         localStorage.setItem(
@@ -172,48 +131,75 @@ window.MeridianAdminState = {
                 this.currentUser.userId
 
 
-
             })
 
         );
 
 
+    },
+
+
+    createCurrentUser(session){
+
+
+        return {
+
+
+            userId:
+
+            session.userId,
+
+
+            socketId:
+
+            session.socketId,
+
+
+            status:
+
+            session.status,
+
+
+            assignedAgentId:
+
+            session.assignedAgentId,
+
+
+            aiMode:
+
+            session.aiMode
+
+            ||
+
+            "off",
+
+
+            humanTakeover:
+
+            session.humanTakeover === true
+
+
+        };
+
 
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * 更新Session
-     */
     updateSession(session){
-
 
 
         const exists =
 
         this.sessions.find(
 
-            item =>
+            item=>
 
             item.userId === session.userId
 
         );
 
 
-
-
-
-
-
         if(exists){
-
 
 
             Object.assign(
@@ -230,7 +216,6 @@ window.MeridianAdminState = {
         else{
 
 
-
             this.sessions.push(
 
                 session
@@ -241,18 +226,34 @@ window.MeridianAdminState = {
         }
 
 
-
-
-
-
-
         this.sortSessions();
 
 
+        if(
+
+            this.currentConversationId
+
+            ===
+
+            session.userId
+
+        ){
 
 
+            this.currentUser =
+
+            this.createCurrentUser(
+
+                exists
+
+                ||
+
+                session
+
+            );
 
 
+        }
 
 
         if(
@@ -262,40 +263,27 @@ window.MeridianAdminState = {
         ){
 
 
+            MeridianConversationStore
 
-            MeridianConversationStore.updateSession(
+            .updateSession(
 
                 session
 
             );
 
-        }
 
+        }
 
 
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * Session排序
-     *
-     * 最新活动优先
-     */
     sortSessions(){
-
 
 
         this.sessions.sort(
 
             (a,b)=>{
-
 
 
                 const timeA =
@@ -315,11 +303,6 @@ window.MeridianAdminState = {
                 );
 
 
-
-
-
-
-
                 const timeB =
 
                 new Date(
@@ -337,13 +320,7 @@ window.MeridianAdminState = {
                 );
 
 
-
-
-
-
-
-                return timeB-timeA;
-
+                return timeB - timeA;
 
 
             }
@@ -351,43 +328,182 @@ window.MeridianAdminState = {
         );
 
 
+    },
+
+
+    addOnlineUser(user){
+
+
+        if(
+
+            !user
+
+            ||
+
+            !user.userId
+
+        ){
+
+
+            return;
+
+
+        }
+
+
+        this.offlineUsers =
+
+        this.offlineUsers.filter(
+
+            item=>
+
+            item.userId !== user.userId
+
+        );
+
+
+        const exists =
+
+        this.onlineUsers.find(
+
+            item=>
+
+            item.userId === user.userId
+
+        );
+
+
+        if(exists){
+
+
+            Object.assign(
+
+                exists,
+
+                user
+
+            );
+
+
+        }
+
+        else{
+
+
+            this.onlineUsers.push(
+
+                user
+
+            );
+
+
+        }
+
 
     },
 
 
+    addOfflineUser(user){
 
 
+        if(
+
+            !user
+
+            ||
+
+            !user.userId
+
+        ){
 
 
+            return;
 
 
+        }
 
-    /**
-     * 获取全部会话
-     */
+
+        this.onlineUsers =
+
+        this.onlineUsers.filter(
+
+            item=>
+
+            item.userId !== user.userId
+
+        );
+
+
+        const exists =
+
+        this.offlineUsers.find(
+
+            item=>
+
+            item.userId === user.userId
+
+        );
+
+
+        if(exists){
+
+
+            Object.assign(
+
+                exists,
+
+                user
+
+            );
+
+
+        }
+
+        else{
+
+
+            this.offlineUsers.push(
+
+                user
+
+            );
+
+
+        }
+
+
+    },
+
+
     getSessions(){
-
 
 
         return this.sessions;
 
 
+    },
+
+
+    getSessionByUserId(userId){
+
+
+        return this.sessions.find(
+
+            item=>
+
+            item.userId === userId
+
+        )
+
+        ||
+
+        null;
+
 
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * 恢复当前Session
-     */
     restoreSessionUser(){
-
 
 
         if(
@@ -400,137 +516,56 @@ window.MeridianAdminState = {
 
         ){
 
+
             return null;
+
 
         }
 
 
-
-
-
-
-
         const session =
 
-        this.sessions.find(
-
-            item =>
-
-            item.userId ===
+        this.getSessionByUserId(
 
             this.currentUser.userId
 
         );
 
 
-
-
-
-
-
         if(!session){
-
 
 
             return null;
 
+
         }
 
 
+        this.currentUser =
 
+        this.createCurrentUser(
 
+            session
 
-
-
-        this.currentUser = {
-
-
-            userId:
-
-            session.userId,
-
-
-
-            socketId:
-
-            session.socketId,
-
-
-
-            status:
-
-            session.status,
-
-
-
-            assignedAgentId:
-
-            session.assignedAgentId
-
-
-
-        };
-
-
-
-
-
+        );
 
 
         return session;
 
 
-
     },
 
 
-
-
-
-
-
-
-
-    /**
-     * 选择会话
-     */
     selectSession(session){
 
 
+        this.currentUser =
 
-        this.currentUser = {
+        this.createCurrentUser(
 
+            session
 
-            userId:
-
-            session.userId,
-
-
-
-            socketId:
-
-            session.socketId,
-
-
-
-            status:
-
-            session.status,
-
-
-
-            assignedAgentId:
-
-            session.assignedAgentId
-
-
-
-        };
-
-
-
-
-
+        );
 
 
         this.currentConversationId =
@@ -538,18 +573,7 @@ window.MeridianAdminState = {
         session.userId;
 
 
-
-
-
-
-
         this.saveCurrentSession();
-
-
-
-
-
-
 
 
         if(
@@ -559,59 +583,56 @@ window.MeridianAdminState = {
         ){
 
 
+            MeridianConversationStore
 
-            MeridianConversationStore.createConversation(
+            .createConversation(
 
                 session
 
             );
 
 
+        }
+
+
+        if(
+
+            window.MeridianAdminAI
+
+        ){
+
+
+            window.MeridianAdminAI
+
+            .renderSession(
+
+                session
+
+            );
+
 
         }
 
 
-
     },
-
-
-
-
-
-
-
 
 
     getCurrentUser(){
 
 
-
         return this.currentUser;
-
 
 
     },
 
 
-
-
-
-
-
-
-
     getCurrentConversationId(){
-
 
 
         return this.currentConversationId;
 
 
-
     }
-
-
-
 
 
 };

@@ -4,48 +4,25 @@
  * MongoDB Message Manager
  *
  * Version:
- * v2.1.0
+ * v2.2.0
  *
  * Features:
  * - Save Message
  * - Duplicate Check
  * - Query History
+ * - Recent AI Context
  * - Rich Message Support
  * - Investor Choice Lookup
  */
-
-
 
 const Message =
 require("../database/models/message-model");
 
 
-
-
-
-
-
-
-
-/**
- * 临时消息去重缓存
- *
- * 后续可迁移 Redis
- */
 const recentMessages =
 new Set();
 
 
-
-
-
-
-
-
-
-/**
- * 支持的消息类型
- */
 const allowedTypes = [
 
 
@@ -67,22 +44,11 @@ const allowedTypes = [
 ];
 
 
-
-
-
-
-
-
-
-/**
- * 判断重复消息
- */
 function isDuplicate(
 
     messageId
 
 ){
-
 
 
     if(
@@ -95,14 +61,11 @@ function isDuplicate(
 
     ){
 
+
         return true;
 
+
     }
-
-
-
-
-
 
 
     recentMessages.add(
@@ -112,14 +75,8 @@ function isDuplicate(
     );
 
 
+    const timer =
 
-
-
-
-
-    /**
-     * 5分钟释放
-     */
     setTimeout(
 
         ()=>{
@@ -134,16 +91,12 @@ function isDuplicate(
 
         },
 
-
         5 * 60 * 1000
-
 
     );
 
 
-
-
-
+    timer.unref();
 
 
     return false;
@@ -152,82 +105,34 @@ function isDuplicate(
 }
 
 
+function normalizeType(type){
 
 
+    return allowedTypes.includes(type)
 
-
-
-
-
-/**
- * 消息类型处理
- */
-function normalizeType(
+    ?
 
     type
 
-){
+    :
 
-
-
-    if(
-
-        allowedTypes.includes(type)
-
-    ){
-
-        return type;
-
-    }
-
-
-
-
-
-
-
-    return "text";
+    "text";
 
 
 }
 
 
-
-
-
-
-
-
-
-/**
- * 保存消息
- */
 async function saveMessage(data){
 
 
-
-    const message =
-
-    await Message.create({
+    return await Message.create({
 
 
-
-        /**
-         * 消息ID
-         */
         messageId:
 
         data.messageId,
 
 
-
-
-
-
-
-        /**
-         * 会话ID
-         */
         sessionId:
 
         data.sessionId
@@ -237,27 +142,11 @@ async function saveMessage(data){
         data.userId,
 
 
-
-
-
-
-
-        /**
-         * 用户ID
-         */
         userId:
 
         data.userId,
 
 
-
-
-
-
-
-        /**
-         * Socket
-         */
         socketId:
 
         data.socketId
@@ -267,14 +156,6 @@ async function saveMessage(data){
         null,
 
 
-
-
-
-
-
-        /**
-         * 发送者
-         */
         sender:
 
         data.sender
@@ -284,14 +165,6 @@ async function saveMessage(data){
         "user",
 
 
-
-
-
-
-
-        /**
-         * 消息类型
-         */
         type:
 
         normalizeType(
@@ -305,29 +178,6 @@ async function saveMessage(data){
         ),
 
 
-
-
-
-
-
-        /**
-         * 消息内容
-         *
-         * text:
-         * 文字
-         *
-         * image:
-         * 图片URL
-         *
-         * link:
-         * 链接URL
-         *
-         * file:
-         * 文件URL
-         *
-         * link-card:
-         * 链接URL，卡片信息存储在 metadata
-         */
         content:
 
         data.content
@@ -341,14 +191,6 @@ async function saveMessage(data){
         "",
 
 
-
-
-
-
-
-        /**
-         * 扩展数据
-         */
         metadata:
 
         data.metadata
@@ -358,14 +200,6 @@ async function saveMessage(data){
         {},
 
 
-
-
-
-
-
-        /**
-         * 消息状态
-         */
         messageStatus:
 
         data.messageStatus
@@ -373,11 +207,6 @@ async function saveMessage(data){
         ||
 
         "sent",
-
-
-
-
-
 
 
         createdAt:
@@ -389,50 +218,30 @@ async function saveMessage(data){
         new Date()
 
 
-
     });
-
-
-
-
-
-
-
-    return message;
 
 
 }
 
 
-
-
-
-
-
-
-
-/**
- * 查询用户聊天记录
- */
-async function getMessages(
-
-    userId
-
-){
-
+async function getMessages(userId){
 
 
     return await Message.find({
 
 
-        userId:userId
+        userId:
+
+        userId
 
 
     })
 
     .sort({
 
+
         createdAt:1
+
 
     });
 
@@ -440,60 +249,109 @@ async function getMessages(
 }
 
 
-
-
-
-
-
-
-
-/**
- * 根据Session查询
- */
-async function getSessionMessages(
-
-    sessionId
-
-){
-
+async function getSessionMessages(sessionId){
 
 
     return await Message.find({
 
 
-        sessionId:sessionId
+        sessionId:
+
+        sessionId
 
 
     })
 
     .sort({
 
+
         createdAt:1
 
-    });
 
+    });
 
 
 }
 
 
+async function getRecentMessages(
 
+    userId,
 
-
-
-
-
-
-
-
-/**
- * 检查用户是否已经选择过投资者类型
- */
-async function hasInvestorProfileChoice(
-
-    userId
+    limit=20
 
 ){
+
+
+    const safeLimit =
+
+    Math.min(
+
+        Math.max(
+
+            Number(limit)
+
+            ||
+
+            20,
+
+            2
+
+        ),
+
+        50
+
+    );
+
+
+    const messages =
+
+    await Message.find({
+
+
+        userId:
+
+        userId,
+
+
+        type:"text",
+
+
+        content:{
+
+
+            $ne:""
+
+
+        }
+
+
+    })
+
+    .sort({
+
+
+        createdAt:-1
+
+
+    })
+
+    .limit(
+
+        safeLimit
+
+    )
+
+    .lean();
+
+
+    return messages.reverse();
+
+
+}
+
+
+async function hasInvestorProfileChoice(userId){
 
 
     const result =
@@ -519,13 +377,10 @@ async function hasInvestorProfileChoice(
     });
 
 
-
     return Boolean(result);
 
 
 }
-
-
 
 
 module.exports = {
@@ -541,6 +396,9 @@ module.exports = {
 
 
     getSessionMessages,
+
+
+    getRecentMessages,
 
 
     hasInvestorProfileChoice

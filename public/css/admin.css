@@ -578,3 +578,158 @@ body{
 .admin-logout-button:hover {
     background: #f8fafc;
 }
+
+/*
+ Meridian AI Customer Service v2.2.0
+*/
+
+.admin-ai-panel {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #dbe5f1;
+    border-radius: 9px;
+    background: #ffffff;
+}
+
+.admin-ai-panel.not-configured {
+    opacity: 0.72;
+}
+
+.admin-ai-panel.busy {
+    cursor: wait;
+}
+
+.admin-ai-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.admin-ai-heading > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-ai-connection-status,
+.admin-ai-session-status {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.admin-ai-mode-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.admin-ai-mode-buttons button {
+    min-width: 76px;
+    height: 32px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-ai-mode-buttons button.active {
+    border-color: #1677ff;
+    background: #eaf3ff;
+    color: #0958d9;
+}
+
+.admin-ai-mode-buttons button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.admin-ai-suggestion-area {
+    margin-top: 10px;
+}
+
+.admin-ai-suggestion-area textarea {
+    width: 100%;
+    min-height: 82px;
+    resize: vertical;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-family: inherit;
+    line-height: 1.45;
+}
+
+.admin-ai-suggestion-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.admin-ai-suggestion-actions button {
+    min-width: 110px;
+    height: 32px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.admin-ai-suggestion-actions button:last-child {
+    border-color: #1677ff;
+    background: #1677ff;
+    color: #ffffff;
+}
+
+.admin-ai-message {
+    min-height: 17px;
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.message.ai {
+    background: #f1ecff;
+    border: 1px solid #ddd1ff;
+}
+
+.message-ai-label {
+    margin-bottom: 5px;
+    color: #6d4aff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.session-ai-badge {
+    display: inline-flex;
+    margin-top: 6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.session-ai-badge.ai-assist {
+    background: #fff7df;
+    color: #9a6700;
+}
+
+.session-ai-badge.ai-auto {
+    background: #e9f8ef;
+    color: #137333;
+}
+
+@media(max-width:768px) {
+    .admin-ai-heading {
+        flex-direction: column;
+    }
+
+    .admin-ai-mode-buttons {
+        flex-wrap: wrap;
+    }
+}

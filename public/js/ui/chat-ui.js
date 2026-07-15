@@ -1396,6 +1396,15 @@ window.MeridianChatUI = {
     content;
 
 
+    this.renderAiExtras(
+
+      container,
+
+      metadata
+
+    );
+
+
 
   },
 
@@ -1403,6 +1412,279 @@ window.MeridianChatUI = {
 
 
 
+
+
+
+
+  ensureAiResponseStyles(){
+
+
+    if(
+
+      document.getElementById(
+
+        "meridianAiResponseStyles"
+
+      )
+
+    ){
+
+
+      return;
+
+
+    }
+
+
+    const style =
+
+    document.createElement("style");
+
+
+    style.id =
+
+    "meridianAiResponseStyles";
+
+
+    style.textContent = `
+
+      .meridian-ai-extras{
+        margin-top:9px;
+        padding-top:8px;
+        border-top:1px solid rgba(15,23,42,.12);
+      }
+
+      .meridian-ai-sources{
+        display:flex;
+        align-items:center;
+        flex-wrap:wrap;
+        gap:5px;
+        margin-bottom:8px;
+        font-size:11px;
+      }
+
+      .meridian-ai-sources-label{
+        color:#64748b;
+        font-weight:700;
+      }
+
+      .meridian-ai-source-link{
+        display:inline-flex;
+        align-items:center;
+        justify-content:flex-start;
+        min-height:22px;
+        max-width:100%;
+        padding:3px 7px;
+        border-radius:999px;
+        background:#eef4ff;
+        color:#1358bf !important;
+        text-decoration:none !important;
+        font-weight:700;
+        line-height:1.25;
+        overflow-wrap:anywhere;
+      }
+
+      .meridian-ai-source-link:hover{
+        text-decoration:underline !important;
+      }
+
+      .meridian-ai-search-time{
+        margin:0 0 8px;
+        color:#64748b;
+        font-size:10px;
+        line-height:1.3;
+      }
+
+      .meridian-ai-whatsapp-intro{
+        margin-bottom:6px;
+        color:#334155;
+        font-size:12px;
+        line-height:1.35;
+      }
+
+      .meridian-ai-whatsapp-button{
+        min-height:38px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:8px 12px;
+        border-radius:10px;
+        background:#25d366;
+        color:#ffffff !important;
+        text-decoration:none !important;
+        text-align:center;
+        font-size:13px;
+        font-weight:700;
+        box-shadow:0 5px 14px rgba(37,211,102,.24);
+      }
+
+    `;
+
+
+    document.head.appendChild(
+
+      style
+
+    );
+
+
+  },
+
+
+
+
+
+  renderAiExtras(
+
+    container,
+
+    metadata
+
+  ){
+
+
+    /*
+     * Customer-facing privacy rule:
+     * - Do not display Web Search sources.
+     * - Do not display the Checked/search timestamp.
+     * - Keep sources and searchedAt in message metadata so the
+     *   admin panel, MongoDB and analytics can still use them.
+     */
+
+
+    const whatsapp =
+
+    metadata.whatsapp
+
+    &&
+
+    typeof metadata.whatsapp === "object"
+
+    ?
+
+    metadata.whatsapp
+
+    :
+
+    null;
+
+
+    const whatsappUrl =
+
+    whatsapp
+
+    ?
+
+    this.getSafeUrl(
+
+      whatsapp.url
+
+    )
+
+    :
+
+    "";
+
+
+    if(!whatsappUrl){
+
+
+      return;
+
+
+    }
+
+
+    this.ensureAiResponseStyles();
+
+
+    const extras =
+
+    document.createElement("div");
+
+
+    extras.className =
+
+    "meridian-ai-extras";
+
+
+    if(whatsapp.intro){
+
+
+      const intro =
+
+      document.createElement("div");
+
+
+      intro.className =
+
+      "meridian-ai-whatsapp-intro";
+
+
+      intro.textContent =
+
+      whatsapp.intro;
+
+
+      extras.appendChild(
+
+        intro
+
+      );
+
+
+    }
+
+
+    const button =
+
+    document.createElement("a");
+
+
+    button.className =
+
+    "meridian-ai-whatsapp-button";
+
+
+    button.href =
+
+    whatsappUrl;
+
+
+    button.target =
+
+    "_blank";
+
+
+    button.rel =
+
+    "noopener noreferrer";
+
+
+    button.textContent =
+
+    whatsapp.buttonText
+
+    ||
+
+    "Get full briefing";
+
+
+    extras.appendChild(
+
+      button
+
+    );
+
+
+    container.appendChild(
+
+      extras
+
+    );
+
+
+  },
 
 
 
@@ -1618,6 +1900,136 @@ window.MeridianChatUI = {
 
 
 
+  trackWhatsappClick(metadata){
+
+    if(
+      !metadata
+      ||
+      metadata.platform !== "whatsapp"
+      ||
+      !metadata.trackingId
+    ){
+
+      return;
+
+    }
+
+    const userId =
+
+    window.MeridianConfig
+
+    &&
+
+    window.MeridianConfig.user
+
+    ?
+
+    window.MeridianConfig.user.id
+
+    :
+
+    null;
+
+    if(!userId){
+
+      return;
+
+    }
+
+    const endpoint =
+
+    metadata.trackingUrl
+
+    ||
+
+    "/api/conversion/whatsapp-click";
+
+    const body =
+
+    JSON.stringify({
+
+      userId:userId,
+
+      trackingId:metadata.trackingId
+
+    });
+
+    try{
+
+      if(navigator.sendBeacon){
+
+        const blob =
+
+        new Blob(
+
+          [body],
+
+          {
+
+            type:"application/json"
+
+          }
+
+        );
+
+        navigator.sendBeacon(
+
+          endpoint,
+
+          blob
+
+        );
+
+        return;
+
+      }
+
+    }
+
+    catch(error){
+
+      console.warn(
+
+        "WhatsApp click beacon failed",
+
+        error
+
+      );
+
+    }
+
+    fetch(
+
+      endpoint,
+
+      {
+
+        method:"POST",
+
+        headers:{
+
+          "Content-Type":
+
+          "application/json"
+
+        },
+
+        body:body,
+
+        keepalive:true
+
+      }
+
+    )
+
+    .catch(()=>{});
+
+  },
+
+
+
+
+
   renderLinkCard(
 
     container,
@@ -1763,6 +2175,24 @@ window.MeridianChatUI = {
     ||
 
     "Claim for free";
+
+
+
+    bubble.addEventListener(
+
+      "click",
+
+      ()=>{
+
+        this.trackWhatsappClick(
+
+          metadata
+
+        );
+
+      }
+
+    );
 
 
 
