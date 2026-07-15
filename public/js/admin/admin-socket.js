@@ -4,7 +4,7 @@
  * 多会话消息管理
  *
  * Version:
- * v2.1.1
+ * v2.1.2
  *
  * Features:
  * - Admin State Restore
@@ -45,12 +45,50 @@ window.MeridianAdminSocket = {
 
             await fetch(
 
-                "/api/admin/state"
+                "/api/admin/state",
+
+                {
+
+
+                    credentials:
+
+                    "same-origin",
+
+
+                    cache:
+
+                    "no-store"
+
+
+                }
 
             );
 
 
 
+
+
+            if(
+
+                window.MeridianAdminAuth
+
+                &&
+
+                window.MeridianAdminAuth
+
+                .handleUnauthorizedResponse(
+
+                    response
+
+                )
+
+            ){
+
+
+                return;
+
+
+            }
 
 
             const result =
@@ -212,7 +250,24 @@ window.MeridianAdminSocket = {
 
         this.socket =
 
-        io();
+        io({
+
+
+            auth:{
+
+
+                clientType:
+
+                "admin"
+
+
+            },
+
+
+            withCredentials:true
+
+
+        });
 
 
 
@@ -225,6 +280,86 @@ window.MeridianAdminSocket = {
         window.MERIDIAN_EVENTS;
 
 
+
+
+
+
+
+
+
+        this.socket.on(
+
+            "admin_auth_expired",
+
+            ()=>{
+
+
+                if(window.MeridianAdminAuth){
+
+
+                    window.MeridianAdminAuth
+
+                    .redirectToLogin();
+
+
+                }
+
+
+            }
+
+        );
+
+
+
+
+
+        this.socket.on(
+
+            "connect_error",
+
+            error=>{
+
+
+                if(
+
+                    error
+
+                    &&
+
+                    error.message === "ADMIN_AUTH_REQUIRED"
+
+                ){
+
+
+                    if(window.MeridianAdminAuth){
+
+
+                        window.MeridianAdminAuth
+
+                        .redirectToLogin();
+
+
+                    }
+
+
+                    return;
+
+
+                }
+
+
+                console.error(
+
+                    "Admin socket connection failed:",
+
+                    error
+
+                );
+
+
+            }
+
+        );
 
 
 
@@ -891,6 +1026,30 @@ window.MeridianAdminSocket = {
         }
 
 
+
+
+        if(
+
+            !this.socket
+
+            ||
+
+            !this.socket.connected
+
+        ){
+
+
+            console.error(
+
+                "Admin socket is not connected"
+
+            );
+
+
+            return;
+
+
+        }
 
 
         this.socket.emit(

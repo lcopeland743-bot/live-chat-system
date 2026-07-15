@@ -4,7 +4,7 @@
  * Admin History Message API
  *
  * Version:
- * v1.2.1
+ * v2.1.2
  */
 
 
@@ -18,12 +18,33 @@ const router =
 express.Router();
 
 
+const {
+    requireAdminApi
+}
+=
+require("../middleware/admin-auth-middleware");
+
+
+
+
 
 
 const messageService =
 require("../services/message-service");
 
 
+
+
+
+
+
+
+
+router.use(
+
+    requireAdminApi
+
+);
 
 
 

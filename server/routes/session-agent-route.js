@@ -4,7 +4,7 @@
  * Multi Agent Assignment API
  *
  * Version:
- * v2.0.1
+ * v2.1.2
  *
  * Features:
  * - Assign Agent
@@ -21,8 +21,29 @@ const router =
 express.Router();
 
 
+const {
+    requireAdminApi
+}
+=
+require("../middleware/admin-auth-middleware");
+
+
+
+
 const sessionService =
 require("../services/session-service");
+
+
+
+
+
+router.use(
+
+    requireAdminApi
+
+);
+
+
 
 
 

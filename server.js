@@ -2,12 +2,15 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.0.3
+ * v2.1.2
  *
  * Features:
  * - Express
  * - Socket.IO
  * - MongoDB
+ * - Admin Session Authentication
+ * - Protected Admin Pages and APIs
+ * - Authenticated Admin Socket
  * - Unified Presence
  * - Chat
  * - Message History API
@@ -19,6 +22,7 @@
  * - Image Upload
  */
 
+require("dotenv").config();
 
 
 const express =
@@ -33,18 +37,15 @@ const path =
 require("path");
 
 
-const {Server} =
+const {
+    Server
+}
+=
 require("socket.io");
-
-
-
 
 
 const config =
 require("./server/config/server-config");
-
-
-
 
 
 const {
@@ -54,40 +55,59 @@ const {
 require("./server/database/connection");
 
 
+const {
+    createSessionMiddleware,
+    isProduction
+}
+=
+require("./server/config/session-config");
 
+
+const adminAuthService =
+require("./server/services/admin-auth-service");
+
+
+const {
+    requireAdminApi
+}
+=
+require("./server/middleware/admin-auth-middleware");
 
 
 const sessionCleanupService =
 require("./server/services/session-cleanup-service");
 
 
-
-
-
 const registerPresenceHandler =
 require("./server/socket/presence-handler");
-
-
-
 
 
 const registerChatHandler =
 require("./server/socket/chat-handler");
 
 
+const {
+    configureAdminSocketAuth,
+    joinAuthenticatedAdminRoom
+}
+=
+require("./server/middleware/admin-socket-auth");
 
 
+const adminPageRoute =
+require("./server/routes/admin-page-route");
 
+
+const adminAuthRoute =
+require("./server/routes/admin-auth-route");
 
 
 const messageRoute =
 require("./server/routes/message-route");
 
 
-
 const sessionRoute =
 require("./server/routes/session-route");
-
 
 
 const adminStateRoute =
@@ -102,32 +122,38 @@ const sessionAgentRoute =
 require("./server/routes/session-agent-route");
 
 
-
-/**
- * Image Upload Route
- */
 const uploadRoute =
 require("./server/routes/upload-route");
-
-
-
-
-
-
 
 
 const app =
 express();
 
 
+if(isProduction()){
 
+
+    app.set(
+
+        "trust proxy",
+
+        1
+
+    );
+
+
+}
+
+
+app.disable(
+
+    "x-powered-by"
+
+);
 
 
 const server =
 http.createServer(app);
-
-
-
 
 
 const io =
@@ -146,29 +172,60 @@ new Server(
 );
 
 
-
-
-
-
-
+const sessionMiddleware =
+createSessionMiddleware();
 
 
 app.use(
 
-    express.json()
+    express.json({
+
+
+        limit:
+
+        "100kb"
+
+
+    })
 
 );
 
 
+app.use(
 
+    sessionMiddleware
 
-
-
-
+);
 
 
 /**
- * Public Static
+ * Authentication API must be available before protected pages.
+ */
+app.use(
+
+    "/api/admin/auth",
+
+    adminAuthRoute
+
+);
+
+
+/**
+ * Protected /admin and /admin.html routes must be registered
+ * before public static files.
+ */
+app.use(
+
+    "/",
+
+    adminPageRoute
+
+);
+
+
+/**
+ * Public static assets.
+ * public/admin.html is only a redirect placeholder.
  */
 app.use(
 
@@ -180,24 +237,24 @@ app.use(
 
             "public"
 
-        )
+        ),
+
+        {
+
+
+            index:false
+
+
+        }
 
     )
 
 );
 
 
-
-
-
-
-
-
-
 /**
- * Uploaded Files Access
- *
- * /uploads/xxx.png
+ * Uploaded files remain public because both visitors and admins
+ * currently use the same upload endpoint.
  */
 app.use(
 
@@ -220,16 +277,6 @@ app.use(
 );
 
 
-
-
-
-
-
-
-
-/**
- * Message History API
- */
 app.use(
 
     "/api/messages",
@@ -239,35 +286,17 @@ app.use(
 );
 
 
-
-
-
-
-
-
-
-/**
- * Session Restore API
- */
 app.use(
 
     "/api/sessions",
+
+    requireAdminApi,
 
     sessionRoute
 
 );
 
 
-
-
-
-
-
-
-
-/**
- * Admin State Restore API
- */
 app.use(
 
     "/api/admin/state",
@@ -277,16 +306,6 @@ app.use(
 );
 
 
-
-
-
-
-
-
-
-/**
- * Agent Management API
- */
 app.use(
 
     "/api/agents",
@@ -296,16 +315,6 @@ app.use(
 );
 
 
-
-
-
-
-
-
-
-/**
- * Session Agent Assignment API
- */
 app.use(
 
     "/api/session-agent",
@@ -315,16 +324,6 @@ app.use(
 );
 
 
-
-
-
-
-
-
-
-/**
- * Image Upload API
- */
 app.use(
 
     "/api/upload",
@@ -332,13 +331,6 @@ app.use(
     uploadRoute
 
 );
-
-
-
-
-
-
-
 
 
 app.get(
@@ -354,7 +346,9 @@ app.get(
 
                 __dirname,
 
-                "public/index.html"
+                "public",
+
+                "index.html"
 
             )
 
@@ -364,88 +358,74 @@ app.get(
     }
 
 );
-
-
-
-
-
-
-
-
-
-app.get(
-
-    "/admin",
-
-    (req,res)=>{
-
-
-        res.sendFile(
-
-            path.join(
-
-                __dirname,
-
-                "public/admin.html"
-
-            )
-
-        );
-
-
-    }
-
-);
-
-
-
-
-
-
-
 
 
 /**
- * Socket.IO
- *
- * 保持原架构
+ * Share the same Express session with Socket.IO.
+ * Socket.IO 4.6+ supports Express middleware through Engine.IO.
  */
+io.engine.use(
+
+    sessionMiddleware
+
+);
+
+
+configureAdminSocketAuth(
+
+    io
+
+);
+
+
 io.on(
 
     "connection",
 
-    (socket)=>{
+    socket=>{
 
 
-
-        console.log(
-
-            "Socket connected:",
-
-            socket.id
-
-        );
-
-
-
-
-
-
-
-
-        registerPresenceHandler(
-
-            io,
+        joinAuthenticatedAdminRoom(
 
             socket
 
         );
 
 
+        console.log(
+
+            socket.data.isAdmin
+
+            ?
+
+            "Admin socket connected:"
+
+            :
+
+            "User socket connected:",
+
+            socket.id
+
+        );
 
 
+        if(
+
+            socket.data.isAdmin !== true
+
+        ){
 
 
+            registerPresenceHandler(
+
+                io,
+
+                socket
+
+            );
+
+
+        }
 
 
         registerChatHandler(
@@ -457,39 +437,25 @@ io.on(
         );
 
 
-
     }
 
 );
 
 
-
-
-
-
-
-
-
 async function startServer(){
 
+
+    adminAuthService
+
+    .assertConfigured();
 
 
     await connectDatabase();
 
 
-
-
-
-
-
     await sessionCleanupService
 
     .cleanupOnlineSessions();
-
-
-
-
-
 
 
     server.listen(
@@ -501,7 +467,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK running on port",
+                "Meridian Chat SDK v2.1.2 running on port",
 
                 config.port
 
@@ -516,11 +482,25 @@ async function startServer(){
 }
 
 
+startServer()
+
+.catch(
+
+    error=>{
 
 
+        console.error(
+
+            "Server startup failed:",
+
+            error
+
+        );
 
 
+        process.exit(1);
 
 
+    }
 
-startServer();
+);

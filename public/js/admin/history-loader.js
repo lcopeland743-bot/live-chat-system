@@ -4,24 +4,13 @@
  * MongoDB History Message Loader
  *
  * Version:
- * v1.2.1
+ * v2.1.2
  */
-
-
-
-
 
 window.MeridianHistoryLoader = {
 
 
-
-    /**
-     * 加载用户历史消息
-     */
     async load(userId){
-
-
-
 
 
         if(!userId){
@@ -36,31 +25,58 @@ window.MeridianHistoryLoader = {
 
             return [];
 
+
         }
 
 
-
-
-
-
-
-        try {
-
+        try{
 
 
             const response =
 
             await fetch(
 
-                `/api/messages/${userId}`
+                `/api/messages/${encodeURIComponent(userId)}`,
+
+                {
+
+
+                    credentials:
+
+                    "same-origin",
+
+
+                    cache:
+
+                    "no-store"
+
+
+                }
 
             );
 
 
+            if(
+
+                window.MeridianAdminAuth
+
+                &&
+
+                window.MeridianAdminAuth
+
+                .handleUnauthorizedResponse(
+
+                    response
+
+                )
+
+            ){
 
 
+                return [];
 
 
+            }
 
 
             const result =
@@ -68,17 +84,15 @@ window.MeridianHistoryLoader = {
             await response.json();
 
 
-
-
-
-
-
             if(
+
+                !response.ok
+
+                ||
 
                 !result.success
 
             ){
-
 
 
                 console.error(
@@ -92,13 +106,8 @@ window.MeridianHistoryLoader = {
 
                 return [];
 
+
             }
-
-
-
-
-
-
 
 
             const messages =
@@ -110,11 +119,6 @@ window.MeridianHistoryLoader = {
             [];
 
 
-
-
-
-
-
             console.log(
 
                 "History messages loaded:",
@@ -124,22 +128,12 @@ window.MeridianHistoryLoader = {
             );
 
 
-
-
-
-
-
             return messages;
 
 
-
-
-
-
-
         }
-        catch(error){
 
+        catch(error){
 
 
             console.error(
@@ -151,20 +145,13 @@ window.MeridianHistoryLoader = {
             );
 
 
-
             return [];
+
 
         }
 
 
-
-
     }
-
-
-
-
-
 
 
 };

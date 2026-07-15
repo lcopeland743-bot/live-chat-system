@@ -4,7 +4,7 @@
  * 实时状态同步
  *
  * Version:
- * v2.0.0
+ * v2.1.2
  *
  * Features:
  * - Unified Presence
@@ -24,6 +24,13 @@ require("../services/session-service");
 
 const MeridianTime =
 require("../utils/time");
+
+
+const {
+    ADMIN_ROOM
+}
+=
+require("../middleware/admin-socket-auth");
 
 
 
@@ -221,7 +228,13 @@ function registerPresenceHandler(
             /**
              * 通知后台
              */
-            io.emit(
+            io.to(
+
+                ADMIN_ROOM
+
+            )
+
+            .emit(
 
                 "admin_session_update",
 
@@ -397,7 +410,13 @@ function registerPresenceHandler(
 
 
 
-        io.emit(
+        io.to(
+
+            ADMIN_ROOM
+
+        )
+
+        .emit(
 
             "admin_session_update",
 

@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.1.1
+ * v2.1.2
  *
  * Features:
  * - Rich Message Support
@@ -28,6 +28,14 @@ require("../services/session-service");
 
 const briefingAutoReplyService =
 require("../services/briefing-auto-reply-service");
+
+
+const {
+    ADMIN_ROOM,
+    verifyAdminSocketSession
+}
+=
+require("../middleware/admin-socket-auth");
 
 
 const activeChoiceUsers =
@@ -229,7 +237,13 @@ function emitSessionUpdate(
 ){
 
 
-    io.emit(
+    io.to(
+
+        ADMIN_ROOM
+
+    )
+
+    .emit(
 
         "admin_session_update",
 
@@ -263,7 +277,13 @@ function emitAdminConversationMessage(
 ){
 
 
-    io.emit(
+    io.to(
+
+        ADMIN_ROOM
+
+    )
+
+    .emit(
 
         "admin_user_message",
 
@@ -537,6 +557,23 @@ function registerChatHandler(
         "user_message",
 
         async(data)=>{
+
+
+            if(
+
+                socket.data
+
+                &&
+
+                socket.data.isAdmin === true
+
+            ){
+
+
+                return;
+
+
+            }
 
 
             let lockedChoiceUserId =
@@ -823,6 +860,33 @@ function registerChatHandler(
             try{
 
 
+                const adminSessionValid =
+
+                await verifyAdminSocketSession(
+
+                    socket
+
+                );
+
+
+                if(!adminSessionValid){
+
+
+                    console.warn(
+
+                        "[Unauthorized Admin Reply]",
+
+                        socket.id
+
+                    );
+
+
+                    return;
+
+
+                }
+
+
                 if(
 
                     !data.socketId
@@ -988,7 +1052,13 @@ function registerChatHandler(
 
 
 
-                socket.emit(
+                io.to(
+
+                    ADMIN_ROOM
+
+                )
+
+                .emit(
 
                     "admin_reply",
 

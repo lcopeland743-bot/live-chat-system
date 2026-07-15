@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<meta
+name="robots"
+content="noindex,nofollow">
+
+<title>
+Meridian Admin Login
+</title>
+
+<link
+rel="stylesheet"
+href="/css/admin-login.css">
+
+</head>
+
+<body>
+
+<main class="admin-login-page">
+
+    <section
+    class="admin-login-card"
+    aria-labelledby="adminLoginTitle">
+
+        <div class="admin-login-brand">
+
+            <div class="admin-login-logo">
+                M
+            </div>
+
+            <div>
+
+                <p class="admin-login-eyebrow">
+                    Meridian Chat SDK
+                </p>
+
+                <h1 id="adminLoginTitle">
+                    Administrator Sign In
+                </h1>
+
+            </div>
+
+        </div>
+
+        <form
+        id="adminLoginForm"
+        novalidate>
+
+            <label for="adminUsername">
+                Username
+            </label>
+
+            <input
+            id="adminUsername"
+            name="username"
+            type="text"
+            autocomplete="username"
+            maxlength="128"
+            required>
+
+            <label for="adminPassword">
+                Password
+            </label>
+
+            <input
+            id="adminPassword"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            maxlength="256"
+            required>
+
+            <p
+            id="adminLoginStatus"
+            class="admin-login-status"
+            role="alert"
+            aria-live="polite">
+            </p>
+
+            <button
+            id="adminLoginSubmit"
+            type="submit">
+
+                Sign In
+
+            </button>
+
+        </form>
+
+    </section>
+
+</main>
+
+<script src="/js/admin/admin-login.js"></script>
+
+</body>
+
+</html>

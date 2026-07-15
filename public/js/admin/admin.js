@@ -2,92 +2,90 @@
  * Meridian Admin Bootstrap
  *
  * Version:
- * v1.2.2
+ * v2.1.2
  *
  * Features:
+ * - Authentication Check
  * - State Restore
  * - UI Init
  * - Socket Init
  * - Send Binding
  */
 
-
-
 (function(){
 
 
-
-    function initAdmin(){
-
+    async function initAdmin(){
 
 
+        if(
+
+            !window.MeridianAdminAuth
+
+        ){
 
 
-        /**
-         * 初始化后台状态
-         */
+            console.error(
+
+                "MeridianAdminAuth not loaded"
+
+            );
+
+
+            return;
+
+
+        }
+
+
+        const authenticated =
+
+        await window.MeridianAdminAuth
+
+        .requireAuthenticated();
+
+
+        if(!authenticated){
+
+
+            return;
+
+
+        }
+
+
         window.MeridianAdminState.init();
 
 
-
-
-
-
-
-        /**
-         * 初始化后台UI
-         */
         window.MeridianAdminUI.init();
 
 
+        window.MeridianAdminSocket.init();
 
 
+        if(
+
+            window.MeridianAdminUpload
+
+        ){
 
 
+            window.MeridianAdminUpload.init();
 
 
-       /**
- * 初始化后台Socket
- */
-window.MeridianAdminSocket.init();
+        }
 
 
-
-/**
- * 初始化后台上传模块
- */
-if(
-    window.MeridianAdminUpload
-){
-
-    window.MeridianAdminUpload.init();
-
-}
-
-
-
-
-
-
-
-
-        /**
-         * 绑定发送按钮
-         */
         window.MeridianAdminUI.bindSend(
 
             ()=>{
 
 
-
                 const message =
 
-                window.MeridianAdminUI.getInputMessage();
+                window.MeridianAdminUI
 
-
-
-
-
+                .getInputMessage();
 
 
                 if(!message){
@@ -99,39 +97,23 @@ if(
                 }
 
 
+                window.MeridianAdminSocket
 
-
-
-
-
-
-                window.MeridianAdminSocket.sendReply(
+                .sendReply(
 
                     message
 
                 );
 
 
+                window.MeridianAdminUI
 
-
-
-
-
-                window.MeridianAdminUI.clearInput();
-
-
+                .clearInput();
 
 
             }
 
         );
-
-
-
-
-
-
-
 
 
         console.log(
@@ -141,23 +123,14 @@ if(
         );
 
 
-
     }
-
-
-
-
-
-
-
 
 
     if(
 
-        document.readyState==="loading"
+        document.readyState === "loading"
 
     ){
-
 
 
         document.addEventListener(
@@ -169,8 +142,8 @@ if(
         );
 
 
-
     }
+
     else{
 
 
@@ -178,11 +151,6 @@ if(
 
 
     }
-
-
-
-
-
 
 
 })();

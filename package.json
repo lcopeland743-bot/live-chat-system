@@ -1,14 +1,20 @@
 {
   "name": "live-chat-system",
-  "version": "1.0.0",
+  "version": "2.1.2",
+  "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "admin:hash": "node server/scripts/generate-admin-password-hash.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-session": "^1.19.0",
+    "mongodb": "^6.20.0",
     "mongoose": "^8.24.1",
     "multer": "^2.2.0",
     "socket.io": "^4.7.5"

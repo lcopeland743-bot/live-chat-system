@@ -4,7 +4,7 @@
  * Admin Dashboard State Restore API
  *
  * Version:
- * v1.2.4
+ * v2.1.2
  *
  * Data Source:
  * MongoDB Session
@@ -20,6 +20,15 @@ const router =
 express.Router();
 
 
+const {
+    requireAdminApi
+}
+=
+require("../middleware/admin-auth-middleware");
+
+
+
+
 
 
 
@@ -27,6 +36,18 @@ const sessionService =
 require("../services/session-service");
 
 
+
+
+
+
+
+
+
+router.use(
+
+    requireAdminApi
+
+);
 
 
 

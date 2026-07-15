@@ -4,7 +4,7 @@
  * Multi Agent Foundation
  *
  * Version:
- * v2.0.1
+ * v2.1.2
  *
  * Features:
  * - Create Agent
@@ -22,8 +22,29 @@ const router =
 express.Router();
 
 
+const {
+    requireAdminApi
+}
+=
+require("../middleware/admin-auth-middleware");
+
+
+
+
 const agentService =
 require("../services/agent-service");
+
+
+
+
+
+router.use(
+
+    requireAdminApi
+
+);
+
+
 
 
 

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="robots"
+content="noindex,nofollow">
+
+<title>
+Meridian Admin
+</title>
+
+
+<link rel="stylesheet" href="/css/admin.css">
+
+
+</head>
+
+
+<body>
+
+
+<div class="admin-container">
+
+
+    <header class="admin-header">
+
+        <h1>
+            Meridian Admin
+        </h1>
+
+        <div class="admin-header-actions">
+
+            <span
+            id="adminIdentity"
+            class="admin-identity">
+                Administrator
+            </span>
+
+            <button
+            id="adminLogoutBtn"
+            class="admin-logout-button"
+            type="button">
+                Sign Out
+            </button>
+
+        </div>
+
+    </header>
+
+
+
+    <main class="admin-layout">
+
+
+
+        <!-- 左侧访客区域 -->
+
+        <aside class="admin-sidebar">
+
+
+            <section class="admin-panel">
+
+
+                <h2>
+                    访客会话
+                </h2>
+
+
+                <div id="sessions">
+
+                </div>
+
+
+            </section>
+
+
+
+
+            <section class="admin-panel">
+
+
+                <h2>
+                    在线访客
+                </h2>
+
+
+                <div id="onlineUsers">
+
+                </div>
+
+
+            </section>
+
+
+
+
+
+            <section class="admin-panel">
+
+
+                <h2>
+                    离线访客
+                </h2>
+
+
+                <div id="offlineUsers">
+
+                </div>
+
+
+            </section>
+
+
+
+        </aside>
+
+
+
+
+
+        <!-- 右侧聊天区域 -->
+
+
+        <section class="admin-chat">
+
+
+
+            <div 
+            id="adminMessages"
+            class="admin-messages">
+
+            </div>
+
+
+
+
+
+            <div class="admin-input">
+
+
+
+                <!-- 图片上传 -->
+
+                <button
+
+                id="adminImageBtn"
+
+                type="button">
+
+                📷
+
+                </button>
+
+
+
+
+                <!-- WhatsApp 链接卡片 -->
+
+                <button
+
+                id="adminWhatsAppCardBtn"
+
+                type="button"
+
+                title="发送 WhatsApp 链接卡片">
+
+                WA
+
+                </button>
+
+
+
+
+                <!-- 文件上传 -->
+
+                <button
+
+                id="adminFileBtn"
+
+                type="button">
+
+                📎
+
+                </button>
+
+
+
+
+                <input
+
+                id="adminReplyInput"
+
+                type="text"
+
+                placeholder="输入回复内容"
+
+                />
+
+
+
+                <button
+
+                id="adminSendBtn"
+
+                >
+
+                发送
+
+                </button>
+
+
+
+
+                <input
+
+                id="adminImageInput"
+
+                type="file"
+
+                accept="image/*"
+
+                hidden>
+
+
+                <input
+
+                id="adminFileInput"
+
+                type="file"
+
+                hidden>
+
+
+
+            </div>
+
+
+
+        </section>
+
+
+
+
+
+    </main>
+
+
+
+</div>
+
+
+
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+
+<script src="/js/admin/admin-auth.js"></script>
+
+<script src="/js/core/events.js"></script>
+
+<script src="/js/core/logger.js"></script>
+
+<script src="/js/core/time.js"></script>
+
+<script src="/js/core/message-adapter.js"></script>
+
+
+
+<script src="/js/admin/conversation-store.js"></script>
+
+<script src="/js/admin/history-loader.js"></script>
+
+
+<script src="/js/admin/admin-state.js"></script>
+
+
+<script src="/js/admin/admin-ui.js"></script>
+
+
+<!-- 公共上传模块 -->
+
+<script src="/js/upload.js"></script>
+
+
+<!-- 后台上传控制模块 -->
+
+<script src="/js/admin/admin-upload.js"></script>
+
+
+
+<script src="/js/admin/admin-socket.js"></script>
+
+<script src="/js/admin/admin-link-card.js"></script>
+
+
+<script src="/js/admin/admin.js"></script>
+
+
+
+</body>
+
+
+</html>
