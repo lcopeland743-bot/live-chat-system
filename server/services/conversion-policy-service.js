@@ -2,7 +2,7 @@
  * Meridian Conversion Policy Service
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  *
  * The model proposes. This service decides.
  */
@@ -216,6 +216,14 @@ function apply({
     const turn =
         Number(state.eligibleTurnCount || 0) + 1;
 
+    const aiReplyNumber =
+        Number(state.aiReplyCount || 0) + 1;
+
+    const finalAiReply =
+        aiReplyNumber >=
+        conversionConfig
+        .maxAiRepliesPerSession;
+
     const ctaBlocked = Boolean(
         !conversionConfig.whatsapp.enabled
         || state.whatsappClicked
@@ -340,6 +348,7 @@ function apply({
         noQuestion:
             hardSignals.closing
             || exitRisk === "high"
+            || finalAiReply
     });
 
     return {
@@ -352,6 +361,8 @@ function apply({
         exitRisk,
         hardSignals,
         currentTurn: turn,
+        aiReplyNumber,
+        finalAiReply,
         trackingId: null,
         closeConversation: false
     };

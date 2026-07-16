@@ -4,7 +4,7 @@
  * MongoDB Conversation Manager
  *
  * Version:
- * v2.3.2
+ * v2.3.3
  */
 
 const Session =
@@ -13,6 +13,10 @@ require("../database/models/session-model");
 
 const aiConfig =
 require("../config/ai-config");
+
+
+const conversionConfig =
+require("../config/conversion-config");
 
 
 const conversionStateService =
@@ -33,6 +37,12 @@ function buildConversionUpdate(state) {
             normalized.stage,
         "conversionState.eligibleTurnCount":
             normalized.eligibleTurnCount,
+        "conversionState.aiReplyCount":
+            normalized.aiReplyCount,
+        "conversionState.aiReplyLimitReached":
+            normalized.aiReplyLimitReached,
+        "conversionState.aiReplyLimitReachedAt":
+            normalized.aiReplyLimitReachedAt,
         "conversionState.intent":
             normalized.intent,
         "conversionState.asset":
@@ -271,15 +281,62 @@ async function commitConversionStateIfAiActive(
     state,
     expectedMode
 ) {
+    const normalized =
+        conversionStateService
+        .normalize(state);
+
+    if (
+        normalized.aiReplyCount >=
+        conversionConfig
+        .maxAiRepliesPerSession
+    ) {
+        return null;
+    }
+
+    const nextReplyCount =
+        normalized.aiReplyCount + 1;
+
+    const limitReached =
+        nextReplyCount >=
+        conversionConfig
+        .maxAiRepliesPerSession;
+
+    const update =
+        buildConversionUpdate({
+            ...normalized,
+            aiReplyCount:
+                nextReplyCount,
+            aiReplyLimitReached:
+                limitReached,
+            aiReplyLimitReachedAt:
+                limitReached
+                ? new Date()
+                : null
+        });
+
     return await Session.findOneAndUpdate(
         {
             userId,
             aiMode: expectedMode,
-            humanTakeover: false
+            humanTakeover: false,
+            $or: [
+                {
+                    "conversionState.aiReplyCount": {
+                        $lt:
+                            conversionConfig
+                            .maxAiRepliesPerSession
+                    }
+                },
+                {
+                    "conversionState.aiReplyCount": {
+                        $exists: false
+                    }
+                }
+            ]
         },
         {
             $set:
-                buildConversionUpdate(state)
+                update
         },
         {
             new: true

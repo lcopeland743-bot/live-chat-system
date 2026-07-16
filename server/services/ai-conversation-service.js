@@ -2,7 +2,7 @@
  * Meridian AI Conversation Service
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  *
  * Features:
  * - OFF / ASSIST / AUTO
@@ -120,6 +120,40 @@ function isEligiblePayload(payload) {
     }
 
     return true;
+}
+
+
+function hasReachedAiReplyLimit(session) {
+    const state =
+        conversionStateService
+        .normalize(
+            session
+            ? session.conversionState
+            : null
+        );
+
+    return (
+        state.aiReplyLimitReached === true
+        || state.aiReplyCount >=
+            conversionConfig
+            .maxAiRepliesPerSession
+    );
+}
+
+
+function createAiReplyLimitError() {
+    const error =
+        new Error(
+            "This conversation has reached the AI reply limit."
+        );
+
+    error.code =
+        "AI_REPLY_LIMIT_REACHED";
+
+    error.status =
+        409;
+
+    return error;
 }
 
 
@@ -497,6 +531,14 @@ async function generateSuggestion(
                 throw error;
             }
 
+            if (
+                hasReachedAiReplyLimit(
+                    session
+                )
+            ) {
+                throw createAiReplyLimitError();
+            }
+
             const history =
                 await getConversationHistory(
                     userId
@@ -566,6 +608,25 @@ async function processUserMessage({
                 return {
                     action: "none",
                     mode
+                };
+            }
+
+            if (
+                hasReachedAiReplyLimit(
+                    session
+                )
+            ) {
+                return {
+                    action: "none",
+                    mode,
+                    reason:
+                        "ai_reply_limit_reached",
+                    aiReplyCount:
+                        conversionStateService
+                        .normalize(
+                            session.conversionState
+                        )
+                        .aiReplyCount
                 };
             }
 
@@ -744,7 +805,11 @@ function getPublicStatus() {
 
         maxCtaPerSession:
             conversionConfig
-            .maxCtaPerSession
+            .maxCtaPerSession,
+
+        maxAiRepliesPerSession:
+            conversionConfig
+            .maxAiRepliesPerSession
     };
 }
 

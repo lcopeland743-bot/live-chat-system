@@ -2,7 +2,7 @@
  * Meridian Admin AI Controller
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  */
 
 window.MeridianAdminAI = {
@@ -536,17 +536,43 @@ window.MeridianAdminAI = {
         "";
 
 
+        const replyCount =
+
+        Number(
+
+            conversion.aiReplyCount
+
+            ||
+
+            0
+
+        );
+
+
+        const replyLimitLabel =
+
+        conversion.aiReplyLimitReached === true
+
+        ?
+
+        ` · AI limit ${replyCount}/5`
+
+        :
+
+        ` · AI ${replyCount}/5`;
+
+
         this.sessionStatus.textContent =
 
         takeover
 
         ?
 
-        `${mode.toUpperCase()} · Human takeover${conversionLabel}`
+        `${mode.toUpperCase()} · Human takeover${conversionLabel}${replyLimitLabel}`
 
         :
 
-        `${mode.toUpperCase()}${conversionLabel}`;
+        `${mode.toUpperCase()}${conversionLabel}${replyLimitLabel}`;
 
 
         this.suggestionArea.hidden =

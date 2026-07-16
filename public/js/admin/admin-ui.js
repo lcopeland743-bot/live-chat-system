@@ -2,7 +2,7 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  *
  * Features:
  * - Conversation Management
@@ -1853,6 +1853,32 @@ window.MeridianAdminUI = {
                 "";
 
 
+                const replyCount =
+
+                Number(
+
+                    conversion.aiReplyCount
+
+                    ||
+
+                    0
+
+                );
+
+
+                const replyLimit =
+
+                conversion.aiReplyLimitReached === true
+
+                ?
+
+                " · AI LIMIT"
+
+                :
+
+                "";
+
+
                 const conversionFlags =
 
                 conversion.whatsappClicked === true
@@ -1898,8 +1924,9 @@ window.MeridianAdminUI = {
 
                     <span class="session-ai-badge">
                         ${conversionStage}${conversionAsset}
+                        · AI ${replyCount}/5
                         · CTA ${conversion.ctaShownCount || 0}
-                        ${conversionFlags}
+                        ${conversionFlags}${replyLimit}
                     </span>
 
                 `;

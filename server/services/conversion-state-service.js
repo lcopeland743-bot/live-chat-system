@@ -2,7 +2,7 @@
  * Meridian Conversion State Service
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  */
 
 const conversionConfig =
@@ -114,6 +114,9 @@ function createDefaultState() {
         stage: "new",
 
         eligibleTurnCount: 0,
+        aiReplyCount: 0,
+        aiReplyLimitReached: false,
+        aiReplyLimitReachedAt: null,
         intent: "unknown",
         asset: null,
         investmentHorizon: "unknown",
@@ -164,6 +167,26 @@ function normalize(state) {
             source.eligibleTurnCount,
             defaults.eligibleTurnCount
         ),
+
+        aiReplyCount: nonNegativeInteger(
+            source.aiReplyCount,
+            defaults.aiReplyCount
+        ),
+
+        aiReplyLimitReached:
+            source.aiReplyLimitReached === true
+            || nonNegativeInteger(
+                source.aiReplyCount,
+                defaults.aiReplyCount
+            ) >= conversionConfig
+                .maxAiRepliesPerSession,
+
+        aiReplyLimitReachedAt:
+            source.aiReplyLimitReachedAt
+            ? new Date(
+                source.aiReplyLimitReachedAt
+            )
+            : null,
 
         intent:
             nullableString(source.intent, 80)

@@ -2,7 +2,7 @@
  * Meridian Conversion Configuration
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  */
 
 function normalizeInteger(value, fallback, minimum, maximum) {
@@ -49,6 +49,13 @@ module.exports = {
 
     replyCharacterLimit,
     maxQuestionsPerReply: 1,
+
+    maxAiRepliesPerSession: normalizeInteger(
+        process.env.AI_MAX_REPLIES_PER_SESSION,
+        5,
+        1,
+        20
+    ),
 
     forceDecisionTurn: normalizeInteger(
         process.env.CONVERSION_FORCE_DECISION_TURN,

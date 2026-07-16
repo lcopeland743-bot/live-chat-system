@@ -4,7 +4,7 @@
  * MongoDB Conversation Schema
  *
  * Version:
- * v2.3.2
+ * v2.3.3
  */
 
 const mongoose =
@@ -31,6 +31,22 @@ new mongoose.Schema(
             type: Number,
             default: 0,
             min: 0
+        },
+
+        aiReplyCount: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+
+        aiReplyLimitReached: {
+            type: Boolean,
+            default: false
+        },
+
+        aiReplyLimitReachedAt: {
+            type: Date,
+            default: null
         },
 
         intent: {

@@ -2,7 +2,7 @@
  * Meridian Admin AI Routes
  *
  * Version:
- * v2.3.0
+ * v2.3.3
  */
 
 const express =
@@ -239,7 +239,10 @@ router.post(
 
             return res
                 .status(
-                    error.status === 429
+                    error.code ===
+                        "AI_REPLY_LIMIT_REACHED"
+                    ? 409
+                    : error.status === 429
                     ? 429
                     : 502
                 )
