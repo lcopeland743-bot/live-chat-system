@@ -2,7 +2,7 @@
  * Meridian OpenAI Service
  *
  * Version:
- * v2.3.0
+ * v2.3.5
  *
  * Uses:
  * - OpenAI Responses API
@@ -11,6 +11,7 @@
  * - Hosted Web Search
  * - Clickable source metadata
  * - 100-character visible reply enforcement
+ * - Structured-output extraction, retry, and safe fallback
  */
 
 const OpenAIModule =
@@ -32,7 +33,8 @@ require("../config/conversion-config");
 
 const {
     conversionResponseSchema,
-    compressionResponseSchema
+    compressionResponseSchema,
+    languageRepairResponseSchema
 }
 =
 require("../schemas/conversion-response-schema");
@@ -43,6 +45,10 @@ const {
 }
 =
 require("../prompts/conversion-system-prompt");
+
+
+const conversationLanguageService =
+require("./conversation-language-service");
 
 
 const {
@@ -494,33 +500,222 @@ function cleanJsonOutput(value) {
 }
 
 
-function parseStructuredOutput(response) {
-    const raw =
-        String(response.output_text || "")
-        .trim();
+function isStructuredObject(value) {
+    return Boolean(
+        value
+        && typeof value === "object"
+        && !Array.isArray(value)
+    );
+}
 
-    if (!raw) {
-        throw createServiceError(
-            "OPENAI_EMPTY_RESPONSE",
-            "OpenAI returned no structured output"
-        );
+
+function getSdkParsedOutput(response) {
+    if (
+        response
+        && isStructuredObject(
+            response.output_parsed
+        )
+    ) {
+        return response.output_parsed;
+    }
+
+    const output =
+        response
+        && Array.isArray(response.output)
+        ? response.output
+        : [];
+
+    for (const item of output) {
+        if (
+            isStructuredObject(
+                item && item.parsed
+            )
+        ) {
+            return item.parsed;
+        }
+
+        const content =
+            item
+            && Array.isArray(item.content)
+            ? item.content
+            : [];
+
+        for (const part of content) {
+            if (
+                isStructuredObject(
+                    part && part.parsed
+                )
+            ) {
+                return part.parsed;
+            }
+
+            if (
+                isStructuredObject(
+                    part && part.json
+                )
+            ) {
+                return part.json;
+            }
+        }
+    }
+
+    return null;
+}
+
+
+function parseJsonCandidate(value) {
+    const cleaned =
+        cleanJsonOutput(value);
+
+    if (!cleaned) {
+        return null;
     }
 
     try {
-        return JSON.parse(raw);
-    } catch (firstError) {
-        try {
+        return JSON.parse(cleaned);
+    } catch (error) {
+        const firstBrace =
+            cleaned.indexOf("{");
+
+        const lastBrace =
+            cleaned.lastIndexOf("}");
+
+        if (
+            firstBrace >= 0
+            && lastBrace > firstBrace
+        ) {
             return JSON.parse(
-                cleanJsonOutput(raw)
-            );
-        } catch (secondError) {
-            throw createServiceError(
-                "OPENAI_INVALID_STRUCTURED_OUTPUT",
-                "OpenAI returned invalid structured output",
-                secondError
+                cleaned.slice(
+                    firstBrace,
+                    lastBrace + 1
+                )
             );
         }
+
+        throw error;
     }
+}
+
+
+function parseStructuredOutput(response) {
+    const sdkParsed =
+        getSdkParsedOutput(response);
+
+    if (sdkParsed) {
+        return sdkParsed;
+    }
+
+    const raw =
+        String(
+            response
+            && response.output_text
+            ? response.output_text
+            : ""
+        )
+        .trim();
+
+    if (!raw) {
+        const error =
+            createServiceError(
+                "OPENAI_EMPTY_RESPONSE",
+                "OpenAI returned no structured output"
+            );
+
+        error.responseStatus =
+            response
+            && response.status
+            ? response.status
+            : null;
+
+        error.incompleteDetails =
+            response
+            && response.incomplete_details
+            ? response.incomplete_details
+            : null;
+
+        throw error;
+    }
+
+    try {
+        const parsed =
+            parseJsonCandidate(raw);
+
+        if (!isStructuredObject(parsed)) {
+            throw new SyntaxError(
+                "Structured output was not a JSON object"
+            );
+        }
+
+        return parsed;
+    } catch (cause) {
+        const error =
+            createServiceError(
+                "OPENAI_INVALID_STRUCTURED_OUTPUT",
+                "OpenAI returned invalid structured output",
+                cause
+            );
+
+        error.rawLength =
+            raw.length;
+
+        error.responseStatus =
+            response
+            && response.status
+            ? response.status
+            : null;
+
+        error.incompleteDetails =
+            response
+            && response.incomplete_details
+            ? response.incomplete_details
+            : null;
+
+        throw error;
+    }
+}
+
+
+function isStructuredOutputError(error) {
+    return Boolean(
+        error
+        && (
+            error.code ===
+                "OPENAI_EMPTY_RESPONSE"
+            || error.code ===
+                "OPENAI_INVALID_STRUCTURED_OUTPUT"
+        )
+    );
+}
+
+
+function buildStructuredRetryRequest(
+    request
+) {
+    return {
+        ...request,
+
+        reasoning: {
+            effort:
+                "none"
+        },
+
+        instructions:
+            `${request.instructions}\n\n`
+            + `STRUCTURED OUTPUT RETRY:\n`
+            + `The previous attempt returned incomplete or invalid JSON. `
+            + `Return one complete JSON object that exactly matches the schema. `
+            + `Do not use markdown, code fences, commentary, or trailing text. `
+            + `Keep every string concise so the object finishes completely.`,
+
+        max_output_tokens:
+            Math.max(
+                Number(
+                    request.max_output_tokens
+                    || 0
+                ),
+                2600
+            )
+    };
 }
 
 
@@ -738,9 +933,263 @@ function normalizeGenerated(value) {
 }
 
 
+function createStructuredFailureFallback({
+    customerLanguage,
+    serverDataRequest,
+    finalAiReply
+}) {
+    const currentDataRequired =
+        serverDataRequest
+        && serverDataRequest.required;
+
+    return normalizeGenerated({
+        replyText:
+            conversationLanguageService
+            .getLocalized(
+                currentDataRequired
+                ? "currentUnavailable"
+                : "fallback",
+                customerLanguage
+            ),
+
+        intent:
+            "recovery_fallback",
+
+        asset:
+            null,
+
+        investmentHorizon:
+            "unknown",
+
+        positionStatus:
+            "unknown",
+
+        entryPlan:
+            "unknown",
+
+        engagementSignal:
+            "neutral",
+
+        exitRisk:
+            currentDataRequired
+            ? "medium"
+            : "low",
+
+        valueDelivered:
+            "A safe fallback was returned after invalid structured output.",
+
+        reservedValue:
+            null,
+
+        reservedValueType:
+            "none",
+
+        question:
+            null,
+
+        ctaRecommendation:
+            finalAiReply
+            ? "urgent_show"
+            : "hide",
+
+        ctaTitle:
+            "",
+
+        ctaButtonText:
+            "",
+
+        whatsappPrefill:
+            "",
+
+        needsWebSearch:
+            false,
+
+        needsHuman:
+            currentDataRequired,
+
+        dataRequest:
+            serverDataRequest
+            || {
+                type:
+                    "none",
+                symbols:
+                    [],
+                freshness:
+                    "stable",
+                required:
+                    false
+            }
+    });
+}
+
+
+function userFacingFieldsNeedRepair(
+    generated,
+    customerLanguage
+) {
+    const fields = [
+        generated.replyText,
+        generated.ctaTitle,
+        generated.ctaButtonText,
+        generated.whatsappPrefill
+    ];
+
+    return fields.some(value => {
+        return !conversationLanguageService
+            .isTextCompatible(
+                value,
+                customerLanguage
+            );
+    });
+}
+
+
+async function repairUserFacingLanguage({
+    generated,
+    latestMessage,
+    customerLanguage
+}) {
+    const request = {
+        model:
+            aiConfig.model,
+
+        reasoning: {
+            effort:
+                "none"
+        },
+
+        instructions:
+            `Rewrite every field only in ${customerLanguage.name} (${customerLanguage.code}). `
+            + `Preserve all verified numbers, tickers, company names, meaning, and risk context. `
+            + `Do not add facts. replyText must stay within ${conversionConfig.replyCharacterLimit} Unicode characters. `
+            + `Do not add URLs or citations. Keep WhatsApp only as a brand name. `
+            + `Return only the required JSON object.`,
+
+        input: [
+            {
+                role:
+                    "user",
+                content:
+                    JSON.stringify({
+                        latestCustomerMessage:
+                            latestMessage,
+                        targetLanguage:
+                            customerLanguage,
+                        fields: {
+                            replyText:
+                                generated.replyText,
+                            ctaTitle:
+                                generated.ctaTitle,
+                            ctaButtonText:
+                                generated.ctaButtonText,
+                            whatsappPrefill:
+                                generated.whatsappPrefill
+                        }
+                    })
+            }
+        ],
+
+        max_output_tokens:
+            700,
+
+        text: {
+            format: {
+                type:
+                    "json_schema",
+                name:
+                    "meridian_language_repair",
+                strict:
+                    true,
+                schema:
+                    languageRepairResponseSchema
+            }
+        }
+    };
+
+    const response =
+        await getClient()
+        .responses
+        .create(request);
+
+    const repaired =
+        parseStructuredOutput(response);
+
+    generated.replyText =
+        cleanReplyText(
+            repaired.replyText
+        );
+
+    generated.ctaTitle =
+        cleanReplyText(
+            repaired.ctaTitle
+        )
+        .slice(0, 45);
+
+    generated.ctaButtonText =
+        cleanReplyText(
+            repaired.ctaButtonText
+        )
+        .slice(0, 24);
+
+    generated.whatsappPrefill =
+        String(
+            repaired.whatsappPrefill
+            || ""
+        )
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 500);
+
+    return generated;
+}
+
+
+async function ensureLanguageCompliance({
+    generated,
+    latestMessage,
+    customerLanguage
+}) {
+    if (
+        !userFacingFieldsNeedRepair(
+            generated,
+            customerLanguage
+        )
+    ) {
+        return generated;
+    }
+
+    try {
+        await repairUserFacingLanguage({
+            generated,
+            latestMessage,
+            customerLanguage
+        });
+    } catch (error) {
+        console.warn(
+            "[AI Language Repair Failed]",
+            error.message
+        );
+
+        generated.replyText =
+            conversationLanguageService
+            .getLocalized(
+                "fallback",
+                customerLanguage
+            );
+
+        generated.ctaTitle = "";
+        generated.ctaButtonText = "";
+        generated.whatsappPrefill = "";
+    }
+
+    return generated;
+}
+
+
 async function compressReply({
     replyText,
-    latestMessage
+    latestMessage,
+    customerLanguage
 }) {
     const request = {
         model: aiConfig.model,
@@ -750,7 +1199,7 @@ async function compressReply({
         },
 
         instructions:
-            `Compress the reply into the customer's language. `
+            `Compress the reply only in ${customerLanguage.name} (${customerLanguage.code}). `
             + `Keep the useful conclusion and one real decision variable. `
             + `Maximum ${conversionConfig.replyCharacterLimit} Unicode characters. `
             + `Maximum one question. No URLs, citations, or WhatsApp wording. `
@@ -795,7 +1244,8 @@ async function compressReply({
 
 async function ensureReplyCompliance({
     generated,
-    latestMessage
+    latestMessage,
+    customerLanguage
 }) {
     let text =
         cleanReplyText(
@@ -818,7 +1268,8 @@ async function ensureReplyCompliance({
     try {
         text = await compressReply({
             replyText: text,
-            latestMessage
+            latestMessage,
+            customerLanguage
         });
     } catch (error) {
         console.warn(
@@ -920,7 +1371,10 @@ async function runConversionRequest({
     currentTurn,
     hardSignals,
     forceSearch,
-    serverDataRequest
+    serverDataRequest,
+    customerLanguage,
+    aiReplyNumber,
+    finalAiReply
 }) {
     const input =
         normalizeInput(messages);
@@ -932,7 +1386,10 @@ async function runConversionRequest({
             hardSignals,
             freshDataRequired:
                 forceSearch,
-            serverDataRequest
+            serverDataRequest,
+            customerLanguage,
+            aiReplyNumber,
+            finalAiReply
         });
 
     const request =
@@ -942,18 +1399,67 @@ async function runConversionRequest({
             forceSearch
         });
 
-    const response =
+    let response =
         await getClient()
         .responses
         .create(request);
+
+    let parsed;
+
+    try {
+        parsed =
+            parseStructuredOutput(
+                response
+            );
+    } catch (error) {
+        if (
+            !isStructuredOutputError(
+                error
+            )
+        ) {
+            throw error;
+        }
+
+        console.warn(
+            "[AI Structured Retry]",
+            {
+                code:
+                    error.code,
+                responseStatus:
+                    error.responseStatus
+                    || null,
+                incompleteDetails:
+                    error.incompleteDetails
+                    || null,
+                rawLength:
+                    error.rawLength
+                    || 0
+            }
+        );
+
+        const retryRequest =
+            buildStructuredRetryRequest(
+                request
+            );
+
+        response =
+            await getClient()
+            .responses
+            .create(
+                retryRequest
+            );
+
+        parsed =
+            parseStructuredOutput(
+                response
+            );
+    }
 
     return {
         response,
         generated:
             normalizeGenerated(
-                parseStructuredOutput(
-                    response
-                )
+                parsed
             )
     };
 }
@@ -978,6 +1484,26 @@ async function generateConversionReply({
     const latestMessage =
         getLatestUserText(messages);
 
+    const customerLanguage =
+        conversationLanguageService
+        .detectConversationLanguage(
+            latestMessage,
+            messages
+        );
+
+    const aiReplyNumber =
+        Number(
+            state
+            && state.aiReplyCount
+            ? state.aiReplyCount
+            : 0
+        ) + 1;
+
+    const finalAiReply =
+        aiReplyNumber >=
+        conversionConfig
+        .maxAiRepliesPerSession;
+
     const serverDataRequest =
         inferDataRequest(messages);
 
@@ -992,7 +1518,10 @@ async function generateConversionReply({
                 hardSignals,
                 forceSearch:
                     serverDataRequest.required,
-                serverDataRequest
+                serverDataRequest,
+                customerLanguage,
+                aiReplyNumber,
+                finalAiReply
             });
 
         if (
@@ -1011,7 +1540,10 @@ async function generateConversionReply({
                         ...serverDataRequest,
                         required: true,
                         freshness: "current"
-                    }
+                    },
+                    customerLanguage,
+                    aiReplyNumber,
+                    finalAiReply
                 });
         }
 
@@ -1025,9 +1557,11 @@ async function generateConversionReply({
             && !webSearchUsed
         ) {
             result.generated.replyText =
-                /[\u3400-\u9fff]/u.test(latestMessage)
-                ? "暂时无法核实最新市场数据，请稍后重试。关键风险变量仍需实时确认。"
-                : "I could not verify current market data. Please retry; the key risk still needs live confirmation.";
+                conversationLanguageService
+                .getLocalized(
+                    "currentUnavailable",
+                    customerLanguage
+                );
 
             result.generated.ctaRecommendation =
                 "hide";
@@ -1036,10 +1570,18 @@ async function generateConversionReply({
                 true;
         }
 
+        await ensureLanguageCompliance({
+            generated:
+                result.generated,
+            latestMessage,
+            customerLanguage
+        });
+
         await ensureReplyCompliance({
             generated:
                 result.generated,
-            latestMessage
+            latestMessage,
+            customerLanguage
         });
 
         const sources =
@@ -1085,16 +1627,100 @@ async function generateConversionReply({
             serverDataRequest:
                 serverDataRequest.required
                 ? serverDataRequest
-                : result.generated.dataRequest
+                : result.generated.dataRequest,
+
+            customerLanguage,
+
+            structuredOutputRecovered:
+                true,
+
+            structuredOutputFallback:
+                false
         };
     } catch (error) {
         if (
-            error
-            && (
-                error.code === "OPENAI_EMPTY_RESPONSE"
-                || error.code === "OPENAI_INVALID_STRUCTURED_OUTPUT"
-                || error.code === "AI_HISTORY_EMPTY"
+            isStructuredOutputError(
+                error
             )
+        ) {
+            console.error(
+                "[AI Structured Fallback]",
+                {
+                    code:
+                        error.code,
+                    responseStatus:
+                        error.responseStatus
+                        || null,
+                    incompleteDetails:
+                        error.incompleteDetails
+                        || null,
+                    rawLength:
+                        error.rawLength
+                        || 0
+                }
+            );
+
+            const generated =
+                createStructuredFailureFallback({
+                    customerLanguage,
+                    serverDataRequest,
+                    finalAiReply
+                });
+
+            await ensureReplyCompliance({
+                generated,
+                latestMessage,
+                customerLanguage
+            });
+
+            return {
+                ...generated,
+
+                text:
+                    generated.replyText,
+
+                characterCount:
+                    countCharacters(
+                        generated.replyText
+                    ),
+
+                responseId:
+                    null,
+
+                model:
+                    aiConfig.model,
+
+                usage:
+                    null,
+
+                webSearchUsed:
+                    false,
+
+                freshDataRequired:
+                    serverDataRequest.required,
+
+                searchedAt:
+                    null,
+
+                sources:
+                    [],
+
+                serverDataRequest,
+
+                customerLanguage,
+
+                structuredOutputRecovered:
+                    false,
+
+                structuredOutputFallback:
+                    true
+            };
+        }
+
+        if (
+            error
+            && error.code ===
+                "AI_HISTORY_EMPTY"
         ) {
             throw error;
         }

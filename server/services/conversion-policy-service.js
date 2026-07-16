@@ -2,7 +2,7 @@
  * Meridian Conversion Policy Service
  *
  * Version:
- * v2.3.3
+ * v2.3.4
  *
  * The model proposes. This service decides.
  */
@@ -11,13 +11,18 @@ const conversionConfig =
 require("../config/conversion-config");
 
 
+const conversationLanguageService =
+require("./conversation-language-service");
+
+
 const {
     containsCjk,
     cleanReplyText,
     stripWhatsappLanguage,
     countCharacters,
     countQuestions,
-    limitCharacters
+    limitCharacters,
+    getGraphemes
 }
 =
 require("../utils/conversion-text");
@@ -91,21 +96,139 @@ function detectHardSignals(message) {
 }
 
 
-function createFallbackReply(message) {
-    if (containsCjk(message)) {
-        return "先确认决定走势的变量：价格之外还要看量能。你已持有还是准备入场？";
-    }
-
-    return "Price alone is not enough; volume confirms the move. Are you holding or planning to enter?";
+function customerLanguage(
+    latestMessage,
+    generated = null
+) {
+    return (
+        generated
+        && generated.customerLanguage
+        ? generated.customerLanguage
+        : conversationLanguageService
+            .detectLanguage(
+                latestMessage
+            )
+    );
 }
 
 
-function createRefusalReply(message) {
-    if (containsCjk(message)) {
-        return "明白，我们继续在这里沟通，不再发送WhatsApp邀请。";
+function createFallbackReply(
+    message,
+    generated = null
+) {
+    return conversationLanguageService
+        .getLocalized(
+            "fallback",
+            customerLanguage(
+                message,
+                generated
+            )
+        );
+}
+
+
+function createRefusalReply(
+    message,
+    generated = null
+) {
+    return conversationLanguageService
+        .getLocalized(
+            "refusal",
+            customerLanguage(
+                message,
+                generated
+            )
+        );
+}
+
+
+function forceFinalWhatsappClose({
+    text,
+    latestMessage,
+    generated
+}) {
+    const language =
+        customerLanguage(
+            latestMessage,
+            generated
+        );
+
+    const suffix =
+        conversationLanguageService
+        .getLocalized(
+            "finalClose",
+            language
+        );
+
+    let base =
+        removeQuestions(
+            stripWhatsappLanguage(
+                text
+            )
+        )
+        .trim();
+
+    const suffixLength =
+        countCharacters(
+            suffix
+        );
+
+    const joiner =
+        language.code === "zh"
+        || language.code === "ja"
+        || language.code === "ko"
+        ? ""
+        : " ";
+
+    const available =
+        conversionConfig
+        .replyCharacterLimit
+        - suffixLength
+        - (
+            base
+            ? countCharacters(joiner)
+            : 0
+        );
+
+    if (available <= 0) {
+        return getGraphemes(
+            suffix
+        )
+        .slice(
+            0,
+            conversionConfig
+            .replyCharacterLimit
+        )
+        .join("");
     }
 
-    return "Understood. We can continue here, and I will not send another WhatsApp invitation.";
+    if (
+        countCharacters(base)
+        > available
+    ) {
+        base =
+            limitCharacters(
+                base,
+                available
+            )
+            .replace(/…$/u, "")
+            .trim();
+    }
+
+    const combined =
+        base
+        ? `${base}${joiner}${suffix}`
+        : suffix;
+
+    return getGraphemes(
+        combined
+    )
+    .slice(
+        0,
+        conversionConfig
+        .replyCharacterLimit
+    )
+    .join("");
 }
 
 
@@ -138,10 +261,15 @@ function normalizeReply({
     latestMessage,
     showWhatsapp,
     refusal,
-    noQuestion
+    noQuestion,
+    finalWhatsapp,
+    generated
 }) {
     if (refusal) {
-        return createRefusalReply(latestMessage);
+        return createRefusalReply(
+            latestMessage,
+            generated
+        );
     }
 
     let text = cleanReplyText(replyText);
@@ -151,11 +279,22 @@ function normalizeReply({
     }
 
     if (!text) {
-        text = createFallbackReply(latestMessage);
+        text = createFallbackReply(
+            latestMessage,
+            generated
+        );
     }
 
     if (noQuestion) {
         text = removeQuestions(text);
+    }
+
+    if (finalWhatsapp) {
+        return forceFinalWhatsappClose({
+            text,
+            latestMessage,
+            generated
+        });
     }
 
     if (
@@ -224,15 +363,23 @@ function apply({
         conversionConfig
         .maxAiRepliesPerSession;
 
-    const ctaBlocked = Boolean(
+    const finalCtaBlocked = Boolean(
         !conversionConfig.whatsapp.enabled
         || state.whatsappClicked
         || state.doNotPush
         || state.humanTakeover
         || hardSignals.refusal
+    );
+
+    const ctaBlocked = Boolean(
+        finalCtaBlocked
         || state.ctaShownCount >=
             conversionConfig.maxCtaPerSession
     );
+
+    const mandatoryFinalWhatsapp =
+        finalAiReply
+        && !finalCtaBlocked;
 
     const cooldownBlocked = Boolean(
         state.ctaShownCount > 0
@@ -272,6 +419,11 @@ function apply({
         suppressReason = "human_takeover";
         decisionType = "human";
         needsHuman = true;
+    } else if (mandatoryFinalWhatsapp) {
+        showWhatsapp = true;
+        decisionType = "cta";
+        suppressReason = null;
+        needsHuman = false;
     } else if (!ctaBlocked && hardSignals.explicitWhatsappRequest) {
         showWhatsapp = true;
         decisionType = "cta";
@@ -348,7 +500,10 @@ function apply({
         noQuestion:
             hardSignals.closing
             || exitRisk === "high"
-            || finalAiReply
+            || finalAiReply,
+        finalWhatsapp:
+            mandatoryFinalWhatsapp,
+        generated
     });
 
     return {
@@ -363,6 +518,7 @@ function apply({
         currentTurn: turn,
         aiReplyNumber,
         finalAiReply,
+        mandatoryFinalWhatsapp,
         trackingId: null,
         closeConversation: false
     };

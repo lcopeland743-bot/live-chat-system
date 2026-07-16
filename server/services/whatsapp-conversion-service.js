@@ -2,7 +2,7 @@
  * Meridian WhatsApp Conversion Service
  *
  * Version:
- * v2.3.0
+ * v2.3.4
  */
 
 const crypto =
@@ -14,12 +14,15 @@ require("../config/conversion-config");
 
 
 const {
-    containsCjk,
     cleanReplyText,
     limitCharacters
 }
 =
 require("../utils/conversion-text");
+
+
+const conversationLanguageService =
+require("./conversation-language-service");
 
 
 function sanitizePrefill(value) {
@@ -31,66 +34,70 @@ function sanitizePrefill(value) {
 }
 
 
-function defaultTitle({
-    asset,
+function resolveLanguage({
+    generated,
     latestMessage
 }) {
-    if (containsCjk(latestMessage)) {
-        return asset
-            ? `查看${asset}下一步决策信号`
-            : "查看下一步决策信号";
-    }
-
-    return asset
-        ? `See the next ${asset} decision signals`
-        : "See the next decision signals";
+    return (
+        generated
+        && generated.customerLanguage
+        ? generated.customerLanguage
+        : conversationLanguageService
+            .detectLanguage(
+                latestMessage
+            )
+    );
 }
 
 
-function defaultButton({
-    asset,
-    latestMessage
+function safeLocalizedField({
+    value,
+    fallbackKey,
+    language,
+    values,
+    forceFallback = false
 }) {
-    if (containsCjk(latestMessage)) {
-        return asset
-            ? `查看${asset}信号`
-            : "查看关键信号";
+    if (
+        !forceFallback
+        && value
+        && conversationLanguageService
+            .isTextCompatible(
+                value,
+                language
+            )
+    ) {
+        return value;
     }
 
-    return asset
-        ? `View ${asset} signals`
-        : "View key signals";
+    return conversationLanguageService
+        .getLocalized(
+            fallbackKey,
+            language,
+            values
+        );
 }
 
 
 function defaultPrefill({
     generated,
     state,
-    latestMessage
+    language
 }) {
     const asset =
         generated.asset
         || state.asset
         || "";
 
-    const reserved =
-        generated.reservedValue
-        || state.reservedValue
-        || "";
-
-    if (containsCjk(latestMessage)) {
-        return [
-            "你好，我想继续了解",
-            asset ? `${asset}的` : "",
-            reserved || "关键决策信号、风险条件和下一步判断。"
-        ].join("");
-    }
-
-    return [
-        "Hi, I want to continue with ",
-        asset ? `${asset}: ` : "",
-        reserved || "the key decision signals, risks, and next-step conditions."
-    ].join("");
+    return conversationLanguageService
+        .getLocalized(
+            "prefill",
+            language,
+            {
+                asset:
+                    asset
+                    || "the market"
+            }
+        );
 }
 
 
@@ -120,15 +127,32 @@ function createCard({
         || state.asset
         || null;
 
+    const language =
+        resolveLanguage({
+            generated,
+            latestMessage
+        });
+
     const trackingId =
         createTrackingId();
 
+    const forceFinal =
+        decision.finalAiReply === true;
+
     const title = limitCharacters(
         cleanReplyText(
-            generated.ctaTitle
-            || defaultTitle({
-                asset,
-                latestMessage
+            safeLocalizedField({
+                value:
+                    generated.ctaTitle,
+                fallbackKey:
+                    "finalTitle",
+                language,
+                values: {
+                    asset:
+                        asset || ""
+                },
+                forceFallback:
+                    forceFinal
             })
         ),
         45
@@ -136,29 +160,47 @@ function createCard({
 
     const buttonText = limitCharacters(
         cleanReplyText(
-            generated.ctaButtonText
-            || defaultButton({
-                asset,
-                latestMessage
+            safeLocalizedField({
+                value:
+                    generated.ctaButtonText,
+                fallbackKey:
+                    "finalButton",
+                language,
+                values: {
+                    asset:
+                        asset || ""
+                },
+                forceFallback:
+                    forceFinal
             })
         ),
         24
     );
 
-    const prefill =
-        sanitizePrefill(
-            generated.whatsappPrefill
-            || defaultPrefill({
-                generated,
-                state,
-                latestMessage
-            })
-        )
-        || defaultPrefill({
+    const localizedPrefill =
+        defaultPrefill({
             generated,
             state,
-            latestMessage
+            language
         });
+
+    const prefill =
+        sanitizePrefill(
+            forceFinal
+            ? localizedPrefill
+            : safeLocalizedField({
+                value:
+                    generated.whatsappPrefill,
+                fallbackKey:
+                    "prefill",
+                language,
+                values: {
+                    asset:
+                        asset || "the market"
+                }
+            })
+        )
+        || localizedPrefill;
 
     const url =
         `https://wa.me/${conversionConfig.whatsapp.phoneNumber}`
@@ -188,7 +230,14 @@ function createCard({
                 || "unknown",
             asset,
             ctaTurn: decision.currentTurn,
-            ctaVariant,
+            ctaVariant:
+                decision.finalAiReply
+                ? `final:${ctaVariant}`
+                : ctaVariant,
+            finalAiReply:
+                decision.finalAiReply === true,
+            language:
+                language.code,
             prefill
         }
     };

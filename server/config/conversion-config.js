@@ -2,7 +2,7 @@
  * Meridian Conversion Configuration
  *
  * Version:
- * v2.3.3
+ * v2.3.4
  */
 
 function normalizeInteger(value, fallback, minimum, maximum) {
@@ -44,8 +44,8 @@ const replyCharacterLimit = normalizeInteger(
 );
 
 module.exports = {
-    policyVersion: "1.0.0",
-    promptVersion: "1.0.0",
+    policyVersion: "1.1.0",
+    promptVersion: "1.1.0",
 
     replyCharacterLimit,
     maxQuestionsPerReply: 1,

@@ -2,7 +2,7 @@
  * Meridian Conversion Structured Output Schema
  *
  * Version:
- * v2.3.0
+ * v2.3.4
  */
 
 const conversionResponseSchema = {
@@ -245,7 +245,43 @@ const compressionResponseSchema = {
     }
 };
 
+
+const languageRepairResponseSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: [
+        "replyText",
+        "ctaTitle",
+        "ctaButtonText",
+        "whatsappPrefill"
+    ],
+    properties: {
+        replyText: {
+            type: "string",
+            minLength: 1,
+            maxLength: 100
+        },
+
+        ctaTitle: {
+            type: "string",
+            maxLength: 45
+        },
+
+        ctaButtonText: {
+            type: "string",
+            maxLength: 24
+        },
+
+        whatsappPrefill: {
+            type: "string",
+            maxLength: 500
+        }
+    }
+};
+
+
 module.exports = {
     conversionResponseSchema,
-    compressionResponseSchema
+    compressionResponseSchema,
+    languageRepairResponseSchema
 };

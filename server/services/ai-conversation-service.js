@@ -2,7 +2,7 @@
  * Meridian AI Conversation Service
  *
  * Version:
- * v2.3.3
+ * v2.3.4
  *
  * Features:
  * - OFF / ASSIST / AUTO
@@ -212,6 +212,11 @@ function createReplyMetadata({
         dataRequest:
             generated.serverDataRequest,
 
+        language:
+            generated.customerLanguage
+            ? generated.customerLanguage.code
+            : "en",
+
         conversion: {
             stage:
                 nextState.stage,
@@ -227,6 +232,12 @@ function createReplyMetadata({
                 decision.showWhatsapp,
             ctaTurn:
                 decision.currentTurn,
+            aiReplyNumber:
+                decision.aiReplyNumber,
+            finalAiReply:
+                decision.finalAiReply === true,
+            mandatoryFinalWhatsapp:
+                decision.mandatoryFinalWhatsapp === true,
             trackingId:
                 decision.trackingId,
             doNotPush:
