@@ -1,6 +1,6 @@
 {
   "name": "live-chat-system",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "private": true,
   "main": "server.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "admin:hash": "node server/scripts/generate-admin-password-hash.js",
     "data:clear-test": "node server/scripts/clear-test-data.js --confirm CLEAR_LOCAL_TEST_DATA",
     "data:cleanup": "node server/scripts/run-data-cleanup.js",
-    "data:status": "node server/scripts/data-retention-status.js"
+    "data:status": "node server/scripts/data-retention-status.js",
+    "test:visitor-stats": "node tests/admin-visitor-overview.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -2,13 +2,14 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.3.3
+ * v2.3.6
  *
  * Features:
  * - Conversation Management
  * - AI Message Renderer
  * - AI Mode Badges
  * - Rich Message Renderer
+ * - Visitor Classification Statistics
  */
 
 window.MeridianAdminUI = {
@@ -34,6 +35,42 @@ window.MeridianAdminUI = {
         document.getElementById(
 
             "sessions"
+
+        );
+
+
+        this.activeConversationsCount =
+
+        document.getElementById(
+
+            "activeConversationsCount"
+
+        );
+
+
+        this.silentVisitorsCount =
+
+        document.getElementById(
+
+            "silentVisitorsCount"
+
+        );
+
+
+        this.onlineVisitorsCount =
+
+        document.getElementById(
+
+            "onlineVisitorsCount"
+
+        );
+
+
+        this.onlineSilentVisitorsCount =
+
+        document.getElementById(
+
+            "onlineSilentVisitorsCount"
 
         );
 
@@ -295,6 +332,41 @@ window.MeridianAdminUI = {
         this.messages.innerHTML =
 
         "";
+
+
+        if(messages.length === 0){
+
+
+            const empty =
+
+            document.createElement(
+
+                "div"
+
+            );
+
+
+            empty.className =
+
+            "conversation-empty-state";
+
+
+            empty.textContent =
+
+            "该访客尚未发送消息，可在下方主动回复。";
+
+
+            this.messages.appendChild(
+
+                empty
+
+            );
+
+
+            return;
+
+
+        }
 
 
         messages.forEach(
@@ -1548,6 +1620,71 @@ window.MeridianAdminUI = {
     },
 
 
+    renderVisitorStats(){
+
+
+        const stats =
+
+        MeridianAdminState
+
+        .getVisitorStats();
+
+
+        if(this.activeConversationsCount){
+
+
+            this.activeConversationsCount
+
+            .textContent =
+
+            stats.activeConversations;
+
+
+        }
+
+
+        if(this.silentVisitorsCount){
+
+
+            this.silentVisitorsCount
+
+            .textContent =
+
+            stats.silentVisitors;
+
+
+        }
+
+
+        if(this.onlineVisitorsCount){
+
+
+            this.onlineVisitorsCount
+
+            .textContent =
+
+            stats.onlineVisitors;
+
+
+        }
+
+
+        if(this.onlineSilentVisitorsCount){
+
+
+            this.onlineSilentVisitorsCount
+
+            .textContent =
+
+            stats.onlineSilentVisitors;
+
+
+        }
+
+
+    },
+
+
     renderOnlineUsers(){
 
 
@@ -1712,7 +1849,7 @@ window.MeridianAdminUI = {
     },
 
 
-    renderSessions(){
+    renderSessions(restoreCurrentSession = true){
 
 
         if(!this.sessions){
@@ -1982,7 +2119,13 @@ window.MeridianAdminUI = {
         );
 
 
-        this.restoreCurrentSession();
+        if(restoreCurrentSession){
+
+
+            this.restoreCurrentSession();
+
+
+        }
 
 
     },

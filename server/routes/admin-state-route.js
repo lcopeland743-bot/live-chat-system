@@ -4,13 +4,11 @@
  * Admin Dashboard State Restore API
  *
  * Version:
- * v2.1.2
+ * v2.3.6
  *
  * Data Source:
  * MongoDB Session
  */
-
-
 
 const express =
 require("express");
@@ -27,32 +25,13 @@ const {
 require("../middleware/admin-auth-middleware");
 
 
-
-
-
-
-
 const sessionService =
 require("../services/session-service");
 
 
-
-
-
-
-
-
-
 router.use(
-
     requireAdminApi
-
 );
-
-
-
-
-
 
 
 /**
@@ -62,157 +41,39 @@ router.use(
  * /api/admin/state
  */
 router.get(
-
     "/",
-
     async(req,res)=>{
-
-
-
         try{
-
-
-
-            const sessions =
-
-            await sessionService.getSessions();
-
-
-
-
-
-
-
-
-            /**
-             * 根据Session状态分类
-             */
-            const onlineUsers =
-
-            sessions.filter(
-
-                session =>
-
-                session.status === "online"
-
-            );
-
-
-
-
-
-
-
-
-            const offlineUsers =
-
-            sessions.filter(
-
-                session =>
-
-                session.status === "offline"
-
-            );
-
-
-
-
-
-
-
-
+            const overview =
+                await sessionService
+                .getAdminVisitorOverview();
 
             res.json({
-
-
-
-                success:true,
-
-
-
+                success: true,
                 sessions:
-
-
-
-                sessions,
-
-
-
-
-
+                    overview.sessions,
                 onlineUsers:
-
-
-
-                onlineUsers,
-
-
-
-
-
+                    overview.onlineUsers,
                 offlineUsers:
-
-
-
-                offlineUsers
-
-
-
+                    overview.offlineUsers,
+                visitorStats:
+                    overview.visitorStats
             });
-
-
-
-
-
-
         }
-
         catch(error){
-
-
-
             console.error(
-
                 "Admin state error:",
-
                 error
-
             );
 
-
-
-
-
-
             res.status(500)
-
             .json({
-
-
-                success:false,
-
-
-                error:error.message
-
-
-
+                success: false,
+                error: error.message
             });
-
-
-
         }
-
-
-
     }
-
 );
-
-
-
-
-
-
 
 
 module.exports = router;

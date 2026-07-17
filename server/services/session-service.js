@@ -4,7 +4,7 @@
  * MongoDB Conversation Manager
  *
  * Version:
- * v2.3.3
+ * v2.3.6
  */
 
 const Session =
@@ -505,6 +505,244 @@ async function closeConversation(userId) {
 }
 
 
+function normalizeVisitorStats(stats = {}) {
+    return {
+        totalVisitors:
+            Math.max(
+                0,
+                Number(stats.totalVisitors) || 0
+            ),
+        activeConversations:
+            Math.max(
+                0,
+                Number(stats.activeConversations) || 0
+            ),
+        silentVisitors:
+            Math.max(
+                0,
+                Number(stats.silentVisitors) || 0
+            ),
+        onlineVisitors:
+            Math.max(
+                0,
+                Number(stats.onlineVisitors) || 0
+            ),
+        onlineSilentVisitors:
+            Math.max(
+                0,
+                Number(stats.onlineSilentVisitors) || 0
+            )
+    };
+}
+
+
+async function getAdminVisitorOverview() {
+    const result =
+        await Session.aggregate([
+            {
+                $addFields: {
+                    _hasConversation: {
+                        $or: [
+                            {
+                                $gt: [
+                                    {
+                                        $ifNull: [
+                                            "$messageCount",
+                                            0
+                                        ]
+                                    },
+                                    0
+                                ]
+                            },
+                            {
+                                $ne: [
+                                    {
+                                        $ifNull: [
+                                            "$lastMessageAt",
+                                            null
+                                        ]
+                                    },
+                                    null
+                                ]
+                            },
+                            {
+                                $gt: [
+                                    {
+                                        $strLenCP: {
+                                            $trim: {
+                                                input: {
+                                                    $ifNull: [
+                                                        "$lastMessage",
+                                                        ""
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $facet: {
+                    sessions: [
+                        {
+                            $match: {
+                                _hasConversation: true
+                            }
+                        },
+                        {
+                            $sort: {
+                                updatedAt: -1
+                            }
+                        },
+                        {
+                            $project: {
+                                _hasConversation: 0
+                            }
+                        }
+                    ],
+                    onlineUsers: [
+                        {
+                            $match: {
+                                status: "online"
+                            }
+                        },
+                        {
+                            $sort: {
+                                updatedAt: -1
+                            }
+                        },
+                        {
+                            $project: {
+                                _hasConversation: 0
+                            }
+                        }
+                    ],
+                    offlineUsers: [
+                        {
+                            $match: {
+                                status: "offline",
+                                _hasConversation: true
+                            }
+                        },
+                        {
+                            $sort: {
+                                updatedAt: -1
+                            }
+                        },
+                        {
+                            $project: {
+                                _hasConversation: 0
+                            }
+                        }
+                    ],
+                    stats: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalVisitors: {
+                                    $sum: 1
+                                },
+                                activeConversations: {
+                                    $sum: {
+                                        $cond: [
+                                            "$_hasConversation",
+                                            1,
+                                            0
+                                        ]
+                                    }
+                                },
+                                silentVisitors: {
+                                    $sum: {
+                                        $cond: [
+                                            "$_hasConversation",
+                                            0,
+                                            1
+                                        ]
+                                    }
+                                },
+                                onlineVisitors: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $eq: [
+                                                    "$status",
+                                                    "online"
+                                                ]
+                                            },
+                                            1,
+                                            0
+                                        ]
+                                    }
+                                },
+                                onlineSilentVisitors: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $and: [
+                                                    {
+                                                        $eq: [
+                                                            "$status",
+                                                            "online"
+                                                        ]
+                                                    },
+                                                    {
+                                                        $eq: [
+                                                            "$_hasConversation",
+                                                            false
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            1,
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0
+                            }
+                        }
+                    ]
+                }
+            }
+        ]);
+
+    const overview =
+        result[0]
+        ||
+        {};
+
+    return {
+        sessions:
+            overview.sessions
+            ||
+            [],
+        onlineUsers:
+            overview.onlineUsers
+            ||
+            [],
+        offlineUsers:
+            overview.offlineUsers
+            ||
+            [],
+        visitorStats:
+            normalizeVisitorStats(
+                overview.stats
+                &&
+                overview.stats[0]
+            )
+    };
+}
+
+
 async function getSessions() {
     return await Session.find()
     .sort({
@@ -536,6 +774,7 @@ module.exports = {
     getAgentSessions,
     offline,
     closeConversation,
+    getAdminVisitorOverview,
     getSessions,
     getSessionByUserId
 };

@@ -62,6 +62,58 @@ href="/css/admin.css">
                     访客会话
                 </h2>
 
+                <div
+                id="visitorStats"
+                class="visitor-stats"
+                aria-label="访客分类统计"
+                aria-live="polite">
+
+                    <div class="visitor-stat-card">
+                        <span class="visitor-stat-label">
+                            有效会话
+                        </span>
+                        <strong
+                        id="activeConversationsCount"
+                        class="visitor-stat-value">
+                            0
+                        </strong>
+                    </div>
+
+                    <div class="visitor-stat-card">
+                        <span class="visitor-stat-label">
+                            未发言访客
+                        </span>
+                        <strong
+                        id="silentVisitorsCount"
+                        class="visitor-stat-value">
+                            0
+                        </strong>
+                    </div>
+
+                    <div class="visitor-stat-card">
+                        <span class="visitor-stat-label">
+                            当前在线
+                        </span>
+                        <strong
+                        id="onlineVisitorsCount"
+                        class="visitor-stat-value">
+                            0
+                        </strong>
+                    </div>
+
+                    <div class="visitor-stat-card">
+                        <span class="visitor-stat-label">
+                            在线未发言
+                        </span>
+                        <strong
+                        id="onlineSilentVisitorsCount"
+                        class="visitor-stat-value">
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
                 <div id="sessions">
                 </div>
 

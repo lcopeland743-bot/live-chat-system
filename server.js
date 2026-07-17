@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.3.5
+ * v2.3.6
  *
  * Features:
  * - Express
@@ -21,6 +21,7 @@
  * - Customer Language Lock
  * - Mandatory Fifth-Reply WhatsApp Close
  * - Structured Output Auto-Retry and Safe Fallback
+ * - Admin Visitor Classification Statistics
  */
 
 require("dotenv").config();
@@ -513,7 +514,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.3.5 running on port",
+                "Meridian Chat SDK v2.3.6 running on port",
 
                 config.port
 

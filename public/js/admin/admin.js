@@ -2,7 +2,7 @@
  * Meridian Admin Bootstrap
  *
  * Version:
- * v2.2.0
+ * v2.3.6
  */
 
 (function(){
@@ -124,7 +124,7 @@
 
         console.log(
 
-            "Meridian Admin v2.2.0 initialized"
+            "Meridian Admin v2.3.6 initialized"
 
         );
 

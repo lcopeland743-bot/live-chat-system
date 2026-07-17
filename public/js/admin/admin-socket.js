@@ -2,7 +2,7 @@
  * Meridian Admin Socket
  *
  * Version:
- * v2.3.0
+ * v2.3.6
  *
  * Features:
  * - Authenticated Admin Socket
@@ -10,6 +10,7 @@
  * - AI Suggestion Sync
  * - AI Error Sync
  * - Rich Message Sync
+ * - Visitor Statistics Refresh
  */
 
 window.MeridianAdminSocket = {
@@ -18,10 +19,77 @@ window.MeridianAdminSocket = {
     socket:null,
 
 
-    async loadAdminState(){
+    stateRefreshTimer:null,
+
+
+    stateRequestSerial:0,
+
+
+    pendingRestoreCurrentSession:false,
+
+
+    scheduleAdminStateRefresh(delay = 250){
+
+
+        clearTimeout(
+
+            this.stateRefreshTimer
+
+        );
+
+
+        this.stateRefreshTimer =
+
+        setTimeout(
+
+            ()=>{
+
+
+                this.loadAdminState({
+
+                    restoreCurrentSession:false
+
+                });
+
+
+            },
+
+            delay
+
+        );
+
+
+    },
+
+
+    async loadAdminState(options = {}){
 
 
         try{
+
+
+            if(
+
+                options.restoreCurrentSession
+
+                !==
+
+                false
+
+            ){
+
+
+                this.pendingRestoreCurrentSession =
+
+                true;
+
+
+            }
+
+
+            const requestId =
+
+            ++this.stateRequestSerial;
 
 
             const response =
@@ -81,42 +149,66 @@ window.MeridianAdminSocket = {
             }
 
 
-            result.sessions.forEach(
+            if(
 
-                session=>{
+                requestId !==
 
+                this.stateRequestSerial
 
-                    MeridianAdminState.updateSession(
-
-                        session
-
-                    );
+            ){
 
 
-                }
+                return;
+
+
+            }
+
+
+            MeridianAdminState.setPresenceUsers(
+
+                result.onlineUsers
+
+                ||
+
+                [],
+
+
+                result.offlineUsers
+
+                ||
+
+                []
 
             );
 
 
-            MeridianAdminState.onlineUsers =
+            MeridianAdminState.setSessions(
 
-            result.onlineUsers
+                result.sessions
 
-            ||
+                ||
 
-            [];
+                []
 
-
-            MeridianAdminState.offlineUsers =
-
-            result.offlineUsers
-
-            ||
-
-            [];
+            );
 
 
-            MeridianAdminUI.renderSessions();
+            MeridianAdminState.setVisitorStats(
+
+                result.visitorStats
+
+                ||
+
+                {}
+
+            );
+
+
+            MeridianAdminUI.renderSessions(
+
+                false
+
+            );
 
 
             if(
@@ -132,29 +224,57 @@ window.MeridianAdminSocket = {
             }
 
 
-            setTimeout(
+            if(
 
-                ()=>{
+                MeridianAdminUI.renderVisitorStats
 
-
-                    if(
-
-                        MeridianAdminUI.restoreCurrentSession
-
-                    ){
+            ){
 
 
-                        MeridianAdminUI.restoreCurrentSession();
+                MeridianAdminUI.renderVisitorStats();
 
 
-                    }
+            }
 
 
-                },
+            if(
 
-                300
+                this.pendingRestoreCurrentSession
 
-            );
+            ){
+
+
+                this.pendingRestoreCurrentSession =
+
+                false;
+
+
+                setTimeout(
+
+                    ()=>{
+
+
+                        if(
+
+                            MeridianAdminUI.restoreCurrentSession
+
+                        ){
+
+
+                            MeridianAdminUI.restoreCurrentSession();
+
+
+                        }
+
+
+                    },
+
+                    300
+
+                );
+
+
+            }
 
 
             console.log(
@@ -328,6 +448,9 @@ window.MeridianAdminSocket = {
 
 
         }
+
+
+        this.scheduleAdminStateRefresh();
 
 
     },
@@ -602,6 +725,9 @@ window.MeridianAdminSocket = {
                 }
 
 
+                this.scheduleAdminStateRefresh();
+
+
             }
 
         );
@@ -630,7 +756,14 @@ window.MeridianAdminSocket = {
                 );
 
 
-                MeridianAdminUI.renderSessions();
+                MeridianAdminUI.renderSessions(
+
+                    false
+
+                );
+
+
+                this.scheduleAdminStateRefresh();
 
 
                 const current =

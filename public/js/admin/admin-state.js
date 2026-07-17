@@ -2,13 +2,14 @@
  * Meridian Admin State
  *
  * Version:
- * v2.2.0
+ * v2.3.6
  *
  * Features:
  * - Unified Conversation List
  * - Current Conversation Restore
  * - AI Mode State
  * - Human Takeover State
+ * - Visitor Classification Statistics
  */
 
 window.MeridianAdminState = {
@@ -21,6 +22,21 @@ window.MeridianAdminState = {
 
 
     offlineUsers:[],
+
+
+    visitorStats:{
+
+        totalVisitors:0,
+
+        activeConversations:0,
+
+        silentVisitors:0,
+
+        onlineVisitors:0,
+
+        onlineSilentVisitors:0
+
+    },
 
 
     currentUser:null,
@@ -180,6 +196,240 @@ window.MeridianAdminState = {
 
 
         };
+
+
+    },
+
+
+    setSessions(sessions){
+
+
+        this.sessions =
+
+        Array.isArray(sessions)
+
+        ?
+
+        sessions.slice()
+
+        :
+
+        [];
+
+
+        this.sortSessions();
+
+
+        this.sessions.forEach(
+
+            session=>{
+
+
+                if(
+
+                    window.MeridianConversationStore
+
+                ){
+
+
+                    MeridianConversationStore
+
+                    .updateSession(
+
+                        session
+
+                    );
+
+
+                }
+
+
+            }
+
+        );
+
+
+        if(this.currentConversationId){
+
+
+            const current =
+
+            this.getSessionByUserId(
+
+                this.currentConversationId
+
+            );
+
+
+            if(current){
+
+
+                this.currentUser =
+
+                this.createCurrentUser(
+
+                    current
+
+                );
+
+
+            }
+
+
+            else{
+
+
+                this.currentUser =
+
+                null;
+
+
+                this.currentConversationId =
+
+                null;
+
+
+                localStorage.removeItem(
+
+                    this.storageKey
+
+                );
+
+
+            }
+
+
+        }
+
+
+    },
+
+
+    setPresenceUsers(
+
+        onlineUsers,
+
+        offlineUsers
+
+    ){
+
+
+        this.onlineUsers =
+
+        Array.isArray(onlineUsers)
+
+        ?
+
+        onlineUsers.slice()
+
+        :
+
+        [];
+
+
+        this.offlineUsers =
+
+        Array.isArray(offlineUsers)
+
+        ?
+
+        offlineUsers.slice()
+
+        :
+
+        [];
+
+
+    },
+
+
+    setVisitorStats(stats){
+
+
+        const source =
+
+        stats
+
+        ||
+
+        {};
+
+
+        const normalizeCount =
+
+        value=>
+
+        Math.max(
+
+            0,
+
+            Number(value)
+
+            ||
+
+            0
+
+        );
+
+
+        this.visitorStats = {
+
+
+            totalVisitors:
+
+            normalizeCount(
+
+                source.totalVisitors
+
+            ),
+
+
+            activeConversations:
+
+            normalizeCount(
+
+                source.activeConversations
+
+            ),
+
+
+            silentVisitors:
+
+            normalizeCount(
+
+                source.silentVisitors
+
+            ),
+
+
+            onlineVisitors:
+
+            normalizeCount(
+
+                source.onlineVisitors
+
+            ),
+
+
+            onlineSilentVisitors:
+
+            normalizeCount(
+
+                source.onlineSilentVisitors
+
+            )
+
+
+        };
+
+
+    },
+
+
+    getVisitorStats(){
+
+
+        return this.visitorStats;
 
 
     },
@@ -434,6 +684,35 @@ window.MeridianAdminState = {
         );
 
 
+        const session =
+
+        this.getConversationSessionByUserId(
+
+            user.userId
+
+        );
+
+
+        if(!session){
+
+
+            this.offlineUsers =
+
+            this.offlineUsers.filter(
+
+                item=>
+
+                item.userId !== user.userId
+
+            );
+
+
+            return;
+
+
+        }
+
+
         const exists =
 
         this.offlineUsers.find(
@@ -484,7 +763,7 @@ window.MeridianAdminState = {
     },
 
 
-    getSessionByUserId(userId){
+    getConversationSessionByUserId(userId){
 
 
         return this.sessions.find(
@@ -498,6 +777,56 @@ window.MeridianAdminState = {
         ||
 
         null;
+
+
+    },
+
+
+    getPresenceSessionByUserId(userId){
+
+
+        return this.onlineUsers.find(
+
+            item=>
+
+            item.userId === userId
+
+        )
+
+        ||
+
+        this.offlineUsers.find(
+
+            item=>
+
+            item.userId === userId
+
+        )
+
+        ||
+
+        null;
+
+
+    },
+
+
+    getSessionByUserId(userId){
+
+
+        return this.getConversationSessionByUserId(
+
+            userId
+
+        )
+
+        ||
+
+        this.getPresenceSessionByUserId(
+
+            userId
+
+        );
 
 
     },
