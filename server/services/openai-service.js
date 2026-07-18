@@ -2,7 +2,7 @@
  * Meridian OpenAI Service
  *
  * Version:
- * v2.3.5
+ * v2.3.7
  *
  * Uses:
  * - OpenAI Responses API
@@ -10,7 +10,8 @@
  * - Structured Outputs
  * - Hosted Web Search
  * - Clickable source metadata
- * - 100-character visible reply enforcement
+ * - 200-character visible reply enforcement
+ * - Direct Answer Framework 1.2.1 precision repair
  * - Structured-output extraction, retry, and safe fallback
  */
 
@@ -34,7 +35,8 @@ require("../config/conversion-config");
 const {
     conversionResponseSchema,
     compressionResponseSchema,
-    languageRepairResponseSchema
+    languageRepairResponseSchema,
+    directAnswerRepairResponseSchema
 }
 =
 require("../schemas/conversion-response-schema");
@@ -49,6 +51,10 @@ require("../prompts/conversion-system-prompt");
 
 const conversationLanguageService =
 require("./conversation-language-service");
+
+
+const aiAnswerQualityService =
+require("./ai-answer-quality-service");
 
 
 const {
@@ -99,13 +105,58 @@ function getClient() {
                 process.env.OPENAI_API_KEY,
             timeout:
                 aiConfig.requestTimeoutMs,
-            maxRetries: 1
+            // Retry policy is controlled explicitly below so one user turn
+            // cannot trigger hidden SDK retries plus a manual structured retry.
+            maxRetries: 0
         });
     }
 
     return client;
 }
 
+
+
+
+function isOpenAIRequestTimeout(error) {
+    if (!error) {
+        return false;
+    }
+
+    const name =
+        String(error.name || "");
+
+    const constructorName =
+        String(
+            error.constructor
+            && error.constructor.name
+            || ""
+        );
+
+    const code =
+        String(error.code || "");
+
+    const message =
+        String(error.message || "");
+
+    return Boolean(
+        name === "APIConnectionTimeoutError"
+        || constructorName ===
+            "APIConnectionTimeoutError"
+        || code === "ETIMEDOUT"
+        || code === "ESOCKETTIMEDOUT"
+        || code === "ECONNABORTED"
+        || /request timed out/i.test(
+            message
+        )
+        || (
+            error.cause
+            && error.cause !== error
+            && isOpenAIRequestTimeout(
+                error.cause
+            )
+        )
+    );
+}
 
 function normalizeRole(sender) {
     return sender === "user"
@@ -257,6 +308,10 @@ function inferDataRequest(messages) {
     const symbols =
         extractSymbols(text);
 
+    const directAnswerRequest =
+        aiAnswerQualityService
+        .classifyRequest(text);
+
     const currentPattern =
         /\b(today|tonight|now|current|currently|latest|live|real[\s-]?time|price|quote|performance|premarket|pre-market|after[\s-]?hours|this session|open today|close today)\b|今天|今日|现在|当前|最新|实时|行情|股价|价格|涨跌|盘前|盘后|开盘|收盘/iu;
 
@@ -300,6 +355,13 @@ function inferDataRequest(messages) {
         && marketPattern.test(text)
     ) {
         type = "market_status";
+    } else if (
+        directAnswerRequest
+        .requiresCurrentResearch
+    ) {
+        type = symbols.length > 0
+            ? "company_news"
+            : "market_news";
     } else if (shortAssetQuery) {
         type = "quote";
     }
@@ -428,7 +490,8 @@ function extractSources(response) {
     };
 
     const output =
-        Array.isArray(response.output)
+        response
+        && Array.isArray(response.output)
         ? response.output
         : [];
 
@@ -478,9 +541,34 @@ function extractSources(response) {
 }
 
 
+function mergeSources(...groups) {
+    const merged = [];
+
+    groups.forEach(group => {
+        (group || []).forEach(source => {
+            if (
+                source
+                && source.url
+                && !merged.some(item => {
+                    return item.url === source.url;
+                })
+            ) {
+                merged.push(source);
+            }
+        });
+    });
+
+    return merged.slice(
+        0,
+        aiConfig.webSearch.maxSources
+    );
+}
+
+
 function usedWebSearch(response) {
-    return (
-        Array.isArray(response.output)
+    return Boolean(
+        response
+        && Array.isArray(response.output)
         && response.output.some(item => {
             return (
                 item
@@ -1186,6 +1274,253 @@ async function ensureLanguageCompliance({
 }
 
 
+async function repairDirectAnswer({
+    generated,
+    latestMessage,
+    customerLanguage,
+    quality
+}) {
+    const request = {
+        model:
+            aiConfig.model,
+
+        reasoning: {
+            effort:
+                "none"
+        },
+
+        instructions:
+            aiAnswerQualityService
+            .buildRepairInstruction({
+                customerLanguage,
+                quality,
+                characterLimit:
+                    conversionConfig
+                    .replyCharacterLimit
+            }),
+
+        input: [
+            {
+                role:
+                    "user",
+                content:
+                    JSON.stringify({
+                        latestCustomerMessage:
+                            latestMessage,
+                        originalDraft:
+                            generated.replyText,
+                        internalContext: {
+                            intent:
+                                generated.intent,
+                            asset:
+                                generated.asset,
+                            investmentHorizon:
+                                generated.investmentHorizon,
+                            positionStatus:
+                                generated.positionStatus,
+                            valueDelivered:
+                                generated.valueDelivered,
+                            reservedValue:
+                                generated.reservedValue,
+                            dataRequest:
+                                generated.dataRequest
+                        },
+                        qualityIssues:
+                            quality.reasons
+                    })
+            }
+        ],
+
+        max_output_tokens:
+            800,
+
+        text: {
+            format: {
+                type:
+                    "json_schema",
+                name:
+                    "meridian_direct_answer_repair",
+                strict:
+                    true,
+                schema:
+                    directAnswerRepairResponseSchema
+            }
+        }
+    };
+
+    if (
+        quality.requiresCurrentResearch
+        && aiConfig.webSearch.enabled
+    ) {
+        request.tools = [
+            {
+                type:
+                    "web_search",
+                external_web_access:
+                    true,
+                search_context_size:
+                    aiConfig.webSearch.contextSize
+            }
+        ];
+
+        request.tool_choice = "required";
+        request.include = [
+            "web_search_call.action.sources"
+        ];
+    }
+
+    const response =
+        await getClient()
+        .responses
+        .create(request);
+
+    const repaired =
+        parseStructuredOutput(response);
+
+    generated.replyText =
+        cleanReplyText(
+            repaired.replyText
+        );
+
+    return {
+        generated,
+        response
+    };
+}
+
+
+async function ensureDirectAnswerQuality({
+    generated,
+    latestMessage,
+    customerLanguage
+}) {
+    generated.replyText =
+        aiAnswerQualityService
+        .removeRedundantKnownContextQuestions({
+            latestMessage,
+            replyText:
+                generated.replyText
+        });
+
+    const initial =
+        aiAnswerQualityService
+        .evaluate({
+            latestMessage,
+            replyText:
+                generated.replyText,
+            characterLimit:
+                conversionConfig
+                .replyCharacterLimit
+        });
+
+    generated.directAnswerQuality = {
+        kind:
+            initial.kind,
+        repaired:
+            false,
+        passed:
+            initial.passed,
+        reasons:
+            initial.reasons
+    };
+
+    if (!initial.needsRepair) {
+        return {
+            generated,
+            repairResponse:
+                null
+        };
+    }
+
+    console.warn(
+        "[AI Direct Answer Repair]",
+        {
+            kind:
+                initial.kind,
+            reasons:
+                initial.reasons
+        }
+    );
+
+    let repairResponse = null;
+
+    try {
+        const repairResult =
+            await repairDirectAnswer({
+                generated,
+                latestMessage,
+                customerLanguage,
+                quality:
+                    initial
+            });
+
+        repairResponse =
+            repairResult.response;
+
+        generated.replyText =
+            aiAnswerQualityService
+            .removeRedundantKnownContextQuestions({
+                latestMessage,
+                replyText:
+                    generated.replyText
+            });
+
+        const repaired =
+            aiAnswerQualityService
+            .evaluate({
+                latestMessage,
+                replyText:
+                    generated.replyText,
+                characterLimit:
+                    conversionConfig
+                    .replyCharacterLimit
+            });
+
+        generated.directAnswerQuality = {
+            kind:
+                repaired.kind,
+            repaired:
+                true,
+            passed:
+                repaired.passed,
+            reasons:
+                repaired.reasons
+        };
+
+        if (
+            repaired.needsRepair
+            && repaired.requiresCurrentResearch
+        ) {
+            generated.replyText =
+                conversationLanguageService
+                .getLocalized(
+                    "currentUnavailable",
+                    customerLanguage
+                );
+        }
+    } catch (error) {
+        console.warn(
+            "[AI Direct Answer Repair Failed]",
+            error.message
+        );
+
+        if (initial.requiresCurrentResearch) {
+            generated.replyText =
+                conversationLanguageService
+                .getLocalized(
+                    "currentUnavailable",
+                    customerLanguage
+                );
+        }
+    }
+
+    return {
+        generated,
+        repairResponse
+    };
+}
+
+
 async function compressReply({
     replyText,
     latestMessage,
@@ -1326,8 +1661,15 @@ function buildRequest({
 
         input,
 
+        // Structured JSON plus web-search tool output can consume more
+        // output tokens than the visible 200-character reply.
         max_output_tokens:
-            aiConfig.maxOutputTokens,
+            Math.max(
+                aiConfig.maxOutputTokens,
+                forceSearch
+                ? 2600
+                : 2000
+            ),
 
         text: {
             format: {
@@ -1547,14 +1889,14 @@ async function generateConversionReply({
                 });
         }
 
-        const webSearchUsed =
+        const initialWebSearchUsed =
             usedWebSearch(
                 result.response
             );
 
         if (
             serverDataRequest.required
-            && !webSearchUsed
+            && !initialWebSearchUsed
         ) {
             result.generated.replyText =
                 conversationLanguageService
@@ -1577,6 +1919,24 @@ async function generateConversionReply({
             customerLanguage
         });
 
+        const qualityResult =
+            await ensureDirectAnswerQuality({
+                generated:
+                    result.generated,
+                latestMessage,
+                customerLanguage
+            });
+
+        const repairResponse =
+            qualityResult.repairResponse;
+
+        await ensureLanguageCompliance({
+            generated:
+                result.generated,
+            latestMessage,
+            customerLanguage
+        });
+
         await ensureReplyCompliance({
             generated:
                 result.generated,
@@ -1584,9 +1944,21 @@ async function generateConversionReply({
             customerLanguage
         });
 
+        const webSearchUsed = Boolean(
+            initialWebSearchUsed
+            || usedWebSearch(
+                repairResponse
+            )
+        );
+
         const sources =
-            extractSources(
-                result.response
+            mergeSources(
+                extractSources(
+                    result.response
+                ),
+                extractSources(
+                    repairResponse
+                )
             );
 
         return {
@@ -1713,6 +2085,90 @@ async function generateConversionReply({
                     false,
 
                 structuredOutputFallback:
+                    true
+            };
+        }
+
+        if (
+            isOpenAIRequestTimeout(
+                error
+            )
+        ) {
+            console.error(
+                "[AI Request Timeout Fallback]",
+                {
+                    name:
+                        error.name
+                        || null,
+                    timeoutMs:
+                        aiConfig.requestTimeoutMs,
+                    freshDataRequired:
+                        serverDataRequest.required
+                }
+            );
+
+            const generated =
+                createStructuredFailureFallback({
+                    customerLanguage,
+                    serverDataRequest,
+                    finalAiReply
+                });
+
+            generated.intent =
+                "request_timeout_fallback";
+
+            generated.valueDelivered =
+                "A safe same-language fallback was returned after an OpenAI request timeout.";
+
+            await ensureReplyCompliance({
+                generated,
+                latestMessage,
+                customerLanguage
+            });
+
+            return {
+                ...generated,
+
+                text:
+                    generated.replyText,
+
+                characterCount:
+                    countCharacters(
+                        generated.replyText
+                    ),
+
+                responseId:
+                    null,
+
+                model:
+                    aiConfig.model,
+
+                usage:
+                    null,
+
+                webSearchUsed:
+                    false,
+
+                freshDataRequired:
+                    serverDataRequest.required,
+
+                searchedAt:
+                    null,
+
+                sources:
+                    [],
+
+                serverDataRequest,
+
+                customerLanguage,
+
+                structuredOutputRecovered:
+                    false,
+
+                structuredOutputFallback:
+                    true,
+
+                requestTimeoutFallback:
                     true
             };
         }

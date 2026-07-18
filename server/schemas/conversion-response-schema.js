@@ -2,8 +2,11 @@
  * Meridian Conversion Structured Output Schema
  *
  * Version:
- * v2.3.4
+ * v2.3.7
  */
+
+const conversionConfig =
+require("../config/conversion-config");
 
 const conversionResponseSchema = {
     type: "object",
@@ -33,7 +36,7 @@ const conversionResponseSchema = {
         replyText: {
             type: "string",
             minLength: 1,
-            maxLength: 100
+            maxLength: conversionConfig.replyCharacterLimit
         },
 
         intent: {
@@ -53,6 +56,10 @@ const conversionResponseSchema = {
                 "risk_management",
                 "long_term",
                 "short_term",
+                "sector_outlook",
+                "asset_comparison",
+                "long_term_selection",
+                "short_term_selection",
                 "whatsapp_request",
                 "refusal",
                 "conversation_close"
@@ -240,7 +247,7 @@ const compressionResponseSchema = {
         replyText: {
             type: "string",
             minLength: 1,
-            maxLength: 100
+            maxLength: conversionConfig.replyCharacterLimit
         }
     }
 };
@@ -259,7 +266,7 @@ const languageRepairResponseSchema = {
         replyText: {
             type: "string",
             minLength: 1,
-            maxLength: 100
+            maxLength: conversionConfig.replyCharacterLimit
         },
 
         ctaTitle: {
@@ -280,8 +287,23 @@ const languageRepairResponseSchema = {
 };
 
 
+const directAnswerRepairResponseSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["replyText"],
+    properties: {
+        replyText: {
+            type: "string",
+            minLength: 1,
+            maxLength: conversionConfig.replyCharacterLimit
+        }
+    }
+};
+
+
 module.exports = {
     conversionResponseSchema,
     compressionResponseSchema,
-    languageRepairResponseSchema
+    languageRepairResponseSchema,
+    directAnswerRepairResponseSchema
 };

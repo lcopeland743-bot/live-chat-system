@@ -2,7 +2,7 @@
  * Meridian Conversion Configuration
  *
  * Version:
- * v2.3.4
+ * v2.3.7
  */
 
 function normalizeInteger(value, fallback, minimum, maximum) {
@@ -38,14 +38,14 @@ function normalizePhoneNumber(value) {
 
 const replyCharacterLimit = normalizeInteger(
     process.env.AI_REPLY_CHARACTER_LIMIT,
-    100,
-    40,
-    100
+    200,
+    200,
+    200
 );
 
 module.exports = {
     policyVersion: "1.1.0",
-    promptVersion: "1.1.0",
+    promptVersion: "1.2.1",
 
     replyCharacterLimit,
     maxQuestionsPerReply: 1,

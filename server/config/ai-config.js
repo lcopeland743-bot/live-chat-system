@@ -2,7 +2,7 @@
  * Meridian AI Configuration
  *
  * Version:
- * v2.3.0
+ * v2.3.7
  */
 
 const conversionConfig =
