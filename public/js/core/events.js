@@ -43,7 +43,9 @@ window.MERIDIAN_EVENTS = {
      * Admin Reply
      */
 
-    ADMIN_REPLY: "admin_reply"
+    ADMIN_REPLY: "admin_reply",
+
+    AI_TYPING: "ai_typing"
 
 
 };

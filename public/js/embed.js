@@ -482,6 +482,25 @@
 
 
 
+        MeridianSocket.onAiTyping(
+
+            (data)=>{
+
+
+                MeridianChatUI.setAiTyping(
+
+                    data
+
+                );
+
+
+            }
+
+        );
+
+
+
+
         console.log(
 
             "Meridian Embed Initialized v1.1"

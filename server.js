@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.3.7
+ * v2.3.8
  *
  * Features:
  * - Express
@@ -24,6 +24,7 @@
  * - Admin Visitor Classification Statistics
  * - Direct Answer Framework 1.2
  * - 200-Character AI Reply Limit
+ * - Customer AI Typing Indicator
  */
 
 require("dotenv").config();
@@ -516,7 +517,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.3.7 running on port",
+                "Meridian Chat SDK v2.3.8 running on port",
 
                 config.port
 

@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.3.0
+ * v2.3.8
  *
  * Features:
  * - Rich messages
@@ -12,6 +12,7 @@
  * - OpenAI Web Search sources
  * - Dynamic WhatsApp Link Cards
  * - ASSIST / AUTO / Human Takeover
+ * - Customer AI Typing Indicator
  */
 
 const MeridianTime =
@@ -182,6 +183,41 @@ function emitAiError(
 }
 
 
+function emitAiTyping(
+    io,
+    targetSocketId,
+    payload,
+    active
+) {
+    if (
+        !targetSocketId
+        || !payload
+        || !payload.userId
+        || !payload.messageId
+    ) {
+        return;
+    }
+
+    io.to(targetSocketId)
+    .emit(
+        "ai_typing",
+        {
+            userId:
+                payload.userId,
+
+            sourceMessageId:
+                payload.messageId,
+
+            active:
+                active === true,
+
+            time:
+                MeridianTime.now()
+        }
+    );
+}
+
+
 async function saveAutomatedReply(
     io,
     targetSocketId,
@@ -297,8 +333,40 @@ async function sendBriefingAutoReply(
 async function processAiReply(
     io,
     socket,
-    payload
+    payload,
+    sessionSnapshot
 ) {
+    const conversionState =
+        sessionSnapshot
+        && sessionSnapshot.conversionState
+        ? sessionSnapshot.conversionState
+        : {};
+
+    const typingEnabled =
+        Boolean(
+            sessionSnapshot
+            && sessionSnapshot.aiMode === "auto"
+            && sessionSnapshot.humanTakeover
+                !== true
+            && conversionState.humanTakeover
+                !== true
+            && conversionState.aiReplyLimitReached
+                !== true
+            && Number(
+                conversionState.aiReplyCount
+                || 0
+            ) < 5
+        );
+
+    if (typingEnabled) {
+        emitAiTyping(
+            io,
+            socket.id,
+            payload,
+            true
+        );
+    }
+
     try {
         const result =
             await aiConversationService
@@ -399,6 +467,15 @@ async function processAiReply(
             return;
         }
 
+        if (typingEnabled) {
+            emitAiTyping(
+                io,
+                socket.id,
+                payload,
+                false
+            );
+        }
+
         await saveAutomatedReply(
             io,
             socket.id,
@@ -441,6 +518,15 @@ async function processAiReply(
             payload.userId,
             error
         );
+    } finally {
+        if (typingEnabled) {
+            emitAiTyping(
+                io,
+                socket.id,
+                payload,
+                false
+            );
+        }
     }
 }
 
@@ -571,7 +657,8 @@ function registerChatHandler(
                 processAiReply(
                     io,
                     socket,
-                    payload
+                    payload,
+                    session
                 );
             } catch (error) {
                 console.error(

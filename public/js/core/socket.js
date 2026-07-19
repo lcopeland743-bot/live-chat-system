@@ -624,6 +624,110 @@ window.MeridianSocket = {
 
 
 
+    onAiTyping(callback){
+
+
+        const EVENTS =
+
+        window.MERIDIAN_EVENTS;
+
+
+
+
+        if(
+
+            !this.socket
+
+            ||
+
+            !EVENTS
+
+            ||
+
+            typeof callback !== "function"
+
+        ){
+
+
+            return;
+
+
+        }
+
+
+
+
+        this.socket.on(
+
+            EVENTS.AI_TYPING,
+
+            (data)=>{
+
+
+                callback({
+
+
+                    active:
+
+                    data
+
+                    &&
+
+                    data.active === true,
+
+
+                    sourceMessageId:
+
+                    data
+
+                    &&
+
+                    data.sourceMessageId
+
+                    ||
+
+                    "",
+
+
+                    userId:
+
+                    data
+
+                    &&
+
+                    data.userId
+
+                    ||
+
+                    "",
+
+
+                    time:
+
+                    data
+
+                    &&
+
+                    data.time
+
+                    ||
+
+                    null
+
+
+                });
+
+
+            }
+
+        );
+
+
+    },
+
+
+
+
     onAdminReply(callback){
 
 

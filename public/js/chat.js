@@ -38,6 +38,20 @@
 });
 
 
+        MeridianSocket.onAiTyping((data) => {
+
+
+            MeridianChatUI.setAiTyping(
+
+                data
+
+            );
+
+
+        });
+
+
+
         MeridianLogger.info(
             "Chat SDK initialized"
         );

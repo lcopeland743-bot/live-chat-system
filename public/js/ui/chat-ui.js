@@ -36,6 +36,15 @@ window.MeridianChatUI = {
   investorChoiceLocked:false,
 
 
+  typingIndicator:null,
+
+
+  typingRequests:new Map(),
+
+
+  typingTimeoutMs:130000,
+
+
 
   init(){
 
@@ -1039,6 +1048,251 @@ window.MeridianChatUI = {
 
 
 
+  setAiTyping(
+
+    data={}
+
+  ){
+
+
+    const requestId =
+
+    String(
+
+      data.sourceMessageId
+
+      ||
+
+      "default"
+
+    );
+
+
+    if(data.active===true){
+
+
+      const existingTimer =
+
+      this.typingRequests.get(
+
+        requestId
+
+      );
+
+
+      if(existingTimer){
+
+
+        window.clearTimeout(
+
+          existingTimer
+
+        );
+
+
+      }
+
+
+      const timeoutId =
+
+      window.setTimeout(
+
+        ()=>{
+
+
+          this.typingRequests.delete(
+
+            requestId
+
+          );
+
+
+          this.updateAiTypingIndicator();
+
+
+        },
+
+        this.typingTimeoutMs
+
+      );
+
+
+      this.typingRequests.set(
+
+        requestId,
+
+        timeoutId
+
+      );
+
+
+    }
+
+    else{
+
+
+      const existingTimer =
+
+      this.typingRequests.get(
+
+        requestId
+
+      );
+
+
+      if(existingTimer){
+
+
+        window.clearTimeout(
+
+          existingTimer
+
+        );
+
+
+      }
+
+
+      this.typingRequests.delete(
+
+        requestId
+
+      );
+
+
+    }
+
+
+    this.updateAiTypingIndicator();
+
+
+  },
+
+
+
+
+  updateAiTypingIndicator(){
+
+
+    if(!this.elements.messages){
+
+
+      return;
+
+
+    }
+
+
+    if(this.typingRequests.size===0){
+
+
+      if(this.typingIndicator){
+
+
+        this.typingIndicator.remove();
+
+
+        this.typingIndicator=null;
+
+
+      }
+
+
+      return;
+
+
+    }
+
+
+    if(
+
+      this.typingIndicator
+
+      &&
+
+      this.typingIndicator.isConnected
+
+    ){
+
+
+      this.scrollBottom();
+
+
+      return;
+
+
+    }
+
+
+    const indicator =
+
+    document.createElement("div");
+
+
+    indicator.className =
+
+    "meridian-message "
+
+    +
+
+    "meridian-message-admin "
+
+    +
+
+    "meridian-typing-indicator";
+
+
+    indicator.setAttribute(
+
+      "role",
+
+      "status"
+
+    );
+
+
+    indicator.setAttribute(
+
+      "aria-label",
+
+      "AI is typing"
+
+    );
+
+
+    indicator.innerHTML =
+
+    "<span></span>"
+
+    +
+
+    "<span></span>"
+
+    +
+
+    "<span></span>";
+
+
+    this.typingIndicator=
+
+    indicator;
+
+
+    this.elements.messages.appendChild(
+
+      indicator
+
+    );
+
+
+    this.scrollBottom();
+
+
+  },
+
+
+
+
   addMessage(
 
     message,
@@ -1077,9 +1331,28 @@ window.MeridianChatUI = {
 
 
 
-    this.elements.messages.appendChild(
+    const typingIndicator =
 
-      messageDiv
+    this.typingIndicator
+
+    &&
+
+    this.typingIndicator.isConnected
+
+    ?
+
+    this.typingIndicator
+
+    :
+
+    null;
+
+
+    this.elements.messages.insertBefore(
+
+      messageDiv,
+
+      typingIndicator
 
     );
 
