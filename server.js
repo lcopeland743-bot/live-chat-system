@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.3.10
+ * v2.3.11
  *
  * Features:
  * - Express
@@ -27,6 +27,7 @@
  * - Customer AI Typing Indicator
  * - Latest-Only Auto Reply Concurrency Control
  * - Persistent Error Monitoring and Admin Diagnostics
+ * - Offline Silent Session Automatic Cleanup
  */
 
 require("dotenv").config();
@@ -712,7 +713,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.3.10 running on port",
+                "Meridian Chat SDK v2.3.11 running on port",
 
                 config.port
 

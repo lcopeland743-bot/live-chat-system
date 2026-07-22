@@ -532,7 +532,7 @@ async function run() {
     scheduler.resetForTests();
 
     console.log(
-        "AI Concurrency Control v2.3.10 tests passed."
+        "AI Concurrency Control v2.3.11 tests passed."
     );
 }
 

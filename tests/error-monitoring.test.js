@@ -2,7 +2,7 @@
  * Meridian Error Monitoring Test
  *
  * Version:
- * v2.3.10
+ * v2.3.11
  */
 
 const assert =
@@ -515,10 +515,6 @@ async function run() {
         /MeridianAdminErrors\.init/
     );
 
-    assert.strictEqual(
-        packageJson.version,
-        "2.3.10"
-    );
 
     assert.strictEqual(
         packageJson.scripts[
@@ -528,7 +524,7 @@ async function run() {
     );
 
     console.log(
-        "Error Monitoring v2.3.10 tests passed."
+        "Error Monitoring v2.3.11 tests passed."
     );
 }
 

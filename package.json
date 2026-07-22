@@ -1,6 +1,6 @@
 {
   "name": "live-chat-system",
-  "version": "2.3.10",
+  "version": "2.3.11",
   "private": true,
   "main": "server.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:ai-direct-answer": "node tests/ai-direct-answer-framework.test.js",
     "test:ai-typing": "node tests/ai-typing-indicator.test.js",
     "test:ai-concurrency": "node tests/ai-concurrency-control.test.js",
-    "test:error-monitor": "node tests/error-monitoring.test.js"
+    "test:error-monitor": "node tests/error-monitoring.test.js",
+    "test:silent-cleanup": "node tests/silent-session-cleanup.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

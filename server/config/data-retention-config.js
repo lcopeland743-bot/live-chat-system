@@ -2,7 +2,7 @@
  * Meridian Data Retention Configuration
  *
  * Version:
- * v2.3.10
+ * v2.3.11
  */
 
 function normalizeBoolean(value, fallback) {
@@ -88,6 +88,14 @@ const config = {
             3650
         ),
 
+    silentSessionRetentionHours:
+        normalizeInteger(
+            process.env.SILENT_SESSION_RETENTION_HOURS,
+            24,
+            1,
+            8760
+        ),
+
     conversionEventRetentionDays:
         normalizeInteger(
             process.env.CONVERSION_EVENT_RETENTION_DAYS,
@@ -142,6 +150,25 @@ const config = {
         ? addDays(
             date,
             this.closedSessionRetentionDays
+        )
+        : null;
+    },
+
+    calculateSilentSessionCutoff(date = new Date()) {
+        const value =
+            date instanceof Date
+            ? date
+            : new Date(date);
+
+        if (Number.isNaN(value.getTime())) {
+            return null;
+        }
+
+        return this.enabled
+        ? new Date(
+            value.getTime()
+            - this.silentSessionRetentionHours
+            * 60 * 60 * 1000
         )
         : null;
     },

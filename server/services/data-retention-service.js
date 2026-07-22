@@ -2,12 +2,13 @@
  * Meridian Data Retention Service
  *
  * Version:
- * v2.3.2
+ * v2.3.11
  *
  * Responsibilities:
  * - Ensure TTL indexes
  * - Backfill expiry dates for existing records
  * - Delete expired messages/events/closed sessions deterministically
+ * - Delete expired offline silent sessions with strict safety filters
  * - Delete old uploaded files
  * - Run on startup and on a fixed interval
  */
@@ -30,6 +31,10 @@ require("../database/models/session-model");
 
 const ConversionEvent =
 require("../database/models/conversion-event-model");
+
+
+const silentSessionCleanupService =
+require("./silent-session-cleanup-service");
 
 
 const config =
@@ -377,6 +382,7 @@ async function runCleanup() {
             messagesDeleted,
             eventsDeleted,
             sessionsDeleted,
+            silentSessionResult,
             uploadResult
         ] =
         await Promise.all([
@@ -397,6 +403,8 @@ async function runCleanup() {
                     $lte: now
                 }
             }),
+            silentSessionCleanupService
+            .cleanupExpired(now),
             cleanupUploads(now)
         ]);
 
@@ -424,9 +432,14 @@ async function runCleanup() {
                 closedSessions:
                     sessionsDeleted.deletedCount
                     || 0,
+                silentSessions:
+                    silentSessionResult.deleted
+                    || 0,
                 uploads:
                     uploadResult.deleted
             },
+            silentSessionCutoff:
+                silentSessionResult.cutoff,
             uploadsScanned:
                 uploadResult.scanned
         };

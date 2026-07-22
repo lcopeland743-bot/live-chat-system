@@ -21,6 +21,10 @@ const config =
 require("../config/data-retention-config");
 
 
+const silentSessionCleanupService =
+require("../services/silent-session-cleanup-service");
+
+
 const {
     connectDatabase,
     disconnectDatabase
@@ -42,7 +46,8 @@ async function main() {
         conversionEvents,
         expiredMessages,
         expiredEvents,
-        expiredSessions
+        expiredSessions,
+        expiredSilentSessions
     ] =
     await Promise.all([
         Message.countDocuments(),
@@ -68,7 +73,9 @@ async function main() {
             purgeAt: {
                 $lte: now
             }
-        })
+        }),
+        silentSessionCleanupService
+        .countReadyForDeletion(now)
     ]);
 
     console.log({
@@ -79,6 +86,8 @@ async function main() {
                 config.messageRetentionDays,
             closedSessionRetentionDays:
                 config.closedSessionRetentionDays,
+            silentSessionRetentionHours:
+                config.silentSessionRetentionHours,
             conversionEventRetentionDays:
                 config.conversionEventRetentionDays,
             uploadRetentionDays:
@@ -100,7 +109,9 @@ async function main() {
             conversionEvents:
                 expiredEvents,
             closedSessions:
-                expiredSessions
+                expiredSessions,
+            silentSessions:
+                expiredSilentSessions
         },
         protectedCollection:
             "admin_sessions"

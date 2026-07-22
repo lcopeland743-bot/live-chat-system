@@ -4,7 +4,7 @@
  * MongoDB Conversation Schema
  *
  * Version:
- * v2.3.3
+ * v2.3.11
  */
 
 const mongoose =
@@ -375,6 +375,21 @@ sessionSchema.index({
 sessionSchema.index({
     updatedAt: -1
 });
+
+
+sessionSchema.index(
+    {
+        status: 1,
+        conversationStatus: 1,
+        messageCount: 1,
+        lastSeen: 1,
+        updatedAt: 1
+    },
+    {
+        name:
+            "silent_session_cleanup_lookup"
+    }
+);
 
 
 sessionSchema.index({
