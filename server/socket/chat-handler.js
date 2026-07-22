@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.3.8
+ * v2.3.9
  *
  * Features:
  * - Rich messages
@@ -13,6 +13,7 @@
  * - Dynamic WhatsApp Link Cards
  * - ASSIST / AUTO / Human Takeover
  * - Customer AI Typing Indicator
+ * - Latest-only pending Auto reply queue
  */
 
 const MeridianTime =
@@ -371,7 +372,18 @@ async function processAiReply(
         const result =
             await aiConversationService
             .processUserMessage({
-                payload
+                payload,
+                onAutoReplyCancelled:
+                    () => {
+                        if (typingEnabled) {
+                            emitAiTyping(
+                                io,
+                                socket.id,
+                                payload,
+                                false
+                            );
+                        }
+                    }
             });
 
         if (result.action === "none") {
@@ -789,6 +801,12 @@ function registerChatHandler(
                     session.aiMode === "assist"
                     || session.aiMode === "auto"
                 ) {
+                    aiConversationService
+                    .cancelAutoReplies(
+                        session.userId,
+                        "human_takeover"
+                    );
+
                     updatedSession =
                         await sessionService
                         .setHumanTakeover(

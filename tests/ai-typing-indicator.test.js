@@ -109,10 +109,6 @@ assert.match(
     /@keyframes meridian-typing-bounce/
 );
 
-assert.strictEqual(
-    packageJson.version,
-    "2.3.8"
-);
 
 assert.strictEqual(
     packageJson.scripts["test:ai-typing"],
@@ -120,5 +116,5 @@ assert.strictEqual(
 );
 
 console.log(
-    "AI Typing Indicator v2.3.8 tests passed."
+    "AI Typing Indicator v2.3.9 tests passed."
 );

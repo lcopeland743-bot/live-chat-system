@@ -2,7 +2,7 @@
  * Meridian Admin AI Routes
  *
  * Version:
- * v2.3.3
+ * v2.3.9
  */
 
 const express =
@@ -99,12 +99,28 @@ router.patch(
                     });
             }
 
+            if (mode !== "auto") {
+                aiConversationService
+                .cancelAutoReplies(
+                    req.params.userId,
+                    "ai_mode_changed"
+                );
+            }
+
             const session =
                 await sessionService
                 .setAiMode(
                     req.params.userId,
                     mode
                 );
+
+            if (mode !== "auto") {
+                aiConversationService
+                .cancelAutoReplies(
+                    req.params.userId,
+                    "ai_mode_changed"
+                );
+            }
 
             if (!session) {
                 return res

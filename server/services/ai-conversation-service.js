@@ -2,13 +2,14 @@
  * Meridian AI Conversation Service
  *
  * Version:
- * v2.3.4
+ * v2.3.9
  *
  * Features:
  * - OFF / ASSIST / AUTO
  * - Per-session AI mode
  * - Human takeover
  * - Serialized requests
+ * - Latest-only pending Auto reply queue
  * - Structured conversion decisions
  * - OpenAI Web Search
  * - Dynamic WhatsApp CTA
@@ -48,6 +49,10 @@ require("./whatsapp-conversion-service");
 
 const conversionAnalyticsService =
 require("./conversion-analytics-service");
+
+
+const aiAutoReplyScheduler =
+require("./ai-auto-reply-scheduler");
 
 
 const {
@@ -583,137 +588,434 @@ async function generateSuggestion(
 }
 
 
+function timestampValue(
+    value
+) {
+    if (!value) {
+        return null;
+    }
+
+    const timestamp =
+        new Date(value)
+        .getTime();
+
+    return Number.isFinite(
+        timestamp
+    )
+    ? timestamp
+    : String(value);
+}
+
+
+function createNoActionResult({
+    mode = null,
+    reason = null,
+    details = {}
+} = {}) {
+    return {
+        action:
+            "none",
+        ...(
+            mode
+            ? {
+                mode
+            }
+            : {}
+        ),
+        ...(
+            reason
+            ? {
+                reason
+            }
+            : {}
+        ),
+        ...details
+    };
+}
+
+
+async function processUserMessageTask({
+    payload,
+    expectedMode,
+    isActive =
+        () => true
+}) {
+    if (!isActive()) {
+        return createNoActionResult({
+            mode:
+                expectedMode,
+            reason:
+                "auto_reply_cancelled"
+        });
+    }
+
+    const session =
+        await sessionService
+        .getSessionByUserId(
+            payload.userId
+        );
+
+    if (!session) {
+        return createNoActionResult({
+            mode:
+                expectedMode,
+            reason:
+                "session_not_found"
+        });
+    }
+
+    const mode =
+        aiConfig.normalizeMode(
+            session.aiMode
+        );
+
+    if (
+        mode !== expectedMode
+    ) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "ai_mode_changed"
+        });
+    }
+
+    if (mode === "off") {
+        return createNoActionResult({
+            mode,
+            reason:
+                "ai_mode_off"
+        });
+    }
+
+    if (
+        session.humanTakeover
+        === true
+    ) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "human_takeover"
+        });
+    }
+
+    const initialState =
+        conversionStateService
+        .normalize(
+            session.conversionState
+        );
+
+    if (
+        hasReachedAiReplyLimit(
+            session
+        )
+    ) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "ai_reply_limit_reached",
+            details: {
+                aiReplyCount:
+                    initialState
+                    .aiReplyCount
+            }
+        });
+    }
+
+    if (!isActive()) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "auto_reply_cancelled"
+        });
+    }
+
+    const history =
+        await getConversationHistory(
+            payload.userId
+        );
+
+    if (!isActive()) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "auto_reply_cancelled"
+        });
+    }
+
+    const generated =
+        await buildGeneratedResult({
+            session,
+            history,
+            latestMessage:
+                payload.content
+        });
+
+    if (
+        mode === "assist"
+    ) {
+        if (
+            generated.decision.doNotPush
+            === true
+        ) {
+            await sessionService
+            .setConversionDoNotPush(
+                payload.userId,
+                true
+            );
+        }
+
+        storePendingSuggestion({
+            userId:
+                payload.userId,
+            expectedMode:
+                "assist",
+            generated
+        });
+
+        return {
+            action:
+                "suggestion",
+            mode,
+            generated
+        };
+    }
+
+    if (!isActive()) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "auto_reply_cancelled"
+        });
+    }
+
+    const latestSession =
+        await sessionService
+        .getSessionByUserId(
+            payload.userId
+        );
+
+    if (!latestSession) {
+        return createNoActionResult({
+            mode,
+            reason:
+                "session_not_found"
+        });
+    }
+
+    const latestMode =
+        aiConfig.normalizeMode(
+            latestSession.aiMode
+        );
+
+    const latestState =
+        conversionStateService
+        .normalize(
+            latestSession
+            .conversionState
+        );
+
+    if (
+        !isActive()
+        || latestMode !== "auto"
+        || latestSession.humanTakeover
+            === true
+        || timestampValue(
+            latestSession.aiUpdatedAt
+        ) !== timestampValue(
+            session.aiUpdatedAt
+        )
+        || latestState.aiReplyCount
+            !== initialState.aiReplyCount
+        || hasReachedAiReplyLimit(
+            latestSession
+        )
+    ) {
+        return createNoActionResult({
+            mode:
+                latestMode,
+            reason:
+                "ai_state_changed"
+        });
+    }
+
+    if (!isActive()) {
+        return createNoActionResult({
+            mode:
+                latestMode,
+            reason:
+                "auto_reply_cancelled"
+        });
+    }
+
+    const committedSession =
+        await sessionService
+        .commitConversionStateIfAiActive(
+            payload.userId,
+            generated.nextState,
+            "auto"
+        );
+
+    if (!committedSession) {
+        return createNoActionResult({
+            mode:
+                latestMode,
+            reason:
+                "ai_state_changed"
+        });
+    }
+
+    await recordCommittedResult({
+        userId:
+            payload.userId,
+        generated,
+        session:
+            committedSession
+    });
+
+    return {
+        action:
+            "reply",
+        mode:
+            latestMode,
+        generated,
+        session:
+            committedSession
+    };
+}
+
+
+function shouldStopPendingAutoReplies(
+    result
+) {
+    if (
+        !result
+        || result.action === "none"
+    ) {
+        return true;
+    }
+
+    if (
+        result.action === "reply"
+        && result.session
+        && hasReachedAiReplyLimit(
+            result.session
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+
 async function processUserMessage({
-    payload
+    payload,
+    onAutoReplyCancelled
 }) {
     if (!isEligiblePayload(payload)) {
-        return {
-            action: "none"
-        };
+        return createNoActionResult({
+            reason:
+                "ineligible_payload"
+        });
+    }
+
+    const session =
+        await sessionService
+        .getSessionByUserId(
+            payload.userId
+        );
+
+    if (!session) {
+        return createNoActionResult({
+            reason:
+                "session_not_found"
+        });
+    }
+
+    const mode =
+        aiConfig.normalizeMode(
+            session.aiMode
+        );
+
+    if (
+        mode === "off"
+        || session.humanTakeover
+            === true
+    ) {
+        return createNoActionResult({
+            mode,
+            reason:
+                session.humanTakeover
+                ? "human_takeover"
+                : "ai_mode_off"
+        });
+    }
+
+    if (mode === "auto") {
+        return aiAutoReplyScheduler
+        .schedule({
+            userId:
+                payload.userId,
+            messageId:
+                payload.messageId,
+            onCancel:
+                onAutoReplyCancelled,
+            task:
+                async schedulerContext => {
+                    const result =
+                        await enqueue(
+                            payload.userId,
+                            () =>
+                                processUserMessageTask({
+                                    payload,
+                                    expectedMode:
+                                        "auto",
+                                    isActive:
+                                        schedulerContext
+                                        .isActive
+                                })
+                        );
+
+                    if (
+                        shouldStopPendingAutoReplies(
+                            result
+                        )
+                    ) {
+                        schedulerContext
+                        .stopPending(
+                            result
+                            && result.reason
+                            ? result.reason
+                            : "ai_reply_limit_reached"
+                        );
+                    }
+
+                    return result;
+                }
+        });
     }
 
     return enqueue(
         payload.userId,
-        async () => {
-            const session =
-                await sessionService
-                .getSessionByUserId(
-                    payload.userId
-                );
-
-            if (!session) {
-                return {
-                    action: "none"
-                };
-            }
-
-            const mode =
-                aiConfig.normalizeMode(
-                    session.aiMode
-                );
-
-            if (
-                mode === "off"
-                || session.humanTakeover === true
-            ) {
-                return {
-                    action: "none",
+        () =>
+            processUserMessageTask({
+                payload,
+                expectedMode:
                     mode
-                };
-            }
-
-            if (
-                hasReachedAiReplyLimit(
-                    session
-                )
-            ) {
-                return {
-                    action: "none",
-                    mode,
-                    reason:
-                        "ai_reply_limit_reached",
-                    aiReplyCount:
-                        conversionStateService
-                        .normalize(
-                            session.conversionState
-                        )
-                        .aiReplyCount
-                };
-            }
-
-            const history =
-                await getConversationHistory(
-                    payload.userId
-                );
-
-            const generated =
-                await buildGeneratedResult({
-                    session,
-                    history,
-                    latestMessage:
-                        payload.content
-                });
-
-            if (mode === "assist") {
-                if (
-                    generated.decision.doNotPush
-                    === true
-                ) {
-                    await sessionService
-                        .setConversionDoNotPush(
-                            payload.userId,
-                            true
-                        );
-                }
-
-                storePendingSuggestion({
-                    userId:
-                        payload.userId,
-                    expectedMode:
-                        "assist",
-                    generated
-                });
-
-                return {
-                    action:
-                        "suggestion",
-                    mode,
-                    generated
-                };
-            }
-
-            const committedSession =
-                await sessionService
-                .commitConversionStateIfAiActive(
-                    payload.userId,
-                    generated.nextState,
-                    "auto"
-                );
-
-            if (!committedSession) {
-                return {
-                    action: "none",
-                    mode
-                };
-            }
-
-            await recordCommittedResult({
-                userId:
-                    payload.userId,
-                generated,
-                session:
-                    committedSession
-            });
-
-            return {
-                action: "reply",
-                mode,
-                generated,
-                session:
-                    committedSession
-            };
-        }
+            })
     );
+}
+
+
+function cancelAutoReplies(
+    userId,
+    reason
+) {
+    return aiAutoReplyScheduler
+        .cancel(
+            userId,
+            reason
+        );
 }
 
 
@@ -820,7 +1122,11 @@ function getPublicStatus() {
 
         maxAiRepliesPerSession:
             conversionConfig
-            .maxAiRepliesPerSession
+            .maxAiRepliesPerSession,
+
+        autoReplyQueue:
+            aiAutoReplyScheduler
+            .getStatus()
     };
 }
 
@@ -829,6 +1135,7 @@ module.exports = {
     isEligiblePayload,
     generateSuggestion,
     processUserMessage,
+    cancelAutoReplies,
     commitSuggestion,
     getPublicStatus
 };
