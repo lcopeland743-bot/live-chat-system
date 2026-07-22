@@ -500,15 +500,18 @@ function testIntegrationWiring() {
         /cancelAutoReplies\([\s\S]*ai_mode_changed/
     );
 
-    assert.match(
-        server,
-        /Meridian Chat SDK v2\.3\.9 running on port/
+    const escapedVersion =
+    packageJson.version.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
     );
 
-    assert.strictEqual(
-        packageJson.version,
-        "2.3.9"
-    );
+assert.match(
+    server,
+    new RegExp(
+        `Meridian Chat SDK v${escapedVersion} running on port`
+    )
+);
 
     assert.strictEqual(
         packageJson.scripts[
@@ -529,7 +532,7 @@ async function run() {
     scheduler.resetForTests();
 
     console.log(
-        "AI Concurrency Control v2.3.9 tests passed."
+        "AI Concurrency Control v2.3.10 tests passed."
     );
 }
 

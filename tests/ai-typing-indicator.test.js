@@ -116,5 +116,5 @@ assert.strictEqual(
 );
 
 console.log(
-    "AI Typing Indicator v2.3.9 tests passed."
+    "AI Typing Indicator v2.3.10 tests passed."
 );

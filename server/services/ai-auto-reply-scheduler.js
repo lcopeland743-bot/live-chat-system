@@ -2,7 +2,7 @@
  * Meridian AI Auto Reply Scheduler
  *
  * Version:
- * v2.3.9
+ * v2.3.10
  *
  * Strategy:
  * - One running Auto AI task per session.
@@ -10,6 +10,10 @@
  * - Different sessions may run in parallel.
  * - Cancellation prevents stale replies from being delivered.
  */
+
+const errorMonitorService =
+require("./error-monitor-service");
+
 
 const sessionStates =
 new Map();
@@ -121,19 +125,37 @@ function notifyCancellation(
             ...details
         });
     } catch (error) {
+        const context = {
+            userId:
+                job.userId,
+            messageId:
+                job.messageId,
+            reason
+        };
+
         console.error(
             "[AI Auto Queue Cancel Callback Error]",
             {
-                userId:
-                    job.userId,
-                messageId:
-                    job.messageId,
-                reason,
+                ...context,
                 error:
                     error.message
                     || String(error)
             }
         );
+
+        errorMonitorService
+        .captureError({
+            source:
+                "ai.auto_queue.cancel_callback",
+            error,
+            message:
+                "AI auto queue cancellation callback failed.",
+            code:
+                error.code
+                || "AI_AUTO_QUEUE_CANCEL_CALLBACK_FAILED",
+            context
+        })
+        .catch(() => {});
     }
 }
 

@@ -141,6 +141,65 @@ href="/css/admin.css">
 
             </section>
 
+            <section
+            id="adminErrorPanel"
+            class="admin-panel admin-error-panel">
+
+                <div class="admin-error-heading">
+                    <h2>
+                        System Errors
+                    </h2>
+
+                    <div class="admin-error-actions">
+                        <button
+                        id="adminErrorRefreshBtn"
+                        type="button">
+                            Refresh
+                        </button>
+
+                        <button
+                        id="adminErrorResolveAllBtn"
+                        type="button">
+                            Resolve All
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                class="admin-error-summary"
+                aria-label="System error summary">
+                    <div>
+                        <span>Unresolved</span>
+                        <strong id="adminErrorUnresolvedCount">0</strong>
+                    </div>
+                    <div>
+                        <span>Critical</span>
+                        <strong id="adminErrorCriticalCount">0</strong>
+                    </div>
+                    <div>
+                        <span>Errors</span>
+                        <strong id="adminErrorErrorCount">0</strong>
+                    </div>
+                    <div>
+                        <span>Warnings</span>
+                        <strong id="adminErrorWarningCount">0</strong>
+                    </div>
+                </div>
+
+                <p
+                id="adminErrorStatus"
+                class="admin-error-status"
+                aria-live="polite">
+                    Loading system errors...
+                </p>
+
+                <div
+                id="adminErrorList"
+                class="admin-error-list">
+                </div>
+
+            </section>
+
         </aside>
 
         <section class="admin-chat">
@@ -304,6 +363,7 @@ href="/css/admin.css">
 <script src="/js/admin/admin-state.js"></script>
 <script src="/js/admin/admin-ui.js"></script>
 <script src="/js/admin/admin-ai.js"></script>
+<script src="/js/admin/admin-errors.js"></script>
 
 <script src="/js/upload.js"></script>
 <script src="/js/admin/admin-upload.js"></script>

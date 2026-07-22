@@ -2,7 +2,7 @@
  * Meridian Admin AI Routes
  *
  * Version:
- * v2.3.9
+ * v2.3.10
  */
 
 const express =
@@ -37,6 +37,10 @@ require("../services/ai-conversation-service");
 
 const sessionService =
 require("../services/session-service");
+
+
+const errorMonitorService =
+require("../services/error-monitor-service");
 
 
 router.use(
@@ -147,6 +151,27 @@ router.patch(
                 error
             );
 
+            errorMonitorService
+            .captureError({
+                source:
+                    "admin.ai_mode_update",
+                error,
+                message:
+                    "AI mode update failed.",
+                code:
+                    error.code
+                    || "AI_MODE_UPDATE_FAILED",
+                context: {
+                    userId:
+                        req.params.userId,
+                    requestedMode:
+                        req.body
+                        ? req.body.mode
+                        : null
+                }
+            })
+            .catch(() => {});
+
             return res
                 .status(500)
                 .json({
@@ -252,6 +277,31 @@ router.post(
                 "AI suggestion error:",
                 error
             );
+
+            if (
+                error.code
+                !== "AI_REPLY_LIMIT_REACHED"
+            ) {
+                errorMonitorService
+                .captureError({
+                    source:
+                        "admin.ai_suggestion",
+                    error,
+                    message:
+                        "AI suggestion generation failed.",
+                    code:
+                        error.code
+                        || "AI_SUGGESTION_FAILED",
+                    context: {
+                        userId:
+                            req.params.userId,
+                        status:
+                            error.status
+                            || null
+                    }
+                })
+                .catch(() => {});
+            }
 
             return res
                 .status(

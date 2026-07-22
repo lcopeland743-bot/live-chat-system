@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.3.9
+ * v2.3.10
  *
  * Features:
  * - Express
@@ -26,6 +26,7 @@
  * - 200-Character AI Reply Limit
  * - Customer AI Typing Indicator
  * - Latest-Only Auto Reply Concurrency Control
+ * - Persistent Error Monitoring and Admin Diagnostics
  */
 
 require("dotenv").config();
@@ -88,6 +89,19 @@ const dataRetentionService =
 require("./server/services/data-retention-service");
 
 
+const errorMonitorService =
+require("./server/services/error-monitor-service");
+
+
+const {
+    requestIdMiddleware,
+    expressErrorHandler,
+    installProcessHandlers
+}
+=
+require("./server/middleware/error-monitor-middleware");
+
+
 const registerPresenceHandler =
 require("./server/socket/presence-handler");
 
@@ -116,6 +130,10 @@ const adminAiRoute =
 require("./server/routes/admin-ai-route");
 
 
+const adminErrorRoute =
+require("./server/routes/admin-error-route");
+
+
 const messageRoute =
 require("./server/routes/message-route");
 
@@ -142,6 +160,9 @@ require("./server/routes/upload-route");
 
 const conversionRoute =
 require("./server/routes/conversion-route");
+
+
+installProcessHandlers();
 
 
 const app =
@@ -203,6 +224,13 @@ app.set(
 
 const sessionMiddleware =
 createSessionMiddleware();
+
+
+app.use(
+
+    requestIdMiddleware
+
+);
 
 
 app.use(
@@ -331,6 +359,15 @@ app.use(
 
 app.use(
 
+    "/api/admin/errors",
+
+    adminErrorRoute
+
+);
+
+
+app.use(
+
     "/api/agents",
 
     agentRoute
@@ -392,6 +429,13 @@ app.get(
 );
 
 
+app.use(
+
+    expressErrorHandler
+
+);
+
+
 io.engine.use(
 
     sessionMiddleware
@@ -402,6 +446,66 @@ io.engine.use(
 configureAdminSocketAuth(
 
     io
+
+);
+
+
+io.engine.on(
+
+    "connection_error",
+
+    error=>{
+
+
+        console.error(
+
+            "[Socket Connection Error]",
+
+            error
+
+        );
+
+
+        errorMonitorService
+
+        .captureError({
+
+            source:
+
+                "socket.connection",
+
+            error,
+
+            message:
+
+                "Socket connection failed.",
+
+            code:
+
+                error.code
+
+                || "SOCKET_CONNECTION_FAILED",
+
+            context: {
+
+                remoteAddress:
+
+                    error.req
+
+                    && error.req.socket
+
+                    ? error.req.socket.remoteAddress
+
+                    : null
+
+            }
+
+        })
+
+        .catch(()=>{});
+
+
+    }
 
 );
 
@@ -456,6 +560,66 @@ io.on(
         }
 
 
+        socket.on(
+
+            "error",
+
+            error=>{
+
+
+                console.error(
+
+                    "[Socket Error]",
+
+                    error
+
+                );
+
+
+                errorMonitorService
+
+                .captureError({
+
+                    source:
+
+                        "socket.runtime",
+
+                    error,
+
+                    message:
+
+                        "Socket runtime error.",
+
+                    code:
+
+                        error.code
+
+                        || "SOCKET_RUNTIME_FAILED",
+
+                    context: {
+
+                        socketId:
+
+                            socket.id,
+
+                        isAdmin:
+
+                            socket.data.isAdmin
+
+                            === true
+
+                    }
+
+                })
+
+                .catch(()=>{});
+
+
+            }
+
+        );
+
+
         registerChatHandler(
 
             io,
@@ -481,6 +645,11 @@ async function startServer(){
     await connectDatabase();
 
 
+    await errorMonitorService
+
+    .flushBuffer();
+
+
     await sessionCleanupService
 
     .cleanupOnlineSessions();
@@ -504,6 +673,31 @@ async function startServer(){
             );
 
 
+            errorMonitorService
+
+            .captureError({
+
+                source:
+
+                    "startup.data_retention",
+
+                error,
+
+                message:
+
+                    "Data retention startup initialization failed.",
+
+                code:
+
+                    error.code
+
+                    || "DATA_RETENTION_STARTUP_FAILED"
+
+            })
+
+            .catch(()=>{});
+
+
         }
 
     );
@@ -518,7 +712,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.3.9 running on port",
+                "Meridian Chat SDK v2.3.10 running on port",
 
                 config.port
 
@@ -537,7 +731,7 @@ startServer()
 
 .catch(
 
-    error=>{
+    async error=>{
 
 
         console.error(
@@ -547,6 +741,31 @@ startServer()
             error
 
         );
+
+
+        await errorMonitorService
+
+        .captureCritical({
+
+            source:
+
+                "startup.server",
+
+            error,
+
+            message:
+
+                "Server startup failed.",
+
+            code:
+
+                error.code
+
+                || "SERVER_STARTUP_FAILED"
+
+        })
+
+        .catch(()=>null);
 
 
         process.exit(1);

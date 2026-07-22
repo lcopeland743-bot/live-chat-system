@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.3.9
+ * v2.3.10
  *
  * Features:
  * - Rich messages
@@ -38,6 +38,10 @@ require("../services/ai-conversation-service");
 
 const conversionAnalyticsService =
 require("../services/conversion-analytics-service");
+
+
+const errorMonitorService =
+require("../services/error-monitor-service");
 
 
 const {
@@ -525,6 +529,32 @@ async function processAiReply(
             error
         );
 
+        errorMonitorService
+        .captureError({
+            source:
+                "socket.ai_reply",
+            error,
+            message:
+                "AI reply processing failed.",
+            code:
+                error.code
+                || "AI_REPLY_FAILED",
+            context: {
+                userId:
+                    payload.userId,
+                messageId:
+                    payload.messageId,
+                socketId:
+                    socket.id,
+                aiMode:
+                    sessionSnapshot
+                    && sessionSnapshot.aiMode
+                    ? sessionSnapshot.aiMode
+                    : null
+            }
+        })
+        .catch(() => {});
+
         emitAiError(
             io,
             payload.userId,
@@ -560,6 +590,21 @@ function registerChatHandler(
             let lockedChoiceUserId =
                 null;
 
+            const monitorContext = {
+                socketId:
+                    socket.id,
+                userId:
+                    data
+                    && data.userId
+                    ? data.userId
+                    : null,
+                messageId:
+                    data
+                    && data.messageId
+                    ? data.messageId
+                    : null
+            };
+
             try {
                 const payload =
                     createPayload(
@@ -575,6 +620,11 @@ function registerChatHandler(
                                 "user"
                         }
                     );
+
+                monitorContext.userId =
+                    payload.userId;
+                monitorContext.messageId =
+                    payload.messageId;
 
                 if (
                     !payload.userId
@@ -677,6 +727,21 @@ function registerChatHandler(
                     "[User Message Error]",
                     error
                 );
+
+                errorMonitorService
+                .captureError({
+                    source:
+                        "socket.user_message",
+                    error,
+                    message:
+                        "User message processing failed.",
+                    code:
+                        error.code
+                        || "USER_MESSAGE_FAILED",
+                    context:
+                        monitorContext
+                })
+                .catch(() => {});
             } finally {
                 if (lockedChoiceUserId) {
                     activeChoiceUsers.delete(
@@ -691,6 +756,23 @@ function registerChatHandler(
     socket.on(
         "admin_reply",
         async data => {
+            const monitorContext = {
+                adminSocketId:
+                    socket.id,
+                visitorSocketId:
+                    data
+                    && data.socketId
+                    ? data.socketId
+                    : null,
+                messageId:
+                    data
+                    && data.messageId
+                    ? data.messageId
+                    : null,
+                userId:
+                    null
+            };
+
             try {
                 const adminSessionValid =
                     await verifyAdminSocketSession(
@@ -730,6 +812,9 @@ function registerChatHandler(
                 if (!session) {
                     return;
                 }
+
+                monitorContext.userId =
+                    session.userId;
 
                 const payload =
                     createPayload(
@@ -884,6 +969,21 @@ function registerChatHandler(
                     "[Admin Reply Error]",
                     error
                 );
+
+                errorMonitorService
+                .captureError({
+                    source:
+                        "socket.admin_reply",
+                    error,
+                    message:
+                        "Admin reply processing failed.",
+                    code:
+                        error.code
+                        || "ADMIN_REPLY_FAILED",
+                    context:
+                        monitorContext
+                })
+                .catch(() => {});
             }
         }
     );

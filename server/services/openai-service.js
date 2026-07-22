@@ -2,7 +2,7 @@
  * Meridian OpenAI Service
  *
  * Version:
- * v2.3.7
+ * v2.3.10
  *
  * Uses:
  * - OpenAI Responses API
@@ -55,6 +55,10 @@ require("./conversation-language-service");
 
 const aiAnswerQualityService =
 require("./ai-answer-quality-service");
+
+
+const errorMonitorService =
+require("./error-monitor-service");
 
 
 const {
@@ -2015,22 +2019,44 @@ async function generateConversionReply({
                 error
             )
         ) {
+            const fallbackContext = {
+                code:
+                    error.code,
+                responseStatus:
+                    error.responseStatus
+                    || null,
+                incompleteDetails:
+                    error.incompleteDetails
+                    || null,
+                rawLength:
+                    error.rawLength
+                    || 0,
+                customerLanguage,
+                freshDataRequired:
+                    serverDataRequest.required
+            };
+
             console.error(
                 "[AI Structured Fallback]",
-                {
-                    code:
-                        error.code,
-                    responseStatus:
-                        error.responseStatus
-                        || null,
-                    incompleteDetails:
-                        error.incompleteDetails
-                        || null,
-                    rawLength:
-                        error.rawLength
-                        || 0
-                }
+                fallbackContext
             );
+
+            errorMonitorService
+            .captureWarning({
+                source:
+                    "openai.structured_fallback",
+                error,
+                message:
+                    "AI structured output failed and a safe fallback was returned.",
+                code:
+                    error.code
+                    || "AI_STRUCTURED_OUTPUT_FALLBACK",
+                context:
+                    fallbackContext,
+                recovered:
+                    true
+            })
+            .catch(() => {});
 
             const generated =
                 createStructuredFailureFallback({
@@ -2094,18 +2120,38 @@ async function generateConversionReply({
                 error
             )
         ) {
+            const timeoutContext = {
+                name:
+                    error.name
+                    || null,
+                timeoutMs:
+                    aiConfig.requestTimeoutMs,
+                freshDataRequired:
+                    serverDataRequest.required,
+                customerLanguage
+            };
+
             console.error(
                 "[AI Request Timeout Fallback]",
-                {
-                    name:
-                        error.name
-                        || null,
-                    timeoutMs:
-                        aiConfig.requestTimeoutMs,
-                    freshDataRequired:
-                        serverDataRequest.required
-                }
+                timeoutContext
             );
+
+            errorMonitorService
+            .captureWarning({
+                source:
+                    "openai.timeout_fallback",
+                error,
+                message:
+                    "OpenAI request timed out and a safe fallback was returned.",
+                code:
+                    error.code
+                    || "OPENAI_REQUEST_TIMEOUT",
+                context:
+                    timeoutContext,
+                recovered:
+                    true
+            })
+            .catch(() => {});
 
             const generated =
                 createStructuredFailureFallback({

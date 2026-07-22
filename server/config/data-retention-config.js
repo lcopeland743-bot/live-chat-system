@@ -2,7 +2,7 @@
  * Meridian Data Retention Configuration
  *
  * Version:
- * v2.3.2
+ * v2.3.10
  */
 
 function normalizeBoolean(value, fallback) {
@@ -96,6 +96,14 @@ const config = {
             3650
         ),
 
+    errorEventRetentionDays:
+        normalizeInteger(
+            process.env.ERROR_EVENT_RETENTION_DAYS,
+            30,
+            1,
+            3650
+        ),
+
     uploadRetentionDays:
         normalizeInteger(
             process.env.UPLOAD_RETENTION_DAYS,
@@ -143,6 +151,15 @@ const config = {
         ? addDays(
             date,
             this.conversionEventRetentionDays
+        )
+        : null;
+    },
+
+    calculateErrorEventExpiry(date = new Date()) {
+        return this.enabled
+        ? addDays(
+            date,
+            this.errorEventRetentionDays
         )
         : null;
     },
