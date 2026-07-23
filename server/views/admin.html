@@ -114,6 +114,172 @@ href="/css/admin.css">
 
                 </div>
 
+                <div
+                id="adminLeadFilters"
+                class="admin-session-filters">
+
+                    <div
+                    class="admin-intent-summary"
+                    aria-label="客户意向统计">
+                        <button
+                        type="button"
+                        data-admin-intent-level="high">
+                            <span>高意向</span>
+                            <strong id="adminHighIntentCount">0</strong>
+                        </button>
+
+                        <button
+                        type="button"
+                        data-admin-intent-level="medium">
+                            <span>中意向</span>
+                            <strong id="adminMediumIntentCount">0</strong>
+                        </button>
+
+                        <button
+                        type="button"
+                        data-admin-intent-level="low">
+                            <span>低意向</span>
+                            <strong id="adminLowIntentCount">0</strong>
+                        </button>
+                    </div>
+
+                    <label class="admin-session-search-field">
+                        <span>搜索会话</span>
+                        <input
+                        id="adminSessionSearch"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="访客 ID、消息、股票或标签">
+                    </label>
+
+                    <div class="admin-session-filter-grid">
+                        <label>
+                            <span>在线状态</span>
+                            <select id="adminSessionStatusFilter">
+                                <option value="all">全部</option>
+                                <option value="online">在线</option>
+                                <option value="offline">离线</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>意向等级</span>
+                            <select id="adminSessionIntentFilter">
+                                <option value="all">全部</option>
+                                <option value="high">高意向</option>
+                                <option value="medium">中意向</option>
+                                <option value="low">低意向</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>AI 模式</span>
+                            <select id="adminSessionAiModeFilter">
+                                <option value="all">全部</option>
+                                <option value="auto">AUTO</option>
+                                <option value="assist">ASSIST</option>
+                                <option value="off">OFF</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>WhatsApp</span>
+                            <select id="adminSessionWhatsappFilter">
+                                <option value="all">全部</option>
+                                <option value="clicked">已点击</option>
+                                <option value="cta_shown">已展示 CTA</option>
+                                <option value="not_clicked">未点击</option>
+                                <option value="no_push">禁止推送</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>消息状态</span>
+                            <select id="adminSessionUnreadFilter">
+                                <option value="all">全部</option>
+                                <option value="unread">未读</option>
+                                <option value="read">已读</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>接管状态</span>
+                            <select id="adminSessionTakeoverFilter">
+                                <option value="all">全部</option>
+                                <option value="human">人工接管</option>
+                                <option value="ai">AI 处理</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>优先级</span>
+                            <select id="adminSessionPriorityFilter">
+                                <option value="all">全部</option>
+                                <option value="vip">VIP</option>
+                                <option value="high">高</option>
+                                <option value="normal">普通</option>
+                                <option value="low">低</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>排序</span>
+                            <select id="adminSessionSortFilter">
+                                <option value="recent">最近更新</option>
+                                <option value="intent">意向优先</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="admin-session-search-field">
+                        <span>手动标签</span>
+                        <input
+                        id="adminSessionTagFilter"
+                        type="search"
+                        list="adminKnownTagList"
+                        autocomplete="off"
+                        placeholder="输入标签筛选">
+                    </label>
+
+                    <datalist id="adminKnownTagList">
+                    </datalist>
+
+                    <div class="admin-session-filter-actions">
+                        <button
+                        id="adminSessionFilterResetBtn"
+                        type="button">
+                            重置筛选
+                        </button>
+
+                        <span
+                        id="adminSessionResultStatus"
+                        aria-live="polite">
+                            正在加载会话…
+                        </span>
+                    </div>
+
+                    <div class="admin-session-pagination">
+                        <button
+                        id="adminSessionPreviousBtn"
+                        type="button"
+                        disabled>
+                            上一页
+                        </button>
+
+                        <span id="adminSessionPageStatus">
+                            第 1 / 1 页
+                        </span>
+
+                        <button
+                        id="adminSessionNextBtn"
+                        type="button"
+                        disabled>
+                            下一页
+                        </button>
+                    </div>
+
+                </div>
+
                 <div id="sessions">
                 </div>
 
@@ -293,6 +459,86 @@ href="/css/admin.css">
 
             </section>
 
+            <section
+            id="adminLeadPanel"
+            class="admin-lead-panel"
+            hidden>
+
+                <div class="admin-lead-heading">
+                    <div>
+                        <strong>客户意向与标签</strong>
+                        <span id="adminLeadUserId"></span>
+                    </div>
+
+                    <span
+                    id="adminLeadIntentBadge"
+                    class="admin-lead-intent-badge intent-low">
+                        LOW · 0
+                    </span>
+                </div>
+
+                <ul
+                id="adminLeadIntentReasons"
+                class="admin-lead-reasons">
+                </ul>
+
+                <div class="admin-lead-editor-grid">
+                    <label>
+                        <span>人工优先级</span>
+                        <select id="adminLeadPriority">
+                            <option value="vip">VIP</option>
+                            <option value="high">高</option>
+                            <option value="normal">普通</option>
+                            <option value="low">低</option>
+                        </select>
+                    </label>
+
+                    <label class="admin-lead-tag-entry">
+                        <span>添加手动标签</span>
+                        <span class="admin-lead-tag-entry-row">
+                            <input
+                            id="adminLeadTagInput"
+                            type="text"
+                            maxlength="30"
+                            autocomplete="off"
+                            placeholder="例如：重点跟进">
+                            <button
+                            id="adminLeadAddTagBtn"
+                            type="button">
+                                添加
+                            </button>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="admin-lead-tag-group">
+                    <span class="admin-lead-tag-label">
+                        手动标签
+                    </span>
+                    <div
+                    id="adminLeadManualTags"
+                    class="admin-lead-tags">
+                    </div>
+                </div>
+
+                <div class="admin-lead-tag-group">
+                    <span class="admin-lead-tag-label">
+                        系统自动标签
+                    </span>
+                    <div
+                    id="adminLeadAutoTags"
+                    class="admin-lead-tags">
+                    </div>
+                </div>
+
+                <p
+                id="adminLeadMessage"
+                class="admin-lead-message"
+                aria-live="polite">
+                </p>
+
+            </section>
+
             <div
             id="adminMessages"
             class="admin-messages">
@@ -364,6 +610,7 @@ href="/css/admin.css">
 <script src="/js/admin/admin-ui.js"></script>
 <script src="/js/admin/admin-ai.js"></script>
 <script src="/js/admin/admin-errors.js"></script>
+<script src="/js/admin/admin-leads.js"></script>
 
 <script src="/js/upload.js"></script>
 <script src="/js/admin/admin-upload.js"></script>

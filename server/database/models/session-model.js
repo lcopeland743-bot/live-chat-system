@@ -4,7 +4,7 @@
  * MongoDB Conversation Schema
  *
  * Version:
- * v2.3.11
+ * v2.4.1
  */
 
 const mongoose =
@@ -401,6 +401,46 @@ sessionSchema.index({
     "conversionState.stage": 1,
     "conversionState.whatsappClicked": 1
 });
+
+
+sessionSchema.index(
+    {
+        status: 1,
+        aiMode: 1,
+        priority: 1,
+        updatedAt: -1
+    },
+    {
+        name:
+            "admin_session_filter_lookup"
+    }
+);
+
+
+sessionSchema.index(
+    {
+        tags: 1,
+        updatedAt: -1
+    },
+    {
+        name:
+            "admin_session_tag_lookup"
+    }
+);
+
+
+sessionSchema.index(
+    {
+        "conversionState.whatsappClicked": 1,
+        "conversionState.doNotPush": 1,
+        "conversionState.engagementScore": -1,
+        updatedAt: -1
+    },
+    {
+        name:
+            "admin_session_intent_lookup"
+    }
+);
 
 
 sessionSchema.index(

@@ -2,7 +2,7 @@
  * Meridian Admin State
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  *
  * Features:
  * - Unified Conversation List
@@ -10,6 +10,7 @@
  * - AI Mode State
  * - Human Takeover State
  * - Visitor Classification Statistics
+ * - Paginated Lead Management State
  */
 
 window.MeridianAdminState = {
@@ -192,7 +193,60 @@ window.MeridianAdminState = {
 
             humanTakeover:
 
-            session.humanTakeover === true
+            session.humanTakeover === true,
+
+
+            priority:
+
+            session.priority
+
+            ||
+
+            "normal",
+
+
+            tags:
+
+            Array.isArray(session.tags)
+
+            ?
+
+            session.tags.slice()
+
+            :
+
+            [],
+
+
+            autoTags:
+
+            Array.isArray(session.autoTags)
+
+            ?
+
+            session.autoTags.slice()
+
+            :
+
+            [],
+
+
+            leadIntent:
+
+            session.leadIntent
+
+            ||
+
+            null,
+
+
+            conversionState:
+
+            session.conversionState
+
+            ||
+
+            {}
 
 
         };
@@ -201,7 +255,7 @@ window.MeridianAdminState = {
     },
 
 
-    setSessions(sessions){
+    setSessions(sessions, options = {}){
 
 
         this.sessions =
@@ -217,7 +271,21 @@ window.MeridianAdminState = {
         [];
 
 
-        this.sortSessions();
+        if(
+
+            options.preserveOrder
+
+            !==
+
+            true
+
+        ){
+
+
+            this.sortSessions();
+
+
+        }
 
 
         this.sessions.forEach(
@@ -276,7 +344,15 @@ window.MeridianAdminState = {
             }
 
 
-            else{
+            else if(
+
+                options.preserveCurrent
+
+                !==
+
+                true
+
+            ){
 
 
                 this.currentUser =

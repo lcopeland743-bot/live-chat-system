@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.3.11
+ * v2.4.1
  *
  * Features:
  * - Express
@@ -28,6 +28,7 @@
  * - Latest-Only Auto Reply Concurrency Control
  * - Persistent Error Monitoring and Admin Diagnostics
  * - Offline Silent Session Automatic Cleanup
+ * - Admin Search, Filters, Labels, and Lead Intent
  */
 
 require("dotenv").config();
@@ -145,6 +146,10 @@ require("./server/routes/session-route");
 
 const adminStateRoute =
 require("./server/routes/admin-state-route");
+
+
+const adminSessionRoute =
+require("./server/routes/admin-session-route");
 
 
 const agentRoute =
@@ -345,6 +350,15 @@ app.use(
     "/api/admin/state",
 
     adminStateRoute
+
+);
+
+
+app.use(
+
+    "/api/admin/sessions",
+
+    adminSessionRoute
 
 );
 
@@ -713,7 +727,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.3.11 running on port",
+                "Meridian Chat SDK v2.4.1 running on port",
 
                 config.port
 

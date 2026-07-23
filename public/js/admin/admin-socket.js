@@ -2,7 +2,7 @@
  * Meridian Admin Socket
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  *
  * Features:
  * - Authenticated Admin Socket
@@ -11,6 +11,7 @@
  * - AI Error Sync
  * - Rich Message Sync
  * - Visitor Statistics Refresh
+ * - Paginated Lead Filter Refresh
  */
 
 window.MeridianAdminSocket = {
@@ -182,17 +183,6 @@ window.MeridianAdminSocket = {
             );
 
 
-            MeridianAdminState.setSessions(
-
-                result.sessions
-
-                ||
-
-                []
-
-            );
-
-
             MeridianAdminState.setVisitorStats(
 
                 result.visitorStats
@@ -204,11 +194,48 @@ window.MeridianAdminSocket = {
             );
 
 
-            MeridianAdminUI.renderSessions(
+            if(
 
-                false
+                window.MeridianAdminLeads
 
-            );
+                &&
+
+                window.MeridianAdminLeads
+
+                .isReady()
+
+            ){
+
+
+                await window.MeridianAdminLeads
+
+                .loadSessions();
+
+
+            }
+
+            else{
+
+
+                MeridianAdminState.setSessions(
+
+                    result.sessions
+
+                    ||
+
+                    []
+
+                );
+
+
+                MeridianAdminUI.renderSessions(
+
+                    false
+
+                );
+
+
+            }
 
 
             if(
@@ -749,18 +776,48 @@ window.MeridianAdminSocket = {
                 }
 
 
-                MeridianAdminState.updateSession(
+                if(
 
-                    data.session
+                    window.MeridianAdminLeads
 
-                );
+                    &&
+
+                    window.MeridianAdminLeads
+
+                    .isReady()
+
+                ){
 
 
-                MeridianAdminUI.renderSessions(
+                    window.MeridianAdminLeads
 
-                    false
+                    .handleSessionUpdate(
 
-                );
+                        data.session
+
+                    );
+
+
+                }
+
+                else{
+
+
+                    MeridianAdminState.updateSession(
+
+                        data.session
+
+                    );
+
+
+                    MeridianAdminUI.renderSessions(
+
+                        false
+
+                    );
+
+
+                }
 
 
                 this.scheduleAdminStateRefresh();

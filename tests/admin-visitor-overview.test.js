@@ -2,7 +2,7 @@
  * Meridian Admin Visitor Overview Test
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  */
 
 const assert =
@@ -246,6 +246,32 @@ async function run(){
                 stage=>stage.$facet
             ),
             "pipeline should classify sessions with $facet"
+        );
+
+        const facet =
+            capturedPipeline.find(
+                stage=>stage.$facet
+            ).$facet;
+
+        assert.ok(
+            facet.sessions.some(
+                stage=>stage.$limit === 25
+            ),
+            "legacy admin state must not load every conversation"
+        );
+
+        assert.ok(
+            facet.onlineUsers.some(
+                stage=>stage.$limit === 100
+            ),
+            "online presence payload should be bounded"
+        );
+
+        assert.ok(
+            facet.offlineUsers.some(
+                stage=>stage.$limit === 100
+            ),
+            "offline presence payload should be bounded"
         );
 
         assert.strictEqual(

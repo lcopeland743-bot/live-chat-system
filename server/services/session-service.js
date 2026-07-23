@@ -4,7 +4,7 @@
  * MongoDB Conversation Manager
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  */
 
 const Session =
@@ -600,6 +600,9 @@ async function getAdminVisitorOverview() {
                             }
                         },
                         {
+                            $limit: 25
+                        },
+                        {
                             $project: {
                                 _hasConversation: 0
                             }
@@ -615,6 +618,9 @@ async function getAdminVisitorOverview() {
                             $sort: {
                                 updatedAt: -1
                             }
+                        },
+                        {
+                            $limit: 100
                         },
                         {
                             $project: {
@@ -633,6 +639,9 @@ async function getAdminVisitorOverview() {
                             $sort: {
                                 updatedAt: -1
                             }
+                        },
+                        {
+                            $limit: 100
                         },
                         {
                             $project: {

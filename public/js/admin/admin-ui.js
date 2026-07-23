@@ -2,7 +2,7 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  *
  * Features:
  * - Conversation Management
@@ -10,6 +10,7 @@
  * - AI Mode Badges
  * - Rich Message Renderer
  * - Visitor Classification Statistics
+ * - Lead Intent and Label Badges
  */
 
 window.MeridianAdminUI = {
@@ -141,11 +142,42 @@ window.MeridianAdminUI = {
         }
 
 
-        const session =
+        let session =
 
         MeridianAdminState
 
         .restoreSessionUser();
+
+
+        if(
+
+            !session
+
+            &&
+
+            window.MeridianAdminLeads
+
+            &&
+
+            window.MeridianAdminLeads
+
+            .isReady()
+
+        ){
+
+
+            session =
+
+            await window.MeridianAdminLeads
+
+            .fetchSession(
+
+                current.userId
+
+            );
+
+
+        }
 
 
         if(!session){
@@ -176,6 +208,25 @@ window.MeridianAdminUI = {
             session.userId
 
         );
+
+
+        if(
+
+            window.MeridianAdminLeads
+
+        ){
+
+
+            window.MeridianAdminLeads
+
+            .renderCurrentSession(
+
+                session
+
+            );
+
+
+        }
 
 
     },
@@ -1725,6 +1776,163 @@ window.MeridianAdminUI = {
     },
 
 
+    escapeHtml(value){
+
+
+        return String(
+
+            value
+
+            ===
+
+            null
+
+            ||
+
+            value
+
+            ===
+
+            undefined
+
+            ?
+
+            ""
+
+            :
+
+            value
+
+        )
+
+        .replace(
+
+            /&/g,
+
+            "&amp;"
+
+        )
+
+        .replace(
+
+            /</g,
+
+            "&lt;"
+
+        )
+
+        .replace(
+
+            />/g,
+
+            "&gt;"
+
+        )
+
+        .replace(
+
+            /"/g,
+
+            "&quot;"
+
+        )
+
+        .replace(
+
+            /'/g,
+
+            "&#39;"
+
+        );
+
+
+    },
+
+
+    async selectConversationSession(
+
+        session,
+
+        item = null
+
+    ){
+
+
+        if(
+
+            !session
+
+            ||
+
+            !session.userId
+
+        ){
+
+
+            return;
+
+
+        }
+
+
+        MeridianAdminState
+
+        .selectSession(
+
+            session
+
+        );
+
+
+        await this.loadHistory(
+
+            session.userId
+
+        );
+
+
+        this.renderConversation(
+
+            session.userId
+
+        );
+
+
+        if(item){
+
+
+            this.highlightSession(
+
+                item
+
+            );
+
+
+        }
+
+
+        if(
+
+            window.MeridianAdminLeads
+
+        ){
+
+
+            window.MeridianAdminLeads
+
+            .renderCurrentSession(
+
+                session
+
+            );
+
+
+        }
+
+
+    },
+
+
     renderPresenceList(
 
         container,
@@ -1779,10 +1987,12 @@ window.MeridianAdminUI = {
                 "Unknown visitor";
 
 
-                item.onclick = ()=>{
+                item.onclick =
+
+                async()=>{
 
 
-                    const session =
+                    let session =
 
                     MeridianAdminState
 
@@ -1793,37 +2003,50 @@ window.MeridianAdminUI = {
                     );
 
 
-                    if(session){
+                    if(
+
+                        window.MeridianAdminLeads
+
+                        &&
+
+                        window.MeridianAdminLeads
+
+                        .isReady()
+
+                    ){
 
 
-                        MeridianAdminState
+                        const enriched =
 
-                        .selectSession(
+                        await window.MeridianAdminLeads
 
-                            session
+                        .fetchSession(
+
+                            user.userId
 
                         );
 
 
-                        this.loadHistory(
+                        session =
 
-                            session.userId
+                        enriched
 
-                        )
+                        ||
 
-                        .then(
-
-                            ()=>{
+                        session;
 
 
-                                this.renderConversation(
-
-                                    session.userId
-
-                                );
+                    }
 
 
-                            }
+                    if(session){
+
+
+                        await this
+
+                        .selectConversationSession(
+
+                            session
 
                         );
 
@@ -1868,9 +2091,48 @@ window.MeridianAdminUI = {
         .getSessions();
 
 
+        const currentId =
+
+        MeridianAdminState
+
+        .getCurrentConversationId();
+
+
         this.sessions.innerHTML =
 
         "";
+
+
+        if(!sessions.length){
+
+
+            const empty =
+
+            document.createElement(
+
+                "div"
+
+            );
+
+
+            empty.className =
+
+            "conversation-empty-state";
+
+
+            empty.textContent =
+
+            "没有符合当前筛选条件的会话";
+
+
+            this.sessions.appendChild(
+
+                empty
+
+            );
+
+
+        }
 
 
         sessions.forEach(
@@ -1890,6 +2152,36 @@ window.MeridianAdminUI = {
                 div.className =
 
                 "session-item";
+
+
+                div.dataset.userId =
+
+                session.userId
+
+                ||
+
+                "";
+
+
+                if(
+
+                    currentId
+
+                    ===
+
+                    session.userId
+
+                ){
+
+
+                    div.classList.add(
+
+                        "selected"
+
+                    );
+
+
+                }
 
 
                 const statusIcon =
@@ -1930,7 +2222,7 @@ window.MeridianAdminUI = {
 
                 ?
 
-                `<span>🔴${session.unreadCount}</span>`
+                `<span class="session-unread-badge">🔴${Number(session.unreadCount) || 0}</span>`
 
                 :
 
@@ -1983,7 +2275,7 @@ window.MeridianAdminUI = {
 
                 ?
 
-                ` · ${conversion.asset}`
+                ` · ${this.escapeHtml(conversion.asset)}`
 
                 :
 
@@ -2037,34 +2329,159 @@ window.MeridianAdminUI = {
                 "";
 
 
+                const lead =
+
+                session.leadIntent
+
+                ||
+
+                {
+
+                    level:
+
+                    "low",
+
+                    score:
+
+                    0
+
+                };
+
+
+                const leadLevel =
+
+                [
+
+                    "high",
+
+                    "medium",
+
+                    "low"
+
+                ]
+
+                .includes(lead.level)
+
+                ?
+
+                lead.level
+
+                :
+
+                "low";
+
+
+                const priority =
+
+                session.priority
+
+                ||
+
+                "normal";
+
+
+                const tags =
+
+                Array.from(
+
+                    new Set(
+
+                        [
+
+                            ...(
+
+                                Array.isArray(session.tags)
+
+                                ?
+
+                                session.tags
+
+                                :
+
+                                []
+
+                            ),
+
+                            ...(
+
+                                Array.isArray(session.autoTags)
+
+                                ?
+
+                                session.autoTags
+
+                                :
+
+                                []
+
+                            )
+
+                        ]
+
+                    )
+
+                )
+
+                .slice(
+
+                    0,
+
+                    4
+
+                );
+
+
+                const tagMarkup =
+
+                tags.length
+
+                ?
+
+                `<div class="session-tag-row">${tags.map(tag=>`<span>${this.escapeHtml(tag)}</span>`).join("")}</div>`
+
+                :
+
+                "";
+
+
                 div.innerHTML = `
 
-                    <div>
+                    <div class="session-item-heading">
                         <b>
                             ${statusIcon}
-                            ${session.userId}
+                            ${this.escapeHtml(session.userId)}
                         </b>
+                        <span class="session-intent-badge intent-${leadLevel}">
+                            ${leadLevel.toUpperCase()} ${Number(lead.score) || 0}
+                        </span>
                     </div>
 
-                    <div>
-                        ${session.lastMessage || "暂无消息"}
+                    <div class="session-message-preview">
+                        ${this.escapeHtml(session.lastMessage || "暂无消息")}
                     </div>
 
                     <small>
-                        ${time}
+                        ${this.escapeHtml(time)}
                         ${unread}
                     </small>
 
-                    <span class="session-ai-badge ai-${mode}">
-                        AI ${mode.toUpperCase()}${takeover}
-                    </span>
+                    <div class="session-badge-row">
+                        <span class="session-ai-badge ai-${this.escapeHtml(mode)}">
+                            AI ${this.escapeHtml(String(mode).toUpperCase())}${takeover}
+                        </span>
+                        <span class="session-priority-badge priority-${this.escapeHtml(priority)}">
+                            ${this.escapeHtml(String(priority).toUpperCase())}
+                        </span>
+                    </div>
 
-                    <span class="session-ai-badge">
-                        ${conversionStage}${conversionAsset}
+                    <span class="session-ai-badge session-conversion-badge">
+                        ${this.escapeHtml(conversionStage)}${conversionAsset}
                         · AI ${replyCount}/5
-                        · CTA ${conversion.ctaShownCount || 0}
+                        · CTA ${Number(conversion.ctaShownCount) || 0}
                         ${conversionFlags}${replyLimit}
                     </span>
+
+                    ${tagMarkup}
 
                 `;
 
@@ -2074,30 +2491,11 @@ window.MeridianAdminUI = {
                 async()=>{
 
 
-                    MeridianAdminState
+                    await this
 
-                    .selectSession(
+                    .selectConversationSession(
 
-                        session
-
-                    );
-
-
-                    await this.loadHistory(
-
-                        session.userId
-
-                    );
-
-
-                    this.renderConversation(
-
-                        session.userId
-
-                    );
-
-
-                    this.highlightSession(
+                        session,
 
                         div
 
@@ -2147,9 +2545,11 @@ window.MeridianAdminUI = {
             element=>{
 
 
-                element.style.border =
+                element.classList.remove(
 
-                "1px solid #eee";
+                    "selected"
+
+                );
 
 
             }
@@ -2157,9 +2557,17 @@ window.MeridianAdminUI = {
         );
 
 
-        item.style.border =
+        if(item){
 
-        "2px solid #409eff";
+
+            item.classList.add(
+
+                "selected"
+
+            );
+
+
+        }
 
 
     },

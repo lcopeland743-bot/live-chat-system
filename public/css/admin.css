@@ -2,7 +2,7 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.3.6
+ * v2.4.1
  *
  */
 
@@ -1014,4 +1014,473 @@ body{
     .admin-error-list {
         max-height: 280px;
     }
+}
+
+/*
+ Meridian Admin Lead Management v2.4.1
+*/
+
+.admin-sidebar {
+    width: 380px;
+}
+
+.admin-session-filters {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.admin-session-search-field,
+.admin-session-filter-grid label,
+.admin-lead-editor-grid label {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.admin-session-search-field + .admin-session-filter-grid,
+.admin-session-filter-grid + .admin-session-search-field {
+    margin-top: 9px;
+}
+
+.admin-session-search-field input,
+.admin-session-filter-grid select,
+.admin-lead-editor-grid select,
+.admin-lead-tag-entry-row input {
+    width: 100%;
+    height: 32px;
+    min-width: 0;
+    padding: 0 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 12px;
+}
+
+.admin-session-search-field input:focus,
+.admin-session-filter-grid select:focus,
+.admin-lead-editor-grid select:focus,
+.admin-lead-tag-entry-row input:focus {
+    border-color: #1677ff;
+    outline: 2px solid rgba(22,119,255,.12);
+}
+
+.admin-session-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 8px;
+}
+
+.admin-session-filter-actions,
+.admin-session-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.admin-session-filter-actions button,
+.admin-session-pagination button,
+.admin-lead-tag-entry-row button {
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-session-filter-actions button:hover,
+.admin-session-pagination button:hover:not(:disabled),
+.admin-lead-tag-entry-row button:hover {
+    border-color: #1677ff;
+    color: #0958d9;
+}
+
+.admin-session-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+#adminSessionResultStatus {
+    min-width: 0;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 10px;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#adminSessionResultStatus.error,
+.admin-lead-message.error {
+    color: #b91c1c;
+}
+
+#adminSessionPageStatus {
+    color: #475569;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.session-item {
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.session-item.selected {
+    border-color: #1677ff;
+    box-shadow: 0 0 0 1px rgba(22,119,255,.18);
+    background: #f7fbff;
+}
+
+.session-item-heading,
+.session-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.session-item-heading b {
+    min-width: 0;
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-message-preview {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 6px 0;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.session-item small {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.session-unread-badge {
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+.session-badge-row {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 7px;
+}
+
+.session-intent-badge,
+.session-priority-badge,
+.admin-lead-intent-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 7px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+
+.intent-high {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.intent-medium {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #a16207;
+}
+
+.intent-low {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+}
+
+.priority-vip {
+    border-color: #ddd6fe;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+.priority-high {
+    border-color: #fed7aa;
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.priority-normal {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.priority-low {
+    border-color: #d1fae5;
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.session-conversion-badge {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-tag-row,
+.admin-lead-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.session-tag-row {
+    margin-top: 7px;
+}
+
+.session-tag-row span,
+.admin-lead-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 21px;
+    max-width: 100%;
+    padding: 3px 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-lead-panel {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.admin-lead-panel[hidden] {
+    display: none;
+}
+
+.admin-lead-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-lead-heading > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.admin-lead-heading strong {
+    color: #0f172a;
+    font-size: 14px;
+}
+
+#adminLeadUserId {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-lead-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+    margin: 9px 0;
+    padding-left: 18px;
+    color: #475569;
+    font-size: 11px;
+}
+
+.admin-lead-editor-grid {
+    display: grid;
+    grid-template-columns: minmax(120px,.45fr) minmax(220px,1fr);
+    gap: 10px;
+}
+
+.admin-lead-tag-entry-row {
+    display: flex;
+    min-width: 0;
+    gap: 6px;
+}
+
+.admin-lead-tag-entry-row button {
+    flex: 0 0 auto;
+    border-color: #1677ff;
+    background: #1677ff;
+    color: #ffffff;
+}
+
+.admin-lead-tag-entry-row button:hover {
+    color: #ffffff;
+    opacity: .9;
+}
+
+.admin-lead-tag-group {
+    margin-top: 9px;
+}
+
+.admin-lead-tag-label {
+    display: block;
+    margin-bottom: 5px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.admin-lead-tag.manual {
+    gap: 5px;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.admin-lead-tag.automatic {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.admin-lead-tag button {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(29,78,216,.12);
+    color: inherit;
+    font-size: 12px;
+    line-height: 16px;
+    cursor: pointer;
+}
+
+.admin-lead-empty-tag {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.admin-lead-message {
+    min-height: 14px;
+    margin: 7px 0 0;
+    color: #64748b;
+    font-size: 10px;
+}
+
+@media(max-width:1024px) {
+    .admin-sidebar {
+        width: 320px;
+    }
+}
+
+@media(max-width:768px) {
+    .admin-sidebar {
+        width: 250px;
+    }
+
+    .admin-session-filter-grid,
+    .admin-lead-editor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-session-filter-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #adminSessionResultStatus {
+        text-align: left;
+    }
+}
+
+.admin-intent-summary {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.admin-intent-summary button {
+    display: flex;
+    min-width: 0;
+    min-height: 48px;
+    padding: 7px 5px;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid #dbe3ee;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.admin-intent-summary button span {
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.admin-intent-summary button strong {
+    color: #0f172a;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.admin-intent-summary button[data-admin-intent-level="high"] strong {
+    color: #b91c1c;
+}
+
+.admin-intent-summary button[data-admin-intent-level="medium"] strong {
+    color: #a16207;
+}
+
+.admin-intent-summary button[data-admin-intent-level="low"] strong {
+    color: #475569;
+}
+
+.admin-intent-summary button.active {
+    border-color: #1677ff;
+    box-shadow: 0 0 0 1px rgba(22,119,255,.15);
+    background: #eff6ff;
 }
