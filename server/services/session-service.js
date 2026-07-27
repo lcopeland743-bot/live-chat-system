@@ -27,6 +27,10 @@ const dataRetentionConfig =
 require("../config/data-retention-config");
 
 
+const conversationCycleService =
+require("./conversation-cycle-service");
+
+
 function buildConversionUpdate(state) {
     const normalized =
         conversionStateService
@@ -99,45 +103,241 @@ function buildConversionUpdate(state) {
 
 
 async function createSession(data) {
+    const existingSession =
+        await Session.findOne(
+            {
+                userId:
+                    data.userId
+            }
+        )
+        .select({
+            conversationId: 1,
+            humanTakeover: 1,
+            ipAddress: 1,
+            geoLocation: 1
+        })
+        .lean();
+
+    const cycleDecision =
+        conversationCycleService
+        .evaluate({
+            existingSession,
+            incomingConversationId:
+                data.conversationId,
+            allowReset:
+                data.allowConversationReset
+                === true
+        });
+
+    const time =
+        data.time || new Date();
+
+    const setValues = {
+        userId: data.userId,
+        customerId:
+            data.customerId || null,
+        socketId:
+            data.socketId || null,
+        status: "online",
+        page:
+            data.page || "",
+        connectedAt:
+            time,
+        purgeAt:
+            null
+    };
+
+    if (data.ipAddress) {
+        setValues.ipAddress =
+            data.ipAddress;
+    }
+
+    if (data.userAgent) {
+        setValues.userAgent =
+            data.userAgent;
+    }
+
+    if (
+        data.ipAddress
+        && existingSession
+        && existingSession.ipAddress
+        && existingSession.ipAddress
+            !== data.ipAddress
+    ) {
+        setValues.geoLocation = {
+            lookupStatus: "pending",
+            updatedAt: time
+        };
+    }
+
+    if (
+        cycleDecision
+        .effectiveConversationId
+    ) {
+        setValues.conversationId =
+            cycleDecision
+            .effectiveConversationId;
+    }
+
+    if (
+        cycleDecision
+        .resetConversionState
+    ) {
+        setValues.conversionState = {
+            ...conversionStateService
+                .createDefaultState(),
+            humanTakeover:
+                existingSession
+                && existingSession
+                    .humanTakeover
+                === true,
+            updatedAt:
+                time
+        };
+
+        setValues.aiUpdatedAt =
+            time;
+    }
+
+    const setOnInsertValues = {
+        conversationStatus:
+            "unassigned",
+        aiMode:
+            aiConfig.defaultMode,
+        humanTakeover:
+            false
+    };
+
+    if (
+        !cycleDecision
+        .resetConversionState
+    ) {
+        setOnInsertValues.aiUpdatedAt =
+            new Date();
+
+        setOnInsertValues.conversionState =
+            conversionStateService
+            .createDefaultState();
+    }
+
+    const session =
+        await Session.findOneAndUpdate(
+            {
+                userId: data.userId
+            },
+            {
+                $set: setValues,
+                $setOnInsert:
+                    setOnInsertValues
+            },
+            {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert:
+                    true
+            }
+        );
+
+    if (
+        cycleDecision
+        .resetConversionState
+    ) {
+        console.log(
+            "[Session] AI conversation cycle reset:",
+            {
+                userId:
+                    data.userId,
+                conversationId:
+                    cycleDecision
+                    .effectiveConversationId,
+                reason:
+                    cycleDecision.reason
+            }
+        );
+    }
+
+    return session;
+}
+
+
+async function updateGeoLocation(
+    userId,
+    ipAddress,
+    geoLocation
+) {
+    if (
+        !userId
+        || !ipAddress
+        || !geoLocation
+        || geoLocation.success !== true
+    ) {
+        return null;
+    }
+
     return await Session.findOneAndUpdate(
         {
-            userId: data.userId
+            userId,
+            ipAddress
         },
         {
             $set: {
-                userId: data.userId,
-                customerId:
-                    data.customerId || null,
-                socketId:
-                    data.socketId || null,
-                status: "online",
-                page:
-                    data.page || "",
-                connectedAt:
-                    data.time || new Date(),
-                purgeAt:
-                    null
-            },
-
-            $setOnInsert: {
-                conversationStatus:
-                    "unassigned",
-                aiMode:
-                    aiConfig.defaultMode,
-                humanTakeover:
-                    false,
-                conversionState:
-                    conversionStateService
-                    .createDefaultState()
+                "geoLocation.country":
+                    geoLocation.country || "",
+                "geoLocation.countryCode":
+                    geoLocation.countryCode || "",
+                "geoLocation.region":
+                    geoLocation.region || "",
+                "geoLocation.regionCode":
+                    geoLocation.regionCode || "",
+                "geoLocation.city":
+                    geoLocation.city || "",
+                "geoLocation.timezone":
+                    geoLocation.timezone || "",
+                "geoLocation.timezoneAbbr":
+                    geoLocation.timezoneAbbr || "",
+                "geoLocation.locationLabel":
+                    geoLocation.locationLabel || "",
+                "geoLocation.provider":
+                    geoLocation.provider || "",
+                "geoLocation.lookupStatus":
+                    "success",
+                "geoLocation.updatedAt":
+                    geoLocation.updatedAt
+                    || new Date()
             }
         },
         {
-            new: true,
-            upsert: true,
-            setDefaultsOnInsert: true
+            new: true
         }
     );
 }
+
+
+async function setActiveSocket(
+    userId,
+    socketId,
+    time
+) {
+    return await Session.findOneAndUpdate(
+        {
+            userId
+        },
+        {
+            $set: {
+                socketId:
+                    socketId || null,
+                status:
+                    "online",
+                lastSeen:
+                    time || new Date()
+            }
+        },
+        {
+            new: true
+        }
+    );
+}
+
 
 
 async function updateMessage(
@@ -769,6 +969,8 @@ async function getSessionByUserId(userId) {
 
 module.exports = {
     createSession,
+    updateGeoLocation,
+    setActiveSocket,
     updateMessage,
     incrementUnread,
     clearUnread,

@@ -604,6 +604,10 @@ function buildBaseMatch(options) {
                         searchRegex
                 },
                 {
+                    ipAddress:
+                        searchRegex
+                },
+                {
                     lastMessage:
                         searchRegex
                 },
@@ -1845,7 +1849,23 @@ async function getSession(userId) {
                 .trim()
         });
 
-    return enrichSession(session);
+    const enriched =
+        enrichSession(session);
+
+    if (
+        !enriched
+        || !enriched.ipAddress
+    ) {
+        return enriched;
+    }
+
+    enriched.sameIpSessionCount =
+        await Session.countDocuments({
+            ipAddress:
+                enriched.ipAddress
+        });
+
+    return enriched;
 }
 
 

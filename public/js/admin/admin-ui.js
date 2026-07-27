@@ -1849,6 +1849,286 @@ window.MeridianAdminUI = {
     },
 
 
+    getVisitorGeoLocation(item){
+
+
+        return (
+
+            item
+
+            &&
+
+            item.geoLocation
+
+            &&
+
+            typeof item.geoLocation === "object"
+
+            ?
+
+            item.geoLocation
+
+            :
+
+            {}
+
+        );
+
+
+    },
+
+
+    formatVisitorLocation(item, compact = false){
+
+
+        const geo =
+
+        this.getVisitorGeoLocation(item);
+
+
+        if(geo.lookupStatus !== "success"){
+
+
+            return "";
+
+
+        }
+
+
+        const values =
+
+        compact
+
+        ?
+
+        [
+
+            geo.region,
+
+            geo.city,
+
+            geo.country
+
+        ]
+
+        :
+
+        [
+
+            geo.country,
+
+            geo.region,
+
+            geo.city
+
+        ];
+
+
+        return Array.from(
+
+            new Set(
+
+                values
+
+                .map(value=>String(value || "").trim())
+
+                .filter(Boolean)
+
+            )
+
+        )
+
+        .slice(0, compact ? 2 : 3)
+
+        .join(" · ");
+
+
+    },
+
+
+    formatVisitorLocalTime(item, compact = false){
+
+
+        const geo =
+
+        this.getVisitorGeoLocation(item);
+
+
+        const timezone =
+
+        String(geo.timezone || "")
+
+        .trim();
+
+
+        if(!timezone){
+
+
+            return "";
+
+
+        }
+
+
+        try{
+
+
+            return new Intl.DateTimeFormat(
+
+                "zh-CN",
+
+                compact
+
+                ?
+
+                {
+
+                    timeZone: timezone,
+
+                    hour: "2-digit",
+
+                    minute: "2-digit",
+
+                    hour12: false
+
+                }
+
+                :
+
+                {
+
+                    timeZone: timezone,
+
+                    year: "numeric",
+
+                    month: "2-digit",
+
+                    day: "2-digit",
+
+                    hour: "2-digit",
+
+                    minute: "2-digit",
+
+                    second: "2-digit",
+
+                    hour12: false
+
+                }
+
+            )
+
+            .format(new Date());
+
+
+        }
+
+        catch(error){
+
+
+            return "";
+
+
+        }
+
+
+    },
+
+
+    getSameIpCount(ipAddress){
+
+
+        const target =
+
+        String(ipAddress || "")
+
+        .trim();
+
+
+        if(!target){
+
+
+            return 0;
+
+
+        }
+
+
+        const sessions =
+
+        MeridianAdminState
+
+        .getSessions
+
+        ?
+
+        MeridianAdminState.getSessions()
+
+        :
+
+        [];
+
+
+        const sources = [
+
+
+            ...(MeridianAdminState.onlineUsers || []),
+
+
+            ...(MeridianAdminState.offlineUsers || []),
+
+
+            ...(sessions || [])
+
+
+        ];
+
+
+        const userIds =
+
+        new Set();
+
+
+        sources.forEach(
+
+            item=>{
+
+
+                if(
+
+                    item
+
+                    &&
+
+                    String(item.ipAddress || "").trim()
+
+                    ===
+
+                    target
+
+                    &&
+
+                    item.userId
+
+                ){
+
+
+                    userIds.add(item.userId);
+
+
+                }
+
+
+            }
+
+        );
+
+
+        return userIds.size;
+
+
+    },
+
+
     async selectConversationSession(
 
         session,
@@ -1978,13 +2258,166 @@ window.MeridianAdminUI = {
                 className;
 
 
-                item.textContent =
+                const userId =
 
                 user.userId
 
                 ||
 
                 "Unknown visitor";
+
+
+                const title =
+
+                document.createElement(
+
+                    "strong"
+
+                );
+
+
+                title.textContent =
+
+                userId;
+
+
+                item.appendChild(title);
+
+
+                const ipAddress =
+
+                String(
+
+                    user.ipAddress || ""
+
+                )
+
+                .trim();
+
+
+                if(ipAddress){
+
+
+                    const sameIpCount =
+
+                    this.getSameIpCount(
+
+                        ipAddress
+
+                    );
+
+
+                    const network =
+
+                    document.createElement(
+
+                        "small"
+
+                    );
+
+
+                    network.className =
+
+                    "presence-network-meta";
+
+
+                    network.textContent =
+
+                    `IP ${ipAddress}`
+
+                    +
+
+                    (
+
+                        sameIpCount > 1
+
+                        ?
+
+                        ` · 同 IP ${sameIpCount}`
+
+                        :
+
+                        ""
+
+                    );
+
+
+                    item.appendChild(network);
+
+
+                }
+
+
+                const location =
+
+                this.formatVisitorLocation(
+
+                    user,
+
+                    true
+
+                );
+
+
+                const localTime =
+
+                this.formatVisitorLocalTime(
+
+                    user,
+
+                    true
+
+                );
+
+
+                if(location || localTime){
+
+
+                    const locationMeta =
+
+                    document.createElement(
+
+                        "small"
+
+                    );
+
+
+                    locationMeta.className =
+
+                    "presence-network-meta";
+
+
+                    locationMeta.textContent =
+
+                    [
+
+                        location,
+
+                        localTime
+
+                        ?
+
+                        `当地 ${localTime}`
+
+                        :
+
+                        ""
+
+                    ]
+
+                    .filter(Boolean)
+
+                    .join(" · ");
+
+
+                    item.appendChild(
+
+                        locationMeta
+
+                    );
+
+
+                }
 
 
                 item.onclick =
@@ -2469,6 +2902,116 @@ window.MeridianAdminUI = {
                 );
 
 
+                const ipAddress =
+
+                String(
+
+                    session.ipAddress || ""
+
+                )
+
+                .trim();
+
+
+                const sameIpCount =
+
+                ipAddress
+
+                ?
+
+                this.getSameIpCount(ipAddress)
+
+                :
+
+                0;
+
+
+                const location =
+
+                this.formatVisitorLocation(
+
+                    session,
+
+                    true
+
+                );
+
+
+                const localTime =
+
+                this.formatVisitorLocalTime(
+
+                    session,
+
+                    true
+
+                );
+
+
+                const networkLines = [];
+
+
+                if(ipAddress){
+
+
+                    networkLines.push(
+
+                        `IP ${this.escapeHtml(ipAddress)}${sameIpCount > 1 ? ` · 同 IP ${sameIpCount}` : ""}`
+
+                    );
+
+
+                }
+
+
+                if(location || localTime){
+
+
+                    networkLines.push(
+
+                        [
+
+                            location
+
+                            ?
+
+                            this.escapeHtml(location)
+
+                            :
+
+                            "",
+
+                            localTime
+
+                            ?
+
+                            `当地 ${this.escapeHtml(localTime)}`
+
+                            :
+
+                            ""
+
+                        ]
+
+                        .filter(Boolean)
+
+                        .join(" · ")
+
+                    );
+
+
+                }
+
+
+                const networkMarkup =
+
+                networkLines
+
+                .map(line=>`<div class="session-network-meta">${line}</div>`)
+
+                .join("");
+
+
                 const tagMarkup =
 
                 tags.length
@@ -2493,6 +3036,8 @@ window.MeridianAdminUI = {
                             ${leadLevel.toUpperCase()} ${Number(lead.score) || 0}
                         </span>
                     </div>
+
+                    ${networkMarkup}
 
                     <div class="session-message-preview">
                         ${this.escapeHtml(session.lastMessage || "暂无消息")}

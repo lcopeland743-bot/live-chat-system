@@ -149,7 +149,7 @@ href="/css/admin.css">
                         id="adminSessionSearch"
                         type="search"
                         autocomplete="off"
-                        placeholder="访客 ID、消息、股票或标签">
+                        placeholder="访客 ID、IP、消息、股票或标签">
                     </label>
 
                     <div class="admin-session-filter-grid">
@@ -655,6 +655,27 @@ href="/css/admin.css">
                     id="adminLeadIntentBadge"
                     class="admin-lead-intent-badge intent-low">
                         LOW · 0
+                    </span>
+                </div>
+
+                <div class="admin-lead-network">
+                    <span>
+                        IP：
+                        <strong id="adminLeadIpAddress">未记录</strong>
+                    </span>
+                    <span id="adminLeadIpHint"></span>
+                    <span>
+                        大致位置：
+                        <strong id="adminLeadLocation">待识别</strong>
+                    </span>
+                    <span>
+                        当地时间：
+                        <strong id="adminLeadLocalTime">待识别</strong>
+                    </span>
+                    <span
+                    id="adminLeadUserAgent"
+                    class="admin-lead-user-agent"
+                    title="">
                     </span>
                 </div>
 

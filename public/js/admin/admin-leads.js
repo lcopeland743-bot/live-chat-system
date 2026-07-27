@@ -14,6 +14,7 @@ window.MeridianAdminLeads = {
     debounceTimer: null,
     reloadTimer: null,
     currentSessionRefreshTimer: null,
+    localTimeTimer: null,
     currentSession: null,
     labelSaving: false,
     followUpSaving: false,
@@ -146,6 +147,26 @@ window.MeridianAdminLeads = {
             document.getElementById(
                 "adminLeadIntentBadge"
             );
+        this.ipAddress =
+            document.getElementById(
+                "adminLeadIpAddress"
+            );
+        this.ipHint =
+            document.getElementById(
+                "adminLeadIpHint"
+            );
+        this.location =
+            document.getElementById(
+                "adminLeadLocation"
+            );
+        this.localTime =
+            document.getElementById(
+                "adminLeadLocalTime"
+            );
+        this.userAgent =
+            document.getElementById(
+                "adminLeadUserAgent"
+            );
         this.intentReasons =
             document.getElementById(
                 "adminLeadIntentReasons"
@@ -185,6 +206,19 @@ window.MeridianAdminLeads = {
 
         this.bindFilters();
         this.bindLeadEditor();
+
+        clearInterval(
+            this.localTimeTimer
+        );
+
+        this.localTimeTimer =
+            setInterval(
+                () => {
+                    this.refreshCurrentLocalTime();
+                },
+                30000
+            );
+
         this.initialized = true;
         this.renderPagination();
         this.renderCurrentSession(null);
@@ -915,6 +949,44 @@ window.MeridianAdminLeads = {
         );
     },
 
+    refreshCurrentLocalTime() {
+        if (!this.localTime) {
+            return;
+        }
+
+        const formatter =
+            window.MeridianAdminUI
+            && typeof window.MeridianAdminUI
+                .formatVisitorLocalTime === "function"
+            ? window.MeridianAdminUI
+                .formatVisitorLocalTime
+                .bind(window.MeridianAdminUI)
+            : null;
+
+        const localTime =
+            formatter
+            ? formatter(
+                this.currentSession,
+                false
+            )
+            : "";
+
+        const timezone =
+            String(
+                this.currentSession
+                && this.currentSession.geoLocation
+                && this.currentSession.geoLocation.timezone
+                || ""
+            )
+            .trim();
+
+        this.localTime.textContent =
+            localTime
+            ? `${localTime}${timezone ? ` (${timezone})` : ""}`
+            : "待识别";
+    },
+
+
     renderCurrentSession(session) {
         this.currentSession =
             session || null;
@@ -934,6 +1006,77 @@ window.MeridianAdminLeads = {
             this.currentUserId.textContent =
                 session.userId
                 || "Unknown visitor";
+        }
+
+        const ipAddress =
+            String(
+                session.ipAddress || ""
+            )
+            .trim();
+
+        if (this.ipAddress) {
+            this.ipAddress.textContent =
+                ipAddress || "未记录";
+        }
+
+        if (this.ipHint) {
+            const exactCount =
+                Number(
+                    session.sameIpSessionCount
+                    || 0
+                );
+
+            const sameIpCount =
+                exactCount > 0
+                ? exactCount
+                : ipAddress
+                    && window.MeridianAdminUI
+                    && typeof window.MeridianAdminUI
+                        .getSameIpCount === "function"
+                    ? window.MeridianAdminUI
+                        .getSameIpCount(ipAddress)
+                    : 0;
+
+            this.ipHint.textContent =
+                sameIpCount > 1
+                ? `同 IP 会话：${sameIpCount}`
+                : "";
+        }
+
+        if (this.location) {
+            const formatter =
+                window.MeridianAdminUI
+                && typeof window.MeridianAdminUI
+                    .formatVisitorLocation === "function"
+                ? window.MeridianAdminUI
+                    .formatVisitorLocation
+                    .bind(window.MeridianAdminUI)
+                : null;
+
+            const location =
+                formatter
+                ? formatter(session, false)
+                : "";
+
+            this.location.textContent =
+                location || "待识别";
+        }
+
+        this.refreshCurrentLocalTime();
+
+        if (this.userAgent) {
+            const userAgent =
+                String(
+                    session.userAgent || ""
+                )
+                .trim();
+
+            this.userAgent.textContent =
+                userAgent
+                ? `设备：${userAgent}`
+                : "";
+            this.userAgent.title =
+                userAgent;
         }
 
         const lead =

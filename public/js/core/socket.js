@@ -105,6 +105,12 @@ window.MeridianSocket = {
 
 
 
+                        conversationId:
+
+                        config.user.conversationId,
+
+
+
                         page:
 
                         config.user.page,

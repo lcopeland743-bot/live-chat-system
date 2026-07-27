@@ -177,6 +177,33 @@ window.MeridianAdminState = {
             session.status,
 
 
+            ipAddress:
+
+            session.ipAddress
+
+            ||
+
+            "",
+
+
+            userAgent:
+
+            session.userAgent
+
+            ||
+
+            "",
+
+
+            geoLocation:
+
+            session.geoLocation
+
+            ||
+
+            null,
+
+
             assignedAgentId:
 
             session.assignedAgentId,

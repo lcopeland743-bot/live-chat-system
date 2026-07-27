@@ -213,6 +213,76 @@ new mongoose.Schema(
 );
 
 
+const geoLocationSchema =
+new mongoose.Schema(
+    {
+        country: {
+            type: String,
+            default: ""
+        },
+
+        countryCode: {
+            type: String,
+            default: ""
+        },
+
+        region: {
+            type: String,
+            default: ""
+        },
+
+        regionCode: {
+            type: String,
+            default: ""
+        },
+
+        city: {
+            type: String,
+            default: ""
+        },
+
+        timezone: {
+            type: String,
+            default: ""
+        },
+
+        timezoneAbbr: {
+            type: String,
+            default: ""
+        },
+
+        locationLabel: {
+            type: String,
+            default: ""
+        },
+
+        provider: {
+            type: String,
+            default: ""
+        },
+
+        lookupStatus: {
+            type: String,
+            enum: [
+                "pending",
+                "success",
+                "failed",
+                "unavailable"
+            ],
+            default: "pending"
+        },
+
+        updatedAt: {
+            type: Date,
+            default: null
+        }
+    },
+    {
+        _id: false
+    }
+);
+
+
 const sessionSchema =
 new mongoose.Schema(
     {
@@ -226,6 +296,26 @@ new mongoose.Schema(
             type: String,
             default: null,
             index: true
+        },
+
+        ipAddress: {
+            type: String,
+            default: ""
+        },
+
+        userAgent: {
+            type: String,
+            default: ""
+        },
+
+        geoLocation: {
+            type: geoLocationSchema,
+            default: () => ({})
+        },
+
+        conversationId: {
+            type: String,
+            default: ""
         },
 
         socketId: {
@@ -392,6 +482,12 @@ new mongoose.Schema(
 sessionSchema.index({
     userId: 1,
     status: 1
+});
+
+
+sessionSchema.index({
+    ipAddress: 1,
+    updatedAt: -1
 });
 
 

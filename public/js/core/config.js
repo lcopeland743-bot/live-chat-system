@@ -1,28 +1,59 @@
-window.MeridianConfig = {
-  appName: "Meridian Chat SDK",
-  version: "1.0.1",
+/**
+ * Meridian SDK Configuration
+ *
+ * Version: v1.0.3
+ */
+(function(){
 
-  debug: true,
+  const identity =
+    window.MeridianVisitorIdentity;
 
-  socket: {
-    url: window.location.origin
-  },
+  const visitorId =
+    identity
+    && typeof identity.getOrCreate === "function"
+    ? identity.getOrCreate()
+    : "user_"
+      + Math.random()
+        .toString(36)
+        .substring(2, 10);
 
-  chat: {
-    title: "Online Support",
-    welcomeMessage: "Hello, how can we help you?",
-    placeholder: "Type your message...",
-    sendButtonText: "Send"
-  },
+  const conversationId =
+    identity
+    && typeof identity.getConversationId === "function"
+    ? identity.getConversationId()
+    : "conversation_"
+      + Math.random()
+        .toString(36)
+        .substring(2, 14);
 
-  user: {
-    id: "user_" + Math.random().toString(36).substring(2, 10),
-    page: window.location.href,
-    referrer: document.referrer || ""
-  },
+  window.MeridianConfig = {
+    appName: "Meridian Chat SDK",
+    version: "1.0.3",
 
-  tracking: {
-    enabled: true,
-    provider: "x-pixel"
-  }
-};
+    debug: true,
+
+    socket: {
+      url: window.location.origin
+    },
+
+    chat: {
+      title: "Online Support",
+      welcomeMessage: "Hello, how can we help you?",
+      placeholder: "Type your message...",
+      sendButtonText: "Send"
+    },
+
+    user: {
+      id: visitorId,
+      conversationId,
+      page: window.location.href,
+      referrer: document.referrer || ""
+    },
+
+    tracking: {
+      enabled: true,
+      provider: "x-pixel"
+    }
+  };
+
+})();

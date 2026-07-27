@@ -73,6 +73,11 @@ window.MeridianPresence = {
 
 
 
+        const conversationId =
+        window.MeridianConfig.user.conversationId;
+
+
+
 
 
         /**
@@ -85,6 +90,8 @@ window.MeridianPresence = {
             {
 
                 userId:userId,
+
+                conversationId:conversationId,
 
                 page:page
 
@@ -104,6 +111,9 @@ window.MeridianPresence = {
 
 
                 userId:userId,
+
+
+                conversationId:conversationId,
 
 
                 page:page,

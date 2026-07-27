@@ -1857,3 +1857,48 @@ body{
     }
 }
 
+
+/* Visitor identity and network metadata */
+.online-user strong,
+.offline-user strong {
+    display: block;
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.presence-network-meta,
+.session-network-meta {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.35;
+}
+
+.admin-lead-network {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 14px;
+    margin-top: 8px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 10px;
+}
+
+.admin-lead-network strong {
+    color: #0f172a;
+}
+
+.admin-lead-user-agent {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
