@@ -2,7 +2,7 @@
  * Meridian Admin Bootstrap
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 (function(){
@@ -81,6 +81,19 @@
 
         if(
 
+            window.MeridianAdminFunnel
+
+        ){
+
+
+            window.MeridianAdminFunnel.init();
+
+
+        }
+
+
+        if(
+
             window.MeridianAdminLeads
 
         ){
@@ -150,7 +163,7 @@
 
         console.log(
 
-            "Meridian Admin v2.4.1 initialized"
+            "Meridian Admin v2.4.2 initialized"
 
         );
 

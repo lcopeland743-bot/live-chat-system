@@ -2,7 +2,7 @@
  * Meridian Chat SDK Server
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  *
  * Features:
  * - Express
@@ -134,6 +134,10 @@ require("./server/routes/admin-ai-route");
 
 const adminErrorRoute =
 require("./server/routes/admin-error-route");
+
+
+const adminFunnelRoute =
+require("./server/routes/admin-funnel-route");
 
 
 const messageRoute =
@@ -377,6 +381,15 @@ app.use(
     "/api/admin/errors",
 
     adminErrorRoute
+
+);
+
+
+app.use(
+
+    "/api/admin/funnel",
+
+    adminFunnelRoute
 
 );
 
@@ -727,7 +740,7 @@ async function startServer(){
 
             console.log(
 
-                "Meridian Chat SDK v2.4.1 running on port",
+                "Meridian Chat SDK v2.4.2 running on port",
 
                 config.port
 

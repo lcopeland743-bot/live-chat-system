@@ -2,7 +2,7 @@
  * Meridian AI Conversation Service
  *
  * Version:
- * v2.3.9
+ * v2.4.2
  *
  * Features:
  * - OFF / ASSIST / AUTO
@@ -399,6 +399,18 @@ async function recordCommittedResult({
     const state =
         generated.nextState;
 
+    const language =
+        generated.customerLanguage
+        && generated.customerLanguage.code
+        ? generated.customerLanguage.code
+        : "unknown";
+
+    const aiMode =
+        session
+        && session.aiMode
+        ? session.aiMode
+        : "unknown";
+
     await conversionAnalyticsService.record({
         userId,
         sessionId:
@@ -411,6 +423,8 @@ async function recordCommittedResult({
             state.intent,
         asset:
             state.asset,
+        language,
+        aiMode,
         data: {
             turn:
                 state.eligibleTurnCount,
@@ -433,6 +447,8 @@ async function recordCommittedResult({
                 state.intent,
             asset:
                 state.asset,
+            language,
+            aiMode,
             data: {
                 sources:
                     generated.sources
@@ -457,6 +473,8 @@ async function recordCommittedResult({
                 state.intent,
             asset:
                 state.asset,
+            language,
+            aiMode,
             data: {
                 value:
                     generated.valueDelivered
@@ -480,6 +498,8 @@ async function recordCommittedResult({
                 state.intent,
             asset:
                 state.asset,
+            language,
+            aiMode,
             data: {
                 turn:
                     generated.decision
@@ -510,6 +530,8 @@ async function recordCommittedResult({
                 state.intent,
             asset:
                 state.asset,
+            language,
+            aiMode,
             data: {
                 reason:
                     generated.decision

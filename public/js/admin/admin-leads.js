@@ -5,7 +5,7 @@
  * and deterministic high-intent customer identification.
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 window.MeridianAdminLeads = {
@@ -16,6 +16,7 @@ window.MeridianAdminLeads = {
     currentSessionRefreshTimer: null,
     currentSession: null,
     labelSaving: false,
+    followUpSaving: false,
     pagination: {
         page: 1,
         limit: 25,
@@ -38,6 +39,7 @@ window.MeridianAdminLeads = {
         unread: "all",
         takeover: "all",
         priority: "all",
+        followUpStatus: "all",
         tag: "",
         sort: "recent",
         page: 1,
@@ -76,6 +78,10 @@ window.MeridianAdminLeads = {
         this.priorityFilter =
             document.getElementById(
                 "adminSessionPriorityFilter"
+            );
+        this.followUpFilter =
+            document.getElementById(
+                "adminSessionFollowUpFilter"
             );
         this.tagFilter =
             document.getElementById(
@@ -147,6 +153,14 @@ window.MeridianAdminLeads = {
         this.prioritySelect =
             document.getElementById(
                 "adminLeadPriority"
+            );
+        this.followUpSelect =
+            document.getElementById(
+                "adminLeadFollowUpStatus"
+            );
+        this.followUpMeta =
+            document.getElementById(
+                "adminLeadFollowUpMeta"
             );
         this.manualTags =
             document.getElementById(
@@ -246,6 +260,10 @@ window.MeridianAdminLeads = {
             [
                 this.priorityFilter,
                 "priority"
+            ],
+            [
+                this.followUpFilter,
+                "followUpStatus"
             ],
             [
                 this.sortFilter,
@@ -368,6 +386,23 @@ window.MeridianAdminLeads = {
             );
         }
 
+        if (this.followUpSelect) {
+            this.followUpSelect
+            .addEventListener(
+                "change",
+                () => {
+                    if (!this.currentSession) {
+                        return;
+                    }
+
+                    this.updateFollowUp(
+                        this.followUpSelect
+                        .value
+                    );
+                }
+            );
+        }
+
         if (this.addTagButton) {
             this.addTagButton.addEventListener(
                 "click",
@@ -402,6 +437,7 @@ window.MeridianAdminLeads = {
             unread: "all",
             takeover: "all",
             priority: "all",
+            followUpStatus: "all",
             tag: "",
             sort: "recent",
             page: 1,
@@ -434,6 +470,9 @@ window.MeridianAdminLeads = {
         }
         if (this.priorityFilter) {
             this.priorityFilter.value = "all";
+        }
+        if (this.followUpFilter) {
+            this.followUpFilter.value = "all";
         }
         if (this.sortFilter) {
             this.sortFilter.value = "recent";
@@ -936,6 +975,19 @@ window.MeridianAdminLeads = {
                 || "normal";
         }
 
+        if (this.followUpSelect) {
+            this.followUpSelect.value =
+                session.followUpStatus
+                || "not_followed_up";
+        }
+
+        if (this.followUpMeta) {
+            this.followUpMeta.textContent =
+                session.followUpUpdatedAt
+                ? `更新时间：${new Date(session.followUpUpdatedAt).toLocaleString()}`
+                : "尚未人工跟进";
+        }
+
         this.renderTagChips();
         this.setMessage("");
     },
@@ -1056,6 +1108,11 @@ window.MeridianAdminLeads = {
                 value;
         }
 
+        if (this.followUpSelect) {
+            this.followUpSelect.disabled =
+                value;
+        }
+
         if (this.tagInput) {
             this.tagInput.disabled =
                 value;
@@ -1151,6 +1208,129 @@ window.MeridianAdminLeads = {
         this.updateLabels({
             tags
         });
+    },
+
+    async updateFollowUp(status) {
+        if (
+            !this.currentSession
+            || this.followUpSaving
+        ) {
+            return;
+        }
+
+        const userId =
+            this.currentSession.userId;
+
+        const previousStatus =
+            this.currentSession
+            .followUpStatus
+            || "not_followed_up";
+
+        this.followUpSaving = true;
+        this.setEditorDisabled(true);
+        this.setMessage(
+            "正在保存跟进状态…"
+        );
+
+        try {
+            const response =
+                await fetch(
+                    `/api/admin/sessions/${encodeURIComponent(userId)}/follow-up`,
+                    {
+                        method: "PATCH",
+                        credentials:
+                            "same-origin",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body:
+                            JSON.stringify({
+                                status
+                            })
+                    }
+                );
+
+            if (
+                window.MeridianAdminAuth
+                && window.MeridianAdminAuth
+                .handleUnauthorizedResponse(
+                    response
+                )
+            ) {
+                return;
+            }
+
+            const result =
+                await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message
+                    || "Unable to update follow-up status."
+                );
+            }
+
+            this.currentSession =
+                result.session;
+
+            const existing =
+                MeridianAdminState
+                .getConversationSessionByUserId(
+                    userId
+                );
+
+            if (existing) {
+                Object.assign(
+                    existing,
+                    result.session
+                );
+            }
+
+            MeridianAdminState.selectSession(
+                result.session
+            );
+            MeridianAdminUI.renderSessions(
+                false
+            );
+            this.renderCurrentSession(
+                result.session
+            );
+            this.setMessage(
+                "跟进状态已保存。"
+            );
+            this.scheduleReload(150);
+
+            if (
+                window.MeridianAdminFunnel
+                && window.MeridianAdminFunnel
+                .isReady()
+            ) {
+                window.MeridianAdminFunnel
+                .scheduleReload(150);
+            }
+        }
+        catch (error) {
+            console.error(
+                "Admin follow-up update failed:",
+                error
+            );
+
+            if (this.followUpSelect) {
+                this.followUpSelect.value =
+                    previousStatus;
+            }
+
+            this.setMessage(
+                error.message
+                || "跟进状态保存失败。",
+                true
+            );
+        }
+        finally {
+            this.followUpSaving = false;
+            this.setEditorDisabled(false);
+        }
     },
 
     async updateLabels(payload) {

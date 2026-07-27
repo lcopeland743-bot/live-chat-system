@@ -2,7 +2,7 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  *
  */
 
@@ -1337,7 +1337,7 @@ body{
 
 .admin-lead-editor-grid {
     display: grid;
-    grid-template-columns: minmax(120px,.45fr) minmax(220px,1fr);
+    grid-template-columns: minmax(110px,.4fr) minmax(150px,.55fr) minmax(220px,1fr);
     gap: 10px;
 }
 
@@ -1484,3 +1484,376 @@ body{
     box-shadow: 0 0 0 1px rgba(22,119,255,.15);
     background: #eff6ff;
 }
+
+/*
+ Meridian WhatsApp Conversion Funnel v2.4.2
+*/
+
+.admin-funnel-panel {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.admin-funnel-heading,
+.admin-funnel-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-funnel-heading {
+    justify-content: space-between;
+}
+
+.admin-funnel-heading > div:first-child {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.admin-funnel-heading strong {
+    color: #0f172a;
+    font-size: 14px;
+}
+
+#adminFunnelStatus {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#adminFunnelStatus.error {
+    color: #b91c1c;
+}
+
+.admin-funnel-heading-actions button,
+.admin-funnel-filter-action button {
+    min-height: 28px;
+    padding: 4px 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-funnel-heading-actions button:hover,
+.admin-funnel-filter-action button:hover {
+    border-color: #1677ff;
+    color: #0958d9;
+}
+
+#adminFunnelBody {
+    max-height: 390px;
+    margin-top: 10px;
+    overflow-y: auto;
+    padding-right: 3px;
+}
+
+#adminFunnelBody[hidden] {
+    display: none;
+}
+
+.admin-funnel-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(5,minmax(100px,1fr));
+    gap: 7px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-funnel-filter-grid label {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.admin-funnel-filter-grid select,
+.admin-funnel-filter-grid input {
+    width: 100%;
+    height: 30px;
+    min-width: 0;
+    padding: 0 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 11px;
+}
+
+.admin-funnel-filter-grid select:focus,
+.admin-funnel-filter-grid input:focus {
+    border-color: #1677ff;
+    outline: 2px solid rgba(22,119,255,.12);
+}
+
+.admin-funnel-filter-grid input:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.admin-funnel-filter-action {
+    display: flex;
+    align-items: flex-end;
+}
+
+.admin-funnel-filter-action button {
+    width: 100%;
+    height: 30px;
+}
+
+.admin-funnel-stages {
+    display: grid;
+    grid-template-columns: repeat(7,minmax(95px,1fr));
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.admin-funnel-stage {
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #dbe3ee;
+    border-radius: 7px;
+    background: #f8fafc;
+}
+
+.admin-funnel-stage-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.admin-funnel-stage-heading strong {
+    overflow: hidden;
+    color: #334155;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-funnel-stage-heading span {
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.admin-funnel-stage-track {
+    height: 6px;
+    margin: 7px 0 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.admin-funnel-stage-bar {
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+    background: #1677ff;
+}
+
+.admin-funnel-stage small {
+    display: block;
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.35;
+}
+
+.admin-funnel-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 12px;
+    color: #64748b;
+    text-align: center;
+    font-size: 11px;
+}
+
+.admin-funnel-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.35fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.admin-funnel-detail-grid > div {
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #ffffff;
+}
+
+.admin-funnel-detail-grid > div > strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 10px;
+}
+
+.admin-funnel-status-list,
+.admin-funnel-dimension-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.admin-funnel-status,
+.admin-funnel-dimension-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 22px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 9px;
+}
+
+.admin-funnel-status strong {
+    color: #0f172a;
+    font-size: 10px;
+}
+
+.admin-funnel-status.status-contacted {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.admin-funnel-status.status-joined_whatsapp {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.admin-funnel-status.status-converted {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.admin-funnel-status.status-invalid {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.admin-funnel-daily {
+    display: flex;
+    max-height: 112px;
+    overflow-y: auto;
+    flex-direction: column;
+    gap: 4px;
+    color: #64748b;
+    font-size: 9px;
+}
+
+.admin-funnel-daily-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.admin-funnel-daily-row span:first-child {
+    color: #334155;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.admin-funnel-data-quality {
+    min-height: 13px;
+    margin: 7px 0 0;
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+#adminLeadFollowUpMeta {
+    min-height: 12px;
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 400;
+}
+
+.session-follow-up-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.follow-up-contacted {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.follow-up-joined_whatsapp {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.follow-up-converted {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.follow-up-invalid {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+@media(max-width:1280px) {
+    .admin-funnel-filter-grid {
+        grid-template-columns: repeat(3,minmax(110px,1fr));
+    }
+
+    .admin-funnel-stages {
+        grid-template-columns: repeat(4,minmax(105px,1fr));
+    }
+}
+
+@media(max-width:900px) {
+    #adminFunnelBody {
+        max-height: 330px;
+    }
+
+    .admin-funnel-filter-grid,
+    .admin-funnel-detail-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
+    }
+
+    .admin-funnel-stages {
+        grid-template-columns: repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:768px) {
+    .admin-funnel-filter-grid,
+    .admin-funnel-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-funnel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+

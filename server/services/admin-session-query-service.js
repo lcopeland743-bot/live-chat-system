@@ -5,7 +5,7 @@
  * manual labels, and deterministic lead-intent scoring.
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 const Session =
@@ -81,6 +81,17 @@ new Set([
 ]);
 
 
+const ALLOWED_FOLLOW_UP_STATUSES =
+new Set([
+    "all",
+    "not_followed_up",
+    "contacted",
+    "joined_whatsapp",
+    "converted",
+    "invalid"
+]);
+
+
 const ALLOWED_SORTS =
 new Set([
     "recent",
@@ -97,6 +108,10 @@ const SYSTEM_TAGS = [
     "高参与",
     "WhatsApp已点击",
     "已展示CTA",
+    "已联系",
+    "已加入WhatsApp",
+    "已转化",
+    "无效客户",
     "高流失风险",
     "禁止推送"
 ];
@@ -205,6 +220,11 @@ function normalizeListOptions(
             normalizeEnum(
                 input.priority,
                 ALLOWED_PRIORITIES
+            ),
+        followUpStatus:
+            normalizeEnum(
+                input.followUpStatus,
+                ALLOWED_FOLLOW_UP_STATUSES
             ),
         tag:
             normalizeSearch(input.tag)
@@ -343,6 +363,22 @@ function buildAutomaticTagMatch(value) {
                 $gt: 0
             }
         },
+        "已联系": {
+            followUpStatus:
+                "contacted"
+        },
+        "已加入WhatsApp": {
+            followUpStatus:
+                "joined_whatsapp"
+        },
+        "已转化": {
+            followUpStatus:
+                "converted"
+        },
+        "无效客户": {
+            followUpStatus:
+                "invalid"
+        },
         "高流失风险": {
             "conversionState.exitRisk":
                 "high"
@@ -412,6 +448,36 @@ function buildBaseMatch(options) {
             clauses.push({
                 priority:
                     options.priority
+            });
+        }
+    }
+
+    if (
+        options.followUpStatus
+        !== "all"
+    ) {
+        if (
+            options.followUpStatus
+            === "not_followed_up"
+        ) {
+            clauses.push({
+                $or: [
+                    {
+                        followUpStatus:
+                            "not_followed_up"
+                    },
+                    {
+                        followUpStatus: {
+                            $exists: false
+                        }
+                    }
+                ]
+            });
+        }
+        else {
+            clauses.push({
+                followUpStatus:
+                    options.followUpStatus
             });
         }
     }
@@ -1258,6 +1324,28 @@ function deriveAutoTags(session) {
         tags.push("已展示CTA");
     }
 
+    if (session.followUpStatus === "contacted") {
+        tags.push("已联系");
+    }
+    else if (
+        session.followUpStatus
+        === "joined_whatsapp"
+    ) {
+        tags.push("已加入WhatsApp");
+    }
+    else if (
+        session.followUpStatus
+        === "converted"
+    ) {
+        tags.push("已转化");
+    }
+    else if (
+        session.followUpStatus
+        === "invalid"
+    ) {
+        tags.push("无效客户");
+    }
+
     if (conversion.exitRisk === "high") {
         tags.push("高流失风险");
     }
@@ -1427,6 +1515,18 @@ function enrichSession(session) {
     plain.autoTags =
         deriveAutoTags(plain);
 
+    plain.followUpStatus =
+        ALLOWED_FOLLOW_UP_STATUSES.has(
+            plain.followUpStatus
+        )
+        && plain.followUpStatus !== "all"
+        ? plain.followUpStatus
+        : "not_followed_up";
+
+    plain.followUpUpdatedAt =
+        plain.followUpUpdatedAt
+        || null;
+
     return plain;
 }
 
@@ -1533,6 +1633,33 @@ function normalizePriority(value) {
     }
 
     return priority;
+}
+
+
+function normalizeFollowUpStatus(value) {
+    const status =
+        String(value || "")
+        .trim()
+        .toLowerCase();
+
+    if (
+        !status
+        || status === "all"
+        || !ALLOWED_FOLLOW_UP_STATUSES
+            .has(status)
+    ) {
+        const error =
+            new Error(
+                "Invalid follow-up status."
+            );
+
+        error.code =
+            "INVALID_FOLLOW_UP_STATUS";
+
+        throw error;
+    }
+
+    return status;
 }
 
 
@@ -1795,12 +1922,83 @@ async function updateLabels(
 }
 
 
+async function updateFollowUp(
+    userId,
+    payload = {}
+) {
+    const status =
+        normalizeFollowUpStatus(
+            payload.status
+        );
+
+    const normalizedUserId =
+        String(userId || "")
+        .trim();
+
+    const existing =
+        await Session.findOne({
+            userId:
+                normalizedUserId
+        });
+
+    if (!existing) {
+        return null;
+    }
+
+    const previousStatus =
+        ALLOWED_FOLLOW_UP_STATUSES.has(
+            existing.followUpStatus
+        )
+        && existing.followUpStatus !== "all"
+        ? existing.followUpStatus
+        : "not_followed_up";
+
+    const updatedAt =
+        new Date();
+
+    const session =
+        await Session.findOneAndUpdate(
+            {
+                userId:
+                    normalizedUserId
+            },
+            {
+                $set: {
+                    followUpStatus:
+                        status,
+                    followUpUpdatedAt:
+                        updatedAt,
+                    followUpUpdatedBy:
+                        String(
+                            payload.updatedBy
+                            || "admin"
+                        )
+                        .trim()
+                        .slice(0, 80)
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+    return {
+        session:
+            enrichSession(session),
+        previousStatus,
+        updatedAt
+    };
+}
+
+
 module.exports = {
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
     MAX_TAGS,
     MAX_TAG_LENGTH,
     SYSTEM_TAGS,
+    ALLOWED_FOLLOW_UP_STATUSES,
     normalizeListOptions,
     buildAutomaticTagMatch,
     buildBaseMatch,
@@ -1813,9 +2011,11 @@ module.exports = {
     enrichSession,
     normalizeTags,
     normalizePriority,
+    normalizeFollowUpStatus,
     invalidateKnownTagCache,
     getKnownTags,
     listSessions,
     getSession,
-    updateLabels
+    updateLabels,
+    updateFollowUp
 };

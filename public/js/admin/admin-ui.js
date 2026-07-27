@@ -2,7 +2,7 @@
  * Meridian Admin UI
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  *
  * Features:
  * - Conversation Management
@@ -2379,6 +2379,44 @@ window.MeridianAdminUI = {
 
                 "normal";
 
+                const followUpStatus =
+
+                session.followUpStatus
+
+                ||
+
+                "not_followed_up";
+
+
+                const followUpLabels = {
+                    not_followed_up:
+                    "未跟进",
+
+                    contacted:
+                    "已联系",
+
+                    joined_whatsapp:
+                    "已加入WA",
+
+                    converted:
+                    "已转化",
+
+                    invalid:
+                    "无效"
+                };
+
+
+                const followUpLabel =
+
+                followUpLabels[
+                    followUpStatus
+                ]
+
+                ||
+
+                "未跟进";
+
+
 
                 const tags =
 
@@ -2471,6 +2509,9 @@ window.MeridianAdminUI = {
                         </span>
                         <span class="session-priority-badge priority-${this.escapeHtml(priority)}">
                             ${this.escapeHtml(String(priority).toUpperCase())}
+                        </span>
+                        <span class="session-follow-up-badge follow-up-${this.escapeHtml(followUpStatus)}">
+                            ${this.escapeHtml(followUpLabel)}
                         </span>
                     </div>
 

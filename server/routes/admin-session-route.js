@@ -4,7 +4,7 @@
  * Search, filters, pagination, labels, and lead intent.
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 const express =
@@ -31,6 +31,10 @@ require("../middleware/admin-socket-auth");
 
 const adminSessionQueryService =
 require("../services/admin-session-query-service");
+
+
+const conversionAnalyticsService =
+require("../services/conversion-analytics-service");
 
 
 const errorMonitorService =
@@ -74,6 +78,7 @@ function isValidationError(error) {
             "INVALID_TAG_CHARACTERS",
             "TOO_MANY_TAGS",
             "INVALID_PRIORITY",
+            "INVALID_FOLLOW_UP_STATUS",
             "EMPTY_LABEL_UPDATE"
         ]
         .includes(error.code)
@@ -122,6 +127,9 @@ router.get(
                         || "all",
                     whatsapp:
                         req.query.whatsapp
+                        || "all",
+                    followUpStatus:
+                        req.query.followUpStatus
                         || "all",
                     hasSearch:
                         Boolean(req.query.q),
@@ -273,6 +281,144 @@ router.patch(
                 success: false,
                 message:
                     "Unable to update labels."
+            });
+        }
+    }
+);
+
+
+router.patch(
+    "/:userId/follow-up",
+    async (req, res) => {
+        try {
+            const result =
+                await adminSessionQueryService
+                .updateFollowUp(
+                    req.params.userId,
+                    {
+                        status:
+                            req.body
+                            && req.body.status,
+                        updatedBy:
+                            req.session
+                            && req.session
+                                .adminUsername
+                            ? req.session
+                                .adminUsername
+                            : "admin"
+                    }
+                );
+
+            if (
+                !result
+                || !result.session
+            ) {
+                return res
+                .status(404)
+                .json({
+                    success: false,
+                    message:
+                        "Session not found."
+                });
+            }
+
+            const latestContext =
+                await conversionAnalyticsService
+                .findLatestContext(
+                    result.session.userId
+                );
+
+            await conversionAnalyticsService
+                .record({
+                    userId:
+                        result.session.userId,
+                    sessionId:
+                        result.session.userId,
+                    eventType:
+                        "follow_up_updated",
+                    stage:
+                        result.session
+                        .conversionState
+                        .stage,
+                    intent:
+                        result.session
+                        .conversionState
+                        .intent,
+                    asset:
+                        result.session
+                        .conversionState
+                        .asset,
+                    language:
+                        latestContext
+                        && latestContext.language,
+                    aiMode:
+                        result.session.aiMode
+                        || (
+                            latestContext
+                            && latestContext.aiMode
+                        ),
+                    data: {
+                        previousStatus:
+                            result.previousStatus,
+                        status:
+                            result.session
+                            .followUpStatus,
+                        updatedAt:
+                            result.updatedAt
+                            .toISOString()
+                    }
+                });
+
+            emitSessionUpdate(
+                req,
+                result.session
+            );
+
+            return res.json({
+                success: true,
+                session:
+                    result.session
+            });
+        }
+        catch (error) {
+            if (isValidationError(error)) {
+                return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        error.message
+                });
+            }
+
+            console.error(
+                "Admin follow-up update error:",
+                error
+            );
+
+            errorMonitorService
+            .captureError({
+                source:
+                    "admin.follow_up_update",
+                error,
+                message:
+                    "Admin follow-up update failed.",
+                code:
+                    error.code
+                    || "ADMIN_FOLLOW_UP_UPDATE_FAILED",
+                context: {
+                    userId:
+                        req.params.userId
+                }
+            })
+            .catch(() => {});
+
+            return res
+            .status(500)
+            .json({
+                success: false,
+                message:
+                    "Unable to update follow-up status."
             });
         }
     }

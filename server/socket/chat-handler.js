@@ -2,7 +2,7 @@
  * Meridian Chat Handler
  *
  * Version:
- * v2.3.10
+ * v2.4.2
  *
  * Features:
  * - Rich messages
@@ -899,6 +899,12 @@ function registerChatHandler(
                             true
                         );
 
+                    const analyticsContext =
+                        await conversionAnalyticsService
+                        .findLatestContext(
+                            session.userId
+                        );
+
                     await conversionAnalyticsService
                         .record({
                             userId:
@@ -919,6 +925,17 @@ function registerChatHandler(
                                 updatedSession
                                 .conversionState
                                 .asset,
+                            language:
+                                analyticsContext
+                                && analyticsContext
+                                    .language,
+                            aiMode:
+                                updatedSession.aiMode
+                                || (
+                                    analyticsContext
+                                    && analyticsContext
+                                        .aiMode
+                                ),
                             data: {
                                 source:
                                     committedSuggestion

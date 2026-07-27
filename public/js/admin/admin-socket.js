@@ -2,7 +2,7 @@
  * Meridian Admin Socket
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  *
  * Features:
  * - Authenticated Admin Socket
@@ -12,6 +12,7 @@
  * - Rich Message Sync
  * - Visitor Statistics Refresh
  * - Paginated Lead Filter Refresh
+ * - Conversion Funnel Refresh
  */
 
 window.MeridianAdminSocket = {
@@ -816,6 +817,19 @@ window.MeridianAdminSocket = {
 
                     );
 
+
+                }
+
+
+                if(
+                    window.MeridianAdminFunnel
+                    &&
+                    window.MeridianAdminFunnel
+                    .isReady()
+                ){
+
+                    window.MeridianAdminFunnel
+                    .scheduleReload();
 
                 }
 

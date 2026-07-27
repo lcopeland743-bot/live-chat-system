@@ -2,7 +2,7 @@
  * Meridian Admin Lead Management Test
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 const assert =
@@ -190,6 +190,8 @@ function createHighIntentSession() {
         tags: [
             "重点跟进"
         ],
+        followUpStatus:
+            "contacted",
         conversionState: {
             asset:
                 "NVDA",
@@ -233,6 +235,8 @@ async function run() {
                 "invalid",
             intentLevel:
                 "HIGH",
+            followUpStatus:
+                "CONTACTED",
             page:
                 "0",
             limit:
@@ -256,6 +260,10 @@ async function run() {
     assert.strictEqual(
         normalized.intentLevel,
         "high"
+    );
+    assert.strictEqual(
+        normalized.followUpStatus,
+        "contacted"
     );
     assert.strictEqual(
         normalized.page,
@@ -359,6 +367,11 @@ async function run() {
             "WhatsApp已点击"
         )
     );
+    assert.ok(
+        autoTags.includes(
+            "已联系"
+        )
+    );
 
     assert.deepStrictEqual(
         service.buildAutomaticTagMatch(
@@ -393,6 +406,23 @@ async function run() {
             "INVALID_TAG_CHARACTERS"
     );
 
+    assert.strictEqual(
+        service.normalizeFollowUpStatus(
+            "JOINED_WHATSAPP"
+        ),
+        "joined_whatsapp"
+    );
+
+    assert.throws(
+        () =>
+            service.normalizeFollowUpStatus(
+                "invalid_status"
+            ),
+        error =>
+            error.code ===
+            "INVALID_FOLLOW_UP_STATUS"
+    );
+
     assert.throws(
         () =>
             service.normalizeTags(
@@ -416,6 +446,8 @@ async function run() {
             intentLevel: "high",
             whatsapp: "clicked",
             priority: "vip",
+            followUpStatus:
+                "contacted",
             q: "AAPL",
             tag: "重点",
             sort: "intent"
@@ -561,12 +593,7 @@ async function run() {
                 ...createHighIntentSession(),
                 userId:
                     query.userId,
-                tags:
-                    update.$set.tags
-                    || [],
-                priority:
-                    update.$set.priority
-                    || "normal"
+                ...update.$set
             };
         };
 
@@ -682,6 +709,37 @@ async function run() {
             updated.leadIntent.level,
             "high"
         );
+
+        const followUpResult =
+            await service.updateFollowUp(
+                "lead_high_1",
+                {
+                    status:
+                        "joined_whatsapp",
+                    updatedBy:
+                        "local-admin"
+                }
+            );
+
+        assert.strictEqual(
+            followUpResult.previousStatus,
+            "contacted"
+        );
+        assert.strictEqual(
+            capturedUpdate.update.$set
+            .followUpStatus,
+            "joined_whatsapp"
+        );
+        assert.strictEqual(
+            capturedUpdate.update.$set
+            .followUpUpdatedBy,
+            "local-admin"
+        );
+        assert.strictEqual(
+            followUpResult.session
+            .followUpStatus,
+            "joined_whatsapp"
+        );
     }
     finally {
         Session.aggregate =
@@ -745,9 +803,13 @@ async function run() {
         modelSource,
         /admin_session_intent_lookup/
     );
+    assert.match(
+        modelSource,
+        /admin_session_follow_up_lookup/
+    );
     assert.strictEqual(
         packageJson.version,
-        "2.4.1"
+        "2.4.2"
     );
     assert.strictEqual(
         packageJson.scripts[
@@ -757,7 +819,7 @@ async function run() {
     );
 
     console.log(
-        "Admin Lead Management v2.4.1 tests passed."
+        "Admin Lead Management v2.4.2 tests passed."
     );
 }
 

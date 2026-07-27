@@ -223,6 +223,18 @@ href="/css/admin.css">
                         </label>
 
                         <label>
+                            <span>跟进状态</span>
+                            <select id="adminSessionFollowUpFilter">
+                                <option value="all">全部</option>
+                                <option value="not_followed_up">未跟进</option>
+                                <option value="contacted">已联系</option>
+                                <option value="joined_whatsapp">已加入 WhatsApp</option>
+                                <option value="converted">已转化</option>
+                                <option value="invalid">无效客户</option>
+                            </select>
+                        </label>
+
+                        <label>
                             <span>排序</span>
                             <select id="adminSessionSortFilter">
                                 <option value="recent">最近更新</option>
@@ -460,6 +472,175 @@ href="/css/admin.css">
             </section>
 
             <section
+            id="adminFunnelPanel"
+            class="admin-funnel-panel">
+
+                <div class="admin-funnel-heading">
+                    <div>
+                        <strong>WhatsApp 转化漏斗</strong>
+                        <span
+                        id="adminFunnelStatus"
+                        aria-live="polite">
+                            正在加载漏斗数据…
+                        </span>
+                    </div>
+
+                    <div class="admin-funnel-heading-actions">
+                        <button
+                        id="adminFunnelRefreshBtn"
+                        type="button">
+                            刷新
+                        </button>
+                        <button
+                        id="adminFunnelToggleBtn"
+                        type="button"
+                        aria-expanded="true">
+                            收起
+                        </button>
+                    </div>
+                </div>
+
+                <div id="adminFunnelBody">
+                    <div class="admin-funnel-filter-grid">
+                        <label>
+                            <span>日期范围</span>
+                            <select id="adminFunnelRange">
+                                <option value="today">今天</option>
+                                <option value="7d">近 7 天</option>
+                                <option value="30d" selected>近 30 天</option>
+                                <option value="90d">近 90 天</option>
+                                <option value="all">全部</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>开始日期</span>
+                            <input
+                            id="adminFunnelStart"
+                            type="date"
+                            disabled>
+                        </label>
+
+                        <label>
+                            <span>结束日期</span>
+                            <input
+                            id="adminFunnelEnd"
+                            type="date"
+                            disabled>
+                        </label>
+
+                        <label>
+                            <span>语言</span>
+                            <select id="adminFunnelLanguage">
+                                <option value="all">全部</option>
+                                <option value="en">英文</option>
+                                <option value="zh">中文</option>
+                                <option value="other">其他</option>
+                                <option value="unknown">未知</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>AI 模式</span>
+                            <select id="adminFunnelAiMode">
+                                <option value="all">全部</option>
+                                <option value="auto">AUTO</option>
+                                <option value="assist">ASSIST</option>
+                                <option value="off">OFF</option>
+                                <option value="unknown">未知</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>意向等级</span>
+                            <select id="adminFunnelLeadLevel">
+                                <option value="all">全部</option>
+                                <option value="high">高意向</option>
+                                <option value="medium">中意向</option>
+                                <option value="low">低意向</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>跟进状态</span>
+                            <select id="adminFunnelFollowUpStatus">
+                                <option value="all">全部</option>
+                                <option value="not_followed_up">未跟进</option>
+                                <option value="contacted">已联系</option>
+                                <option value="joined_whatsapp">已加入 WhatsApp</option>
+                                <option value="converted">已转化</option>
+                                <option value="invalid">无效客户</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>股票 / 资产</span>
+                            <input
+                            id="adminFunnelAsset"
+                            type="search"
+                            maxlength="30"
+                            placeholder="例如：NVDA">
+                        </label>
+
+                        <label>
+                            <span>客户意图</span>
+                            <input
+                            id="adminFunnelIntent"
+                            type="search"
+                            maxlength="60"
+                            placeholder="输入意图关键词">
+                        </label>
+
+                        <div class="admin-funnel-filter-action">
+                            <button
+                            id="adminFunnelResetBtn"
+                            type="button">
+                                重置
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                    id="adminFunnelStages"
+                    class="admin-funnel-stages">
+                    </div>
+
+                    <div class="admin-funnel-detail-grid">
+                        <div>
+                            <strong>人工跟进状态</strong>
+                            <div
+                            id="adminFunnelFollowUpSummary"
+                            class="admin-funnel-status-list">
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong>热门资产</strong>
+                            <div
+                            id="adminFunnelTopAssets"
+                            class="admin-funnel-dimension-list">
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong>最近 7 个数据日</strong>
+                            <div
+                            id="adminFunnelDaily"
+                            class="admin-funnel-daily">
+                            </div>
+                        </div>
+                    </div>
+
+                    <p
+                    id="adminFunnelDataQuality"
+                    class="admin-funnel-data-quality">
+                    </p>
+                </div>
+
+            </section>
+
+            <section
             id="adminLeadPanel"
             class="admin-lead-panel"
             hidden>
@@ -491,6 +672,18 @@ href="/css/admin.css">
                             <option value="normal">普通</option>
                             <option value="low">低</option>
                         </select>
+                    </label>
+
+                    <label>
+                        <span>人工跟进状态</span>
+                        <select id="adminLeadFollowUpStatus">
+                            <option value="not_followed_up">未跟进</option>
+                            <option value="contacted">已联系</option>
+                            <option value="joined_whatsapp">已加入 WhatsApp</option>
+                            <option value="converted">已转化</option>
+                            <option value="invalid">无效客户</option>
+                        </select>
+                        <small id="adminLeadFollowUpMeta"></small>
                     </label>
 
                     <label class="admin-lead-tag-entry">
@@ -610,6 +803,7 @@ href="/css/admin.css">
 <script src="/js/admin/admin-ui.js"></script>
 <script src="/js/admin/admin-ai.js"></script>
 <script src="/js/admin/admin-errors.js"></script>
+<script src="/js/admin/admin-funnel.js"></script>
 <script src="/js/admin/admin-leads.js"></script>
 
 <script src="/js/upload.js"></script>

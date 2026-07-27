@@ -2,7 +2,7 @@
  * Meridian Public Conversion Routes
  *
  * Version:
- * v2.3.0
+ * v2.4.2
  */
 
 const express =
@@ -73,6 +73,13 @@ router.post(
                 });
             }
 
+            const ctaContext =
+                await conversionAnalyticsService
+                .findCtaContext(
+                    userId,
+                    trackingId
+                );
+
             const session =
                 await sessionService
                 .markWhatsappClicked(
@@ -107,6 +114,15 @@ router.post(
                     asset:
                         session.conversionState
                         .asset,
+                    language:
+                        ctaContext
+                        && ctaContext.language,
+                    aiMode:
+                        session.aiMode
+                        || (
+                            ctaContext
+                            && ctaContext.aiMode
+                        ),
                     data: {
                         clickedAt:
                             new Date()

@@ -2,7 +2,7 @@
  * Meridian Conversion Event Model
  *
  * Version:
- * v2.3.2
+ * v2.4.2
  */
 
 const mongoose =
@@ -45,7 +45,8 @@ new mongoose.Schema(
                 "cta_clicked",
                 "cta_suppressed",
                 "whatsapp_refused",
-                "human_takeover"
+                "human_takeover",
+                "follow_up_updated"
             ],
             required: true,
             index: true
@@ -70,6 +71,24 @@ new mongoose.Schema(
         asset: {
             type: String,
             default: null
+        },
+
+        language: {
+            type: String,
+            default: "unknown",
+            index: true
+        },
+
+        aiMode: {
+            type: String,
+            enum: [
+                "unknown",
+                "off",
+                "assist",
+                "auto"
+            ],
+            default: "unknown",
+            index: true
         },
 
         data: {
@@ -97,6 +116,33 @@ conversionEventSchema.index({
     userId: 1,
     createdAt: -1
 });
+
+
+conversionEventSchema.index(
+    {
+        createdAt: -1,
+        eventType: 1,
+        language: 1,
+        aiMode: 1
+    },
+    {
+        name:
+            "conversion_funnel_filter_lookup"
+    }
+);
+
+
+conversionEventSchema.index(
+    {
+        asset: 1,
+        intent: 1,
+        createdAt: -1
+    },
+    {
+        name:
+            "conversion_funnel_dimension_lookup"
+    }
+);
 
 
 conversionEventSchema.index(

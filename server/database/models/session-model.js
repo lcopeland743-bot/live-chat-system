@@ -4,7 +4,7 @@
  * MongoDB Conversation Schema
  *
  * Version:
- * v2.4.1
+ * v2.4.2
  */
 
 const mongoose =
@@ -329,6 +329,29 @@ new mongoose.Schema(
             String
         ],
 
+        followUpStatus: {
+            type: String,
+            enum: [
+                "not_followed_up",
+                "contacted",
+                "joined_whatsapp",
+                "converted",
+                "invalid"
+            ],
+            default: "not_followed_up",
+            index: true
+        },
+
+        followUpUpdatedAt: {
+            type: Date,
+            default: null
+        },
+
+        followUpUpdatedBy: {
+            type: String,
+            default: ""
+        },
+
         aiMode: {
             type: String,
             enum: [
@@ -439,6 +462,19 @@ sessionSchema.index(
     {
         name:
             "admin_session_intent_lookup"
+    }
+);
+
+
+sessionSchema.index(
+    {
+        followUpStatus: 1,
+        followUpUpdatedAt: -1,
+        updatedAt: -1
+    },
+    {
+        name:
+            "admin_session_follow_up_lookup"
     }
 );
 
