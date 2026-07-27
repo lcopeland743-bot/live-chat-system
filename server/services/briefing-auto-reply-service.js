@@ -11,7 +11,7 @@
  */
 
 const WHATSAPP_BASE_URL =
-"https://wa.me/19342032173";
+"https://wa.me/12085035427";
 
 
 const INTERACTION_TYPE =

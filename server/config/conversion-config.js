@@ -33,7 +33,7 @@ function normalizeBoolean(value, fallback) {
 
 function normalizePhoneNumber(value) {
     const digits = String(value || "").replace(/\D/g, "");
-    return digits || "19342032173";
+    return digits || "12085035427";
 }
 
 const replyCharacterLimit = normalizeInteger(
@@ -93,7 +93,7 @@ module.exports = {
 
         phoneNumber: normalizePhoneNumber(
             process.env.AI_WHATSAPP_NUMBER
-            || "19342032173"
+            || "12085035427"
         ),
 
         clickEndpoint:
