@@ -45,6 +45,18 @@ window.MeridianChatUI = {
   typingTimeoutMs:130000,
 
 
+  mobileBreakpoint:768,
+
+
+  pageScrollY:0,
+
+
+  boundViewportUpdate:null,
+
+
+  boundResponsiveUpdate:null,
+
+
 
   init(){
 
@@ -69,7 +81,10 @@ window.MeridianChatUI = {
 
       <button
       class="meridian-chat-button"
-      id="meridianChatButton">
+      id="meridianChatButton"
+      type="button"
+      aria-label="Open chat"
+      aria-expanded="false">
 
       💬
 
@@ -80,7 +95,10 @@ window.MeridianChatUI = {
 
       <div
       class="meridian-chat-panel"
-      id="meridianChatPanel">
+      id="meridianChatPanel"
+      role="dialog"
+      aria-modal="false"
+      aria-hidden="true">
 
 
 
@@ -95,9 +113,18 @@ window.MeridianChatUI = {
 
 
 
-          <button id="meridianChatClose">
+          <button
+          id="meridianChatClose"
+          type="button"
+          aria-label="Close chat">
 
-          ×
+          <span
+          class="meridian-chat-close-desktop"
+          aria-hidden="true">×</span>
+
+          <span
+          class="meridian-chat-close-mobile"
+          aria-hidden="true">←</span>
 
           </button>
 
@@ -208,6 +235,12 @@ window.MeridianChatUI = {
 
 
     this.elements = {
+
+
+
+      root:
+
+      container,
 
 
 
@@ -391,6 +424,529 @@ window.MeridianChatUI = {
 
     };
 
+
+
+    this.boundResponsiveUpdate = ()=>{
+
+
+      this.syncResponsiveMode();
+
+
+    };
+
+
+
+    window.addEventListener(
+
+      "resize",
+
+      this.boundResponsiveUpdate
+
+    );
+
+
+
+    window.addEventListener(
+
+      "orientationchange",
+
+      this.boundResponsiveUpdate
+
+    );
+
+
+
+  },
+
+
+
+  isMobileViewport(){
+
+
+    return window.matchMedia(
+
+      `(max-width: ${this.mobileBreakpoint}px)`
+
+    ).matches;
+
+
+  },
+
+
+
+  isOpen(){
+
+
+    return Boolean(
+
+      this.elements.panel
+
+      &&
+
+      this.elements.panel.classList.contains(
+
+        "active"
+
+      )
+
+    );
+
+
+  },
+
+
+
+  updateMobileViewport(){
+
+
+    if(
+
+      !this.isOpen()
+
+      ||
+
+      !this.isMobileViewport()
+
+    ){
+
+
+      return;
+
+
+    }
+
+
+
+    const viewport =
+
+    window.visualViewport;
+
+
+
+    const height =
+
+    viewport
+
+    ?
+
+    viewport.height
+
+    :
+
+    window.innerHeight;
+
+
+
+    const width =
+
+    viewport
+
+    ?
+
+    viewport.width
+
+    :
+
+    window.innerWidth;
+
+
+
+    const offsetTop =
+
+    viewport
+
+    ?
+
+    viewport.offsetTop
+
+    :
+
+    0;
+
+
+
+    const offsetLeft =
+
+    viewport
+
+    ?
+
+    viewport.offsetLeft
+
+    :
+
+    0;
+
+
+
+    const rootStyle =
+
+    document.documentElement.style;
+
+
+
+    rootStyle.setProperty(
+
+      "--meridian-chat-viewport-height",
+
+      `${Math.round(height)}px`
+
+    );
+
+
+
+    rootStyle.setProperty(
+
+      "--meridian-chat-viewport-width",
+
+      `${Math.round(width)}px`
+
+    );
+
+
+
+    rootStyle.setProperty(
+
+      "--meridian-chat-viewport-offset-top",
+
+      `${Math.round(offsetTop)}px`
+
+    );
+
+
+
+    rootStyle.setProperty(
+
+      "--meridian-chat-viewport-offset-left",
+
+      `${Math.round(offsetLeft)}px`
+
+    );
+
+
+  },
+
+
+
+  clearMobileViewport(){
+
+
+    const rootStyle =
+
+    document.documentElement.style;
+
+
+
+    [
+
+      "--meridian-chat-viewport-height",
+
+      "--meridian-chat-viewport-width",
+
+      "--meridian-chat-viewport-offset-top",
+
+      "--meridian-chat-viewport-offset-left",
+
+      "--meridian-page-scroll-top"
+
+    ].forEach(
+
+      property=>{
+
+
+        rootStyle.removeProperty(
+
+          property
+
+        );
+
+
+      }
+
+    );
+
+
+  },
+
+
+
+  startMobileFullscreen(){
+
+
+    if(
+
+      !this.isOpen()
+
+      ||
+
+      !this.isMobileViewport()
+
+    ){
+
+
+      return;
+
+
+    }
+
+
+
+    const alreadyActive =
+
+    document.body.classList.contains(
+
+      "meridian-chat-open"
+
+    );
+
+
+
+    if(!alreadyActive){
+
+
+      this.pageScrollY =
+
+      window.scrollY
+
+      ||
+
+      window.pageYOffset
+
+      ||
+
+      0;
+
+
+
+      document.documentElement.style.setProperty(
+
+        "--meridian-page-scroll-top",
+
+        `${-this.pageScrollY}px`
+
+      );
+
+
+
+      document.documentElement.classList.add(
+
+        "meridian-chat-open"
+
+      );
+
+
+
+      document.body.classList.add(
+
+        "meridian-chat-open"
+
+      );
+
+
+    }
+
+
+
+    this.elements.root.classList.add(
+
+      "mobile-active"
+
+    );
+
+
+
+    this.elements.panel.setAttribute(
+
+      "aria-modal",
+
+      "true"
+
+    );
+
+
+
+    if(!this.boundViewportUpdate){
+
+
+      this.boundViewportUpdate = ()=>{
+
+
+        this.updateMobileViewport();
+
+
+      };
+
+
+    }
+
+
+
+    if(window.visualViewport){
+
+
+      window.visualViewport.addEventListener(
+
+        "resize",
+
+        this.boundViewportUpdate
+
+      );
+
+
+
+      window.visualViewport.addEventListener(
+
+        "scroll",
+
+        this.boundViewportUpdate
+
+      );
+
+
+    }
+
+
+
+    this.updateMobileViewport();
+
+
+  },
+
+
+
+  stopMobileFullscreen(){
+
+
+    const wasActive =
+
+    document.body.classList.contains(
+
+      "meridian-chat-open"
+
+    );
+
+
+
+    if(window.visualViewport){
+
+
+      window.visualViewport.removeEventListener(
+
+        "resize",
+
+        this.boundViewportUpdate
+
+      );
+
+
+
+      window.visualViewport.removeEventListener(
+
+        "scroll",
+
+        this.boundViewportUpdate
+
+      );
+
+
+    }
+
+
+
+    document.documentElement.classList.remove(
+
+      "meridian-chat-open"
+
+    );
+
+
+
+    document.body.classList.remove(
+
+      "meridian-chat-open"
+
+    );
+
+
+
+    if(this.elements.root){
+
+
+      this.elements.root.classList.remove(
+
+        "mobile-active"
+
+      );
+
+
+    }
+
+
+
+    if(this.elements.panel){
+
+
+      this.elements.panel.setAttribute(
+
+        "aria-modal",
+
+        "false"
+
+      );
+
+
+    }
+
+
+
+    this.clearMobileViewport();
+
+
+
+    if(wasActive){
+
+
+      window.scrollTo(
+
+        0,
+
+        this.pageScrollY
+
+      );
+
+
+    }
+
+
+  },
+
+
+
+  syncResponsiveMode(){
+
+
+    if(
+
+      this.isOpen()
+
+      &&
+
+      this.isMobileViewport()
+
+    ){
+
+
+      this.startMobileFullscreen();
+
+
+      return;
+
+
+    }
+
+
+
+    this.stopMobileFullscreen();
 
 
   },
@@ -792,6 +1348,12 @@ window.MeridianChatUI = {
   open(){
 
 
+    const wasOpen =
+
+    this.isOpen();
+
+
+
     this.elements.panel
 
     .classList
@@ -800,9 +1362,53 @@ window.MeridianChatUI = {
 
 
 
+    this.elements.panel.setAttribute(
+
+      "aria-hidden",
+
+      "false"
+
+    );
 
 
-    if(window.MeridianPixel){
+
+    this.elements.button.setAttribute(
+
+      "aria-expanded",
+
+      "true"
+
+    );
+
+
+
+    this.syncResponsiveMode();
+
+
+
+    window.requestAnimationFrame(
+
+      ()=>{
+
+
+        this.scrollBottom();
+
+
+      }
+
+    );
+
+
+
+    if(
+
+      !wasOpen
+
+      &&
+
+      window.MeridianPixel
+
+    ){
 
 
       window.MeridianPixel.chatOpen();
@@ -829,6 +1435,52 @@ window.MeridianChatUI = {
     .classList
 
     .remove("active");
+
+
+
+    this.elements.panel.setAttribute(
+
+      "aria-hidden",
+
+      "true"
+
+    );
+
+
+
+    this.elements.button.setAttribute(
+
+      "aria-expanded",
+
+      "false"
+
+    );
+
+
+
+    this.stopMobileFullscreen();
+
+
+
+    try{
+
+
+      this.elements.button.focus({
+
+        preventScroll:true
+
+      });
+
+
+    }
+
+    catch(error){
+
+
+      this.elements.button.focus();
+
+
+    }
 
 
   },
