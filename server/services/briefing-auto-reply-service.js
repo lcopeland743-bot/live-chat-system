@@ -2,7 +2,7 @@
  * Meridian Briefing Auto Reply Service
  *
  * Version:
- * v2.1.1
+ * v2.4.2
  *
  * Responsibilities:
  * - Investor profile choice validation
@@ -10,8 +10,8 @@
  * - WhatsApp prefilled link generation
  */
 
-const WHATSAPP_BASE_URL =
-"https://wa.me/12085035427";
+const whatsappSettingsService =
+require("./whatsapp-settings-service");
 
 
 const INTERACTION_TYPE =
@@ -183,25 +183,17 @@ function getChoiceFromPayload(payload){
 function createWhatsAppUrl(prefill){
 
 
-    return (
+    return whatsappSettingsService
 
-        WHATSAPP_BASE_URL
-
-        +
-
-        "?text="
-
-        +
-
-        encodeURIComponent(prefill)
-
-    );
+    .buildInternalUrl(prefill);
 
 
 }
 
 
-function createAutoReplyMessages(choiceId){
+
+
+async function createAutoReplyMessages(choiceId){
 
 
     const choice =
@@ -220,7 +212,7 @@ function createAutoReplyMessages(choiceId){
 
 
 
-    return [
+    const messages = [
 
 
         {
@@ -253,7 +245,50 @@ function createAutoReplyMessages(choiceId){
             }
 
 
-        },
+        }
+
+
+    ];
+
+
+
+    const whatsappSettings =
+
+    await whatsappSettingsService
+
+    .getResolvedSettings();
+
+
+
+    if(
+
+        !whatsappSettings.enabled
+
+        ||
+
+        !whatsappSettings.number
+
+    ){
+
+
+        return messages;
+
+
+    }
+
+
+
+    const url =
+
+    createWhatsAppUrl(
+
+        choice.whatsappPrefill
+
+    );
+
+
+
+    messages.push(
 
 
         {
@@ -262,13 +297,7 @@ function createAutoReplyMessages(choiceId){
             type:"link-card",
 
 
-            content:
-
-            createWhatsAppUrl(
-
-                choice.whatsappPrefill
-
-            ),
+            content:url,
 
 
             metadata:{
@@ -299,7 +328,15 @@ function createAutoReplyMessages(choiceId){
 
                 buttonText:
 
-                "Claim for free"
+                "Claim for free",
+
+
+                prefill:
+
+                choice.whatsappPrefill,
+
+
+                url:url
 
 
             }
@@ -308,10 +345,15 @@ function createAutoReplyMessages(choiceId){
         }
 
 
-    ];
+    );
+
+
+
+    return messages;
 
 
 }
+
 
 
 module.exports = {

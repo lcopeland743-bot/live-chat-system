@@ -318,7 +318,7 @@ async function sendBriefingAutoReply(
     choiceId
 ) {
     const messages =
-        briefingAutoReplyService
+        await briefingAutoReplyService
         .createAutoReplyMessages(
             choiceId
         );

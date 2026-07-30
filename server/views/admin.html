@@ -56,6 +56,80 @@ href="/css/admin.css">
 
         <aside class="admin-sidebar">
 
+            <section
+            id="adminWhatsappSettingsPanel"
+            class="admin-panel admin-whatsapp-settings-panel">
+
+                <div class="admin-whatsapp-settings-heading">
+                    <div>
+                        <h2>WhatsApp 设置</h2>
+                        <span>无需重新部署即可切换号码</span>
+                    </div>
+
+                    <a
+                    id="adminWhatsappTestLink"
+                    class="admin-whatsapp-test-link is-disabled"
+                    href="/go/whatsapp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled="true">
+                        测试打开
+                    </a>
+                </div>
+
+                <label class="admin-whatsapp-number-field">
+                    <span>国际号码（仅数字）</span>
+                    <input
+                    id="adminWhatsappNumber"
+                    type="tel"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    maxlength="15"
+                    placeholder="例如 14155552671">
+                </label>
+
+                <label class="admin-whatsapp-enabled-field">
+                    <input
+                    id="adminWhatsappEnabled"
+                    type="checkbox">
+                    <span>保存后立即启用 WhatsApp 跳转</span>
+                </label>
+
+                <div class="admin-whatsapp-settings-actions">
+                    <button
+                    id="adminWhatsappSaveBtn"
+                    type="button">
+                        保存设置
+                    </button>
+
+                    <button
+                    id="adminWhatsappDisableBtn"
+                    type="button">
+                        暂停功能
+                    </button>
+
+                    <button
+                    id="adminWhatsappRestoreBtn"
+                    type="button"
+                    disabled>
+                        恢复上一个号码
+                    </button>
+                </div>
+
+                <p
+                id="adminWhatsappSettingsStatus"
+                class="admin-whatsapp-settings-status"
+                aria-live="polite">
+                    正在读取 WhatsApp 设置…
+                </p>
+
+                <small
+                id="adminWhatsappSettingsMeta"
+                class="admin-whatsapp-settings-meta">
+                </small>
+
+            </section>
+
             <section class="admin-panel">
 
                 <h2>
@@ -832,6 +906,7 @@ href="/css/admin.css">
 
 <script src="/js/admin/admin-socket.js"></script>
 <script src="/js/admin/admin-link-card.js"></script>
+<script src="/js/admin/admin-whatsapp-settings.js"></script>
 <script src="/js/admin/admin.js"></script>
 
 </body>

@@ -47,6 +47,10 @@ const whatsappConversionService =
 require("./whatsapp-conversion-service");
 
 
+const whatsappSettingsService =
+require("./whatsapp-settings-service");
+
+
 const conversionAnalyticsService =
 require("./conversion-analytics-service");
 
@@ -282,11 +286,17 @@ async function buildGeneratedResult({
             hardSignals
         });
 
+    const whatsappSettings =
+        await whatsappSettingsService
+        .getResolvedSettings();
+
     const decision =
         conversionPolicyService.apply({
             generated,
             state,
-            latestMessage
+            latestMessage,
+            whatsappAvailable:
+                whatsappSettings.enabled
         });
 
     const linkCard =
@@ -295,7 +305,8 @@ async function buildGeneratedResult({
             generated,
             state,
             decision,
-            latestMessage
+            latestMessage,
+            whatsappSettings
         });
 
     if (linkCard) {

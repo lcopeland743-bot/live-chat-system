@@ -172,6 +172,14 @@ const conversionRoute =
 require("./server/routes/conversion-route");
 
 
+const adminWhatsappSettingsRoute =
+require("./server/routes/admin-whatsapp-settings-route");
+
+
+const whatsappRedirectRoute =
+require("./server/routes/whatsapp-redirect-route");
+
+
 installProcessHandlers();
 
 
@@ -285,6 +293,15 @@ app.use(
 
 app.use(
 
+    "/",
+
+    whatsappRedirectRoute
+
+);
+
+
+app.use(
+
     express.static(
 
         path.join(
@@ -390,6 +407,15 @@ app.use(
     "/api/admin/funnel",
 
     adminFunnelRoute
+
+);
+
+
+app.use(
+
+    "/api/admin/whatsapp-settings",
+
+    adminWhatsappSettingsRoute
 
 );
 

@@ -105,6 +105,19 @@
         }
 
 
+        if(
+
+            window.MeridianAdminWhatsappSettings
+
+        ){
+
+
+            window.MeridianAdminWhatsappSettings.init();
+
+
+        }
+
+
         window.MeridianAdminSocket.init();
 
 

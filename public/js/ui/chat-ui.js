@@ -57,6 +57,15 @@ window.MeridianChatUI = {
   boundResponsiveUpdate:null,
 
 
+  whatsappAvailability:null,
+
+
+  whatsappStatusLoading:false,
+
+
+  whatsappNodes:new Set(),
+
+
 
   init(){
 
@@ -317,6 +326,9 @@ window.MeridianChatUI = {
 
 
     this.renderInvestorChoices();
+
+
+    this.loadWhatsappAvailability();
 
 
 
@@ -2500,9 +2512,11 @@ window.MeridianChatUI = {
 
     ?
 
-    this.getSafeUrl(
+    this.getWhatsappUrl(
 
-      whatsapp.url
+      whatsapp.url,
+
+      whatsapp
 
     )
 
@@ -2602,6 +2616,13 @@ window.MeridianChatUI = {
     );
 
 
+    this.registerWhatsappNode(
+
+      extras
+
+    );
+
+
     container.appendChild(
 
       extras
@@ -2610,6 +2631,247 @@ window.MeridianChatUI = {
 
 
   },
+
+
+
+  async loadWhatsappAvailability(){
+
+
+    if(this.whatsappStatusLoading){
+
+      return;
+
+    }
+
+
+    this.whatsappStatusLoading = true;
+
+
+    try{
+
+
+      const response =
+
+      await fetch(
+
+        "/api/conversion/whatsapp-status",
+
+        {
+
+          cache:"no-store"
+
+        }
+
+      );
+
+
+      const result =
+
+      await response.json();
+
+
+      this.whatsappAvailability =
+
+      Boolean(
+
+        response.ok
+
+        &&
+
+        result.enabled === true
+
+      );
+
+
+      this.updateWhatsappNodes();
+
+
+    }
+
+    catch(error){
+
+
+      console.warn(
+
+        "WhatsApp availability check failed",
+
+        error
+
+      );
+
+
+      this.whatsappAvailability =
+
+      true;
+
+
+      this.updateWhatsappNodes();
+
+
+    }
+
+    finally{
+
+
+      this.whatsappStatusLoading = false;
+
+
+    }
+
+
+  },
+
+
+
+
+  registerWhatsappNode(node){
+
+
+    if(!node){
+
+      return;
+
+    }
+
+
+    this.whatsappNodes.add(node);
+
+
+    node.hidden =
+
+    this.whatsappAvailability !== true;
+
+
+    if(this.whatsappAvailability !== true){
+
+
+      this.loadWhatsappAvailability();
+
+
+    }
+
+
+  },
+
+
+
+
+  updateWhatsappNodes(){
+
+
+    this.whatsappNodes.forEach(
+
+      node=>{
+
+
+        if(!node || !node.isConnected){
+
+
+          this.whatsappNodes.delete(node);
+
+          return;
+
+        }
+
+
+        node.hidden =
+
+        this.whatsappAvailability === false;
+
+
+      }
+
+    );
+
+
+  },
+
+
+
+
+  getWhatsappUrl(value, metadata={}){
+
+
+    let prefill =
+
+    metadata.prefill
+
+    ||
+
+    "";
+
+
+    try{
+
+
+      const original =
+
+      new URL(
+
+        value || "/go/whatsapp",
+
+        window.location.origin
+
+      );
+
+
+      prefill =
+
+      prefill
+
+      ||
+
+      original.searchParams.get("text")
+
+      ||
+
+      "";
+
+
+    }
+
+    catch(error){
+
+
+      prefill =
+
+      String(prefill || "");
+
+
+    }
+
+
+    const redirect =
+
+    new URL(
+
+      "/go/whatsapp",
+
+      window.location.origin
+
+    );
+
+
+    if(prefill){
+
+
+      redirect.searchParams.set(
+
+        "text",
+
+        String(prefill).slice(0,500)
+
+      );
+
+
+    }
+
+
+    return redirect.href;
+
+
+  },
+
 
 
 
@@ -2970,25 +3232,51 @@ window.MeridianChatUI = {
 
 
 
+    const rawUrl =
+
+    metadata.url
+
+    ||
+
+    message.content
+
+    ||
+
+    message.message
+
+    ||
+
+    "";
+
+
+    const isWhatsapp =
+
+    metadata.platform === "whatsapp"
+
+    ||
+
+    /(?:wa\.me|\/go\/whatsapp)/i
+
+    .test(rawUrl);
+
+
     const url =
 
-    this.getSafeUrl(
+    isWhatsapp
 
-      metadata.url
+    ?
 
-      ||
+    this.getWhatsappUrl(
 
-      message.content
+      rawUrl,
 
-      ||
+      metadata
 
-      message.message
+    )
 
-      ||
+    :
 
-      ""
-
-    );
+    this.getSafeUrl(rawUrl);
 
 
 
@@ -3028,6 +3316,19 @@ window.MeridianChatUI = {
     wrapper.className =
 
     "meridian-briefing-card";
+
+
+    if(isWhatsapp){
+
+
+      this.registerWhatsappNode(
+
+        wrapper
+
+      );
+
+
+    }
 
 
 

@@ -28,6 +28,10 @@ const conversionAnalyticsService =
 require("../services/conversion-analytics-service");
 
 
+const whatsappSettingsService =
+require("../services/whatsapp-settings-service");
+
+
 function safeIdentifier(value, maximum = 120) {
     const text =
         String(value || "").trim();
@@ -42,6 +46,39 @@ function safeIdentifier(value, maximum = 120) {
 
     return text;
 }
+
+
+router.get(
+    "/whatsapp-status",
+    async (req, res) => {
+        try {
+            const settings = await whatsappSettingsService
+                .getResolvedSettings();
+
+            res.set(
+                "Cache-Control",
+                "no-store, no-cache, must-revalidate, private"
+            );
+
+            return res.json({
+                success: true,
+                enabled:
+                    settings.enabled === true
+                    && Boolean(settings.number)
+            });
+        } catch (error) {
+            console.error(
+                "[WhatsApp Status Error]",
+                error
+            );
+
+            return res.status(503).json({
+                success: false,
+                enabled: false
+            });
+        }
+    }
+);
 
 
 router.post(

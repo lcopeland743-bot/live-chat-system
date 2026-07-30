@@ -2,7 +2,7 @@
  * Meridian Conversion Configuration
  *
  * Version:
- * v2.3.7
+ * v2.4.2
  */
 
 function normalizeInteger(value, fallback, minimum, maximum) {
@@ -33,7 +33,15 @@ function normalizeBoolean(value, fallback) {
 
 function normalizePhoneNumber(value) {
     const digits = String(value || "").replace(/\D/g, "");
-    return digits || "12085035427";
+
+    if (
+        digits.length < 7
+        || digits.length > 15
+    ) {
+        return "";
+    }
+
+    return digits;
 }
 
 const replyCharacterLimit = normalizeInteger(
@@ -42,6 +50,18 @@ const replyCharacterLimit = normalizeInteger(
     200,
     200
 );
+
+const environmentWhatsappNumber =
+    normalizePhoneNumber(
+        process.env.AI_WHATSAPP_NUMBER
+    );
+
+const environmentWhatsappEnabled =
+    normalizeBoolean(
+        process.env.AI_WHATSAPP_ENABLED,
+        Boolean(environmentWhatsappNumber)
+    )
+    && Boolean(environmentWhatsappNumber);
 
 module.exports = {
     policyVersion: "1.1.0",
@@ -86,18 +106,13 @@ module.exports = {
     ),
 
     whatsapp: {
-        enabled: normalizeBoolean(
-            process.env.AI_WHATSAPP_ENABLED,
-            true
-        ),
-
-        phoneNumber: normalizePhoneNumber(
-            process.env.AI_WHATSAPP_NUMBER
-            || "12085035427"
-        ),
-
+        enabled: environmentWhatsappEnabled,
+        phoneNumber: environmentWhatsappNumber,
         clickEndpoint:
             process.env.AI_WHATSAPP_CLICK_ENDPOINT
-            || "/api/conversion/whatsapp-click"
-    }
+            || "/api/conversion/whatsapp-click",
+        redirectPath: "/go/whatsapp"
+    },
+
+    normalizePhoneNumber
 };

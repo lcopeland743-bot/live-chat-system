@@ -347,7 +347,9 @@ function hasUsefulContext(generated, hardSignals) {
 function apply({
     generated,
     state,
-    latestMessage
+    latestMessage,
+    whatsappAvailable =
+        conversionConfig.whatsapp.enabled
 }) {
     const hardSignals =
         detectHardSignals(latestMessage);
@@ -364,7 +366,7 @@ function apply({
         .maxAiRepliesPerSession;
 
     const finalCtaBlocked = Boolean(
-        !conversionConfig.whatsapp.enabled
+        !whatsappAvailable
         || state.whatsappClicked
         || state.doNotPush
         || state.humanTakeover

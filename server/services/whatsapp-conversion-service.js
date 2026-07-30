@@ -2,7 +2,7 @@
  * Meridian WhatsApp Conversion Service
  *
  * Version:
- * v2.3.4
+ * v2.4.2
  */
 
 const crypto =
@@ -11,6 +11,10 @@ require("crypto");
 
 const conversionConfig =
 require("../config/conversion-config");
+
+
+const whatsappSettingsService =
+require("./whatsapp-settings-service");
 
 
 const {
@@ -113,10 +117,19 @@ function createCard({
     generated,
     state,
     decision,
-    latestMessage
+    latestMessage,
+    whatsappSettings
 }) {
+    const resolvedSettings =
+        whatsappSettings
+        || {
+            enabled: conversionConfig.whatsapp.enabled,
+            number: conversionConfig.whatsapp.phoneNumber
+        };
+
     if (
-        !conversionConfig.whatsapp.enabled
+        !resolvedSettings.enabled
+        || !resolvedSettings.number
         || !decision.showWhatsapp
     ) {
         return null;
@@ -203,8 +216,8 @@ function createCard({
         || localizedPrefill;
 
     const url =
-        `https://wa.me/${conversionConfig.whatsapp.phoneNumber}`
-        + `?text=${encodeURIComponent(prefill)}`;
+        whatsappSettingsService
+        .buildInternalUrl(prefill);
 
     const ctaVariant = [
         generated.intent || "unknown",
