@@ -57,6 +57,14 @@
 
 
 
+    const MOBILE_FULLSCREEN_ASSET_VERSION =
+
+    "20260806-2";
+
+
+
+
+
 
 
 
@@ -110,7 +118,13 @@
 
         BASE_URL +
 
-        "/css/chat.css";
+        "/css/chat.css?v=" +
+
+        encodeURIComponent(
+
+            MOBILE_FULLSCREEN_ASSET_VERSION
+
+        );
 
 
 
@@ -250,7 +264,25 @@
 
                 script.src =
 
-                BASE_URL + src;
+                BASE_URL + src +
+
+                (
+
+                    src === "/js/ui/chat-ui.js"
+
+                    ?
+
+                    "?v=" + encodeURIComponent(
+
+                        MOBILE_FULLSCREEN_ASSET_VERSION
+
+                    )
+
+                    :
+
+                    ""
+
+                );
 
 
 

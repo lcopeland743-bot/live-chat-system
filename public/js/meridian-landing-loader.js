@@ -41,6 +41,10 @@
   const loadMode =
     currentScript.dataset.meridianLoad || "idle";
 
+
+  const assetVersion =
+    currentScript.dataset.meridianAssetVersion || "20260806-2";
+
   const triggerSelector =
     "[data-meridian-chat], [data-question]";
 
@@ -111,7 +115,10 @@
 
       const script = document.createElement("script");
 
-      script.src = baseUrl + "/js/embed.js";
+      script.src =
+        baseUrl +
+        "/js/embed.js?v=" +
+        encodeURIComponent(assetVersion);
       script.async = true;
       script.dataset.meridianLandingEmbed = "true";
       script.onload = ()=>resolve(script);
@@ -135,7 +142,8 @@
 
     sharedState.status = "loading";
     dispatch("meridian_landing_loading", {
-      baseUrl: baseUrl
+      baseUrl: baseUrl,
+      assetVersion: assetVersion
     });
 
     sharedState.promise =
@@ -146,7 +154,8 @@
           sharedState.error = null;
 
           dispatch("meridian_landing_ready", {
-            baseUrl: baseUrl
+            baseUrl: baseUrl,
+            assetVersion: assetVersion
           });
 
           return chatUI;
@@ -306,6 +315,7 @@
   window.MeridianLandingLoader = {
     version: "1.0.0",
     baseUrl: baseUrl,
+    assetVersion: assetVersion,
     load: load,
     open: open,
     isReady: isReady

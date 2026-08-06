@@ -308,7 +308,7 @@ module.exports = function renderMarketClarity({ site, page }){
   <script>window.MeridianLandingContext = Object.freeze(${safeJson(context)});</script>
   ${renderXPixel(site.xPixelId)}
   <script src="/js/landing-page-runtime.js" defer></script>
-  <script src="/js/meridian-landing-loader.js" data-meridian-load="idle" defer></script>
+  <script src="/js/meridian-landing-loader.js?v=20260806-2" data-meridian-asset-version="20260806-2" data-meridian-load="idle" defer></script>
 </head>
 <body id="top">
   <a class="skip-link" href="#main-content">Skip to content</a>

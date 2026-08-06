@@ -45,7 +45,10 @@ window.MeridianChatUI = {
   typingTimeoutMs:130000,
 
 
-  mobileBreakpoint:768,
+  mobileBreakpoint:900,
+
+
+  mobileTouchBreakpoint:1024,
 
 
   pageScrollY:0,
@@ -475,11 +478,117 @@ window.MeridianChatUI = {
   isMobileViewport(){
 
 
-    return window.matchMedia(
+    const viewport =
 
-      `(max-width: ${this.mobileBreakpoint}px)`
+    window.visualViewport;
 
-    ).matches;
+
+    const viewportWidth =
+
+    Math.round(
+
+      viewport
+
+      &&
+
+      viewport.width
+
+      ?
+
+      viewport.width
+
+      :
+
+      document.documentElement.clientWidth
+
+      ||
+
+      window.innerWidth
+
+      ||
+
+      0
+
+    );
+
+
+    const narrowViewport =
+
+    viewportWidth > 0
+
+    &&
+
+    viewportWidth <= this.mobileBreakpoint;
+
+
+    const coarsePointer =
+
+    (
+
+      window.matchMedia
+
+      &&
+
+      window.matchMedia("(pointer: coarse)").matches
+
+    )
+
+    ||
+
+    Number(navigator.maxTouchPoints || 0) > 0;
+
+
+    const userAgentDataMobile =
+
+    Boolean(
+
+      navigator.userAgentData
+
+      &&
+
+      navigator.userAgentData.mobile === true
+
+    );
+
+
+    const mobileUserAgent =
+
+    /Android|iPhone|iPad|iPod|Mobile/i.test(
+
+      navigator.userAgent || ""
+
+    );
+
+
+    return Boolean(
+
+      narrowViewport
+
+      ||
+
+      userAgentDataMobile
+
+      ||
+
+      mobileUserAgent
+
+      ||
+
+      (
+
+        coarsePointer
+
+        &&
+
+        viewportWidth > 0
+
+        &&
+
+        viewportWidth <= this.mobileTouchBreakpoint
+
+      )
+
+    );
 
 
   },

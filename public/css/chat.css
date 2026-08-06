@@ -305,176 +305,176 @@
 }
 
 /*
- Mobile Fullscreen Chat v2.4.2
+ Mobile Fullscreen Chat v2.4.2 - compatibility hardening
  Desktop keeps the existing floating panel.
- Mobile opens a dedicated full-screen conversation view.
+ JavaScript adds .mobile-active only for a mobile/touch viewport, so the
+ fullscreen layout no longer depends on a second CSS-width decision.
 */
 
-@media (max-width: 768px) {
-  html.meridian-chat-open,
-  body.meridian-chat-open {
-    height: 100%;
-    overflow: hidden !important;
-    overscroll-behavior: none;
-  }
+html.meridian-chat-open,
+body.meridian-chat-open {
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
 
-  body.meridian-chat-open {
-    position: fixed;
-    top: var(--meridian-page-scroll-top, 0);
-    right: 0;
-    left: 0;
-    width: 100%;
-  }
+body.meridian-chat-open {
+  position: fixed;
+  top: var(--meridian-page-scroll-top, 0);
+  right: 0;
+  left: 0;
+  width: 100%;
+}
 
-  .meridian-chat {
+.meridian-chat.mobile-active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+.meridian-chat.mobile-active .meridian-chat-button {
+  display: none;
+}
+
+.meridian-chat.mobile-active .meridian-chat-panel.active {
+  position: fixed;
+  top: var(--meridian-chat-viewport-offset-top, 0px);
+  left: var(--meridian-chat-viewport-offset-left, 0px);
+  right: auto;
+  bottom: auto;
+  width: var(--meridian-chat-viewport-width, 100vw);
+  height: var(--meridian-chat-viewport-height, 100vh);
+  height: var(--meridian-chat-viewport-height, 100dvh);
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.meridian-chat.mobile-active .meridian-chat-header {
+  flex: 0 0 auto;
+  min-height: 56px;
+  height: auto;
+  padding:
+    max(8px, env(safe-area-inset-top))
+    14px
+    8px;
+  gap: 10px;
+}
+
+.meridian-chat.mobile-active .meridian-chat-header > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meridian-chat.mobile-active .meridian-chat-header button {
+  order: -1;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -8px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 26px;
+  touch-action: manipulation;
+}
+
+.meridian-chat.mobile-active .meridian-chat-header button:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.meridian-chat.mobile-active .meridian-chat-close-desktop {
+  display: none;
+}
+
+.meridian-chat.mobile-active .meridian-chat-close-mobile {
+  display: inline;
+}
+
+.meridian-chat.mobile-active .meridian-chat-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.meridian-chat.mobile-active .meridian-message {
+  max-width: 88%;
+  overflow-wrap: anywhere;
+}
+
+.meridian-chat.mobile-active .meridian-chat-input {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding:
+    10px
+    10px
+    max(10px, env(safe-area-inset-bottom));
+}
+
+.meridian-chat.mobile-active .meridian-chat-input input[type="text"] {
+  min-width: 0;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.meridian-chat.mobile-active .meridian-chat-input button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  touch-action: manipulation;
+}
+
+.meridian-chat.mobile-active .meridian-link-card {
+  min-width: 0;
+}
+
+.meridian-chat.mobile-active .meridian-investor-choice-button {
+  min-height: 48px;
+}
+
+@media (max-width: 900px) {
+  .meridian-chat:not(.mobile-active) {
     right: 16px;
     bottom: calc(16px + env(safe-area-inset-bottom));
   }
-
-  .meridian-chat.mobile-active {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2147483647;
-    pointer-events: none;
-  }
-
-  .meridian-chat.mobile-active .meridian-chat-button {
-    display: none;
-  }
-
-  .meridian-chat.mobile-active .meridian-chat-panel.active {
-    position: fixed;
-    top: var(--meridian-chat-viewport-offset-top, 0px);
-    left: var(--meridian-chat-viewport-offset-left, 0px);
-    right: auto;
-    bottom: auto;
-    width: var(--meridian-chat-viewport-width, 100vw);
-    height: var(--meridian-chat-viewport-height, 100vh);
-    height: var(--meridian-chat-viewport-height, 100dvh);
-    max-width: none;
-    max-height: none;
-    min-height: 0;
-    border-radius: 0;
-    box-shadow: none;
-    overflow: hidden;
-    pointer-events: auto;
-  }
-
-  .meridian-chat-header {
-    flex: 0 0 auto;
-    min-height: 56px;
-    height: auto;
-    padding:
-      max(8px, env(safe-area-inset-top))
-      14px
-      8px;
-    gap: 10px;
-  }
-
-  .meridian-chat-header > span {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .meridian-chat-header button {
-    order: -1;
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: -8px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 26px;
-    touch-action: manipulation;
-  }
-
-  .meridian-chat-header button:active {
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .meridian-chat-close-desktop {
-    display: none;
-  }
-
-  .meridian-chat-close-mobile {
-    display: inline;
-  }
-
-  .meridian-chat-messages {
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 14px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .meridian-message {
-    max-width: 88%;
-    overflow-wrap: anywhere;
-  }
-
-  .meridian-chat-input {
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 8px;
-    padding:
-      10px
-      10px
-      max(10px, env(safe-area-inset-bottom));
-  }
-
-  .meridian-chat-input input[type="text"] {
-    min-width: 0;
-    min-height: 44px;
-    font-size: 16px;
-  }
-
-  .meridian-chat-input button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 12px;
-    touch-action: manipulation;
-  }
-
-  .meridian-link-card {
-    min-width: 0;
-  }
-
-  .meridian-investor-choice-button {
-    min-height: 48px;
-  }
 }
 
-@media (max-width: 768px) and (orientation: landscape) {
-  .meridian-chat-header {
+@media (orientation: landscape) {
+  .meridian-chat.mobile-active .meridian-chat-header {
     min-height: 48px;
     padding-top: max(4px, env(safe-area-inset-top));
     padding-bottom: 4px;
   }
 
-  .meridian-chat-header button {
+  .meridian-chat.mobile-active .meridian-chat-header button {
     width: 40px;
     height: 40px;
     flex-basis: 40px;
   }
 
-  .meridian-chat-messages {
+  .meridian-chat.mobile-active .meridian-chat-messages {
     padding-top: 10px;
     padding-bottom: 10px;
   }
 
-  .meridian-chat-input {
+  .meridian-chat.mobile-active .meridian-chat-input {
     padding-top: 6px;
     padding-bottom: max(6px, env(safe-area-inset-bottom));
   }
 }
-

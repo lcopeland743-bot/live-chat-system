@@ -67,8 +67,18 @@ assert.match(
 
 assert.match(
   index,
-  /<script src="\/js\/meridian-landing-loader\.js\?v=1" defer><\/script>/,
-  "current landing page must use the stable one-line loader"
+  /<script src="\/js\/meridian-landing-loader\.js\?v=20260806-2" data-meridian-asset-version="20260806-2" defer><\/script>/,
+  "current landing page must use the versioned stable loader"
+);
+assert.match(
+  loader,
+  /assetVersion/,
+  "loader must pass a deterministic asset version to embed.js"
+);
+assert.match(
+  loader,
+  /\/js\/embed\.js\?v=/,
+  "loader must cache-bust embed.js"
 );
 assert.doesNotMatch(
   index,
