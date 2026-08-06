@@ -3,3 +3,15 @@ node_modules/
 .DS_Store
 server/uploads/
 npm-debug.log*
+# Local patches, backups, reports, and verification files
+/Meridian_*_Patch.zip
+/Meridian_*_Source.zip
+/Meridian_Before_*.zip
+/CHANGED_FILES.txt
+/INSTALLATION.txt
+/SHA256SUMS.txt
+/*-report.txt
+/verify-*.cmd
+/*说明.txt
+/public/index-before-*.html
+/local-artifacts/
