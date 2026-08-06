@@ -142,6 +142,7 @@ async function findContext(query) {
                     stage: 1,
                     intent: 1,
                     asset: 1,
+                    data: 1,
                     createdAt: 1
                 });
         }

@@ -32,6 +32,10 @@ const briefingAutoReplyService =
 require("../services/briefing-auto-reply-service");
 
 
+const whatsappSettingsService =
+require("../services/whatsapp-settings-service");
+
+
 const aiConversationService =
 require("../services/ai-conversation-service");
 
@@ -131,6 +135,49 @@ function createPayload(
             data.time
             || MeridianTime.now()
     };
+}
+
+
+function routeWhatsappPayload(payload, session) {
+    if (
+        !payload
+        || payload.type !== "link-card"
+        || !payload.metadata
+        || payload.metadata.platform !== "whatsapp"
+    ) {
+        return payload;
+    }
+
+    const landingContext =
+        session && session.landingContext
+        ? session.landingContext
+        : {};
+
+    const routeKey =
+        whatsappSettingsService.normalizeRouteKey(
+            landingContext.whatsappRouteKey
+            || payload.metadata.whatsappRouteKey
+        );
+
+    const url = whatsappSettingsService
+        .buildInternalUrl(
+            payload.metadata.prefill || "",
+            routeKey
+        );
+
+    payload.content = url;
+    payload.message = url;
+    payload.metadata = {
+        ...payload.metadata,
+        url,
+        whatsappRouteKey: routeKey,
+        pageId:
+            landingContext.pageId || "",
+        campaignId:
+            landingContext.campaignId || ""
+    };
+
+    return payload;
 }
 
 
@@ -317,10 +364,22 @@ async function sendBriefingAutoReply(
     userId,
     choiceId
 ) {
+    const session =
+        await sessionService
+        .getSessionByUserId(userId);
+
+    const routeKey =
+        session
+        && session.landingContext
+        ? session.landingContext
+            .whatsappRouteKey
+        : "";
+
     const messages =
         await briefingAutoReplyService
         .createAutoReplyMessages(
-            choiceId
+            choiceId,
+            { routeKey }
         );
 
     for (const message of messages) {
@@ -830,6 +889,11 @@ function registerChatHandler(
                                 "admin"
                         }
                     );
+
+                routeWhatsappPayload(
+                    payload,
+                    session
+                );
 
                 if (
                     messageService.isDuplicate(

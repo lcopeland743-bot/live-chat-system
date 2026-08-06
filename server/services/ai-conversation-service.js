@@ -286,9 +286,17 @@ async function buildGeneratedResult({
             hardSignals
         });
 
+    const landingContext =
+        session.landingContext
+        || {};
+
     const whatsappSettings =
         await whatsappSettingsService
-        .getResolvedSettings();
+        .getResolvedSettings({
+            routeKey:
+                landingContext.whatsappRouteKey
+                || ""
+        });
 
     const decision =
         conversionPolicyService.apply({
@@ -520,7 +528,29 @@ async function recordCommittedResult({
                     ? generated.linkCard
                         .metadata
                         .ctaVariant
-                    : null
+                    : null,
+                routeKey:
+                    generated.linkCard
+                    && generated.linkCard.metadata
+                    ? generated.linkCard.metadata
+                        .whatsappRouteKey
+                    : "",
+                numberId:
+                    generated.linkCard
+                    && generated.linkCard.metadata
+                    ? generated.linkCard.metadata
+                        .whatsappNumberId
+                    : "",
+                pageId:
+                    session
+                    && session.landingContext
+                    ? session.landingContext.pageId
+                    : "",
+                campaignId:
+                    session
+                    && session.landingContext
+                    ? session.landingContext.campaignId
+                    : ""
             }
         });
     } else if (

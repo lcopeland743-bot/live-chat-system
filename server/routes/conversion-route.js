@@ -52,8 +52,11 @@ router.get(
     "/whatsapp-status",
     async (req, res) => {
         try {
+            const routeKey = whatsappSettingsService
+                .normalizeRouteKey(req.query.routeKey);
+
             const settings = await whatsappSettingsService
-                .getResolvedSettings();
+                .getResolvedSettings({ routeKey });
 
             res.set(
                 "Cache-Control",
@@ -64,7 +67,13 @@ router.get(
                 success: true,
                 enabled:
                     settings.enabled === true
-                    && Boolean(settings.number)
+                    && Boolean(settings.number),
+                routeKey:
+                    settings.routeKey || routeKey || "",
+                resolutionSource:
+                    settings.resolutionSource || settings.source || "",
+                numberId:
+                    settings.numberId || ""
             });
         } catch (error) {
             console.error(
@@ -163,7 +172,31 @@ router.post(
                     data: {
                         clickedAt:
                             new Date()
-                            .toISOString()
+                            .toISOString(),
+                        routeKey:
+                            ctaContext
+                            && ctaContext.data
+                            && ctaContext.data.routeKey
+                            ? ctaContext.data.routeKey
+                            : "",
+                        numberId:
+                            ctaContext
+                            && ctaContext.data
+                            && ctaContext.data.numberId
+                            ? ctaContext.data.numberId
+                            : "",
+                        pageId:
+                            ctaContext
+                            && ctaContext.data
+                            && ctaContext.data.pageId
+                            ? ctaContext.data.pageId
+                            : "",
+                        campaignId:
+                            ctaContext
+                            && ctaContext.data
+                            && ctaContext.data.campaignId
+                            ? ctaContext.data.campaignId
+                            : ""
                     }
                 });
 

@@ -283,6 +283,45 @@ new mongoose.Schema(
 );
 
 
+const landingContextSchema =
+new mongoose.Schema(
+    {
+        pageId: {
+            type: String,
+            default: ""
+        },
+
+        pageFamily: {
+            type: String,
+            default: ""
+        },
+
+        variantId: {
+            type: String,
+            default: ""
+        },
+
+        campaignId: {
+            type: String,
+            default: ""
+        },
+
+        whatsappRouteKey: {
+            type: String,
+            default: ""
+        },
+
+        capturedAt: {
+            type: Date,
+            default: null
+        }
+    },
+    {
+        _id: false
+    }
+);
+
+
 const sessionSchema =
 new mongoose.Schema(
     {
@@ -335,6 +374,11 @@ new mongoose.Schema(
         page: {
             type: String,
             default: ""
+        },
+
+        landingContext: {
+            type: landingContextSchema,
+            default: () => ({})
         },
 
         connectedAt: {

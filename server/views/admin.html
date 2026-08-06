@@ -62,8 +62,8 @@ href="/css/admin.css">
 
                 <div class="admin-whatsapp-settings-heading">
                     <div>
-                        <h2>WhatsApp 设置</h2>
-                        <span>无需重新部署即可切换号码</span>
+                        <h2>WhatsApp 路由设置</h2>
+                        <span>全局号码、号码库和页面绑定均可即时生效</span>
                     </div>
 
                     <a
@@ -73,47 +73,153 @@ href="/css/admin.css">
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-disabled="true">
-                        测试打开
+                        测试全局
                     </a>
                 </div>
 
-                <label class="admin-whatsapp-number-field">
-                    <span>国际号码（仅数字）</span>
+                <div class="admin-whatsapp-routing-block">
+                    <h3>全局默认号码</h3>
+
+                    <label class="admin-whatsapp-number-field">
+                        <span>国际号码（仅数字）</span>
+                        <input
+                        id="adminWhatsappNumber"
+                        type="tel"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        maxlength="15"
+                        placeholder="例如 14155552671">
+                    </label>
+
+                    <label class="admin-whatsapp-enabled-field">
+                        <input
+                        id="adminWhatsappEnabled"
+                        type="checkbox">
+                        <span>启用 WhatsApp 路由系统</span>
+                    </label>
+
+                    <div class="admin-whatsapp-settings-actions">
+                        <button
+                        id="adminWhatsappSaveBtn"
+                        type="button">
+                            保存全局设置
+                        </button>
+
+                        <button
+                        id="adminWhatsappDisableBtn"
+                        type="button">
+                            暂停全部
+                        </button>
+
+                        <button
+                        id="adminWhatsappRestoreBtn"
+                        type="button"
+                        disabled>
+                            恢复上一个号码
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-whatsapp-routing-block">
+                    <div class="admin-whatsapp-subheading">
+                        <h3>号码库</h3>
+                        <span>一个号码可以绑定多个页面</span>
+                    </div>
+
                     <input
-                    id="adminWhatsappNumber"
-                    type="tel"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    maxlength="15"
-                    placeholder="例如 14155552671">
-                </label>
+                    id="adminWhatsappLibraryId"
+                    type="hidden">
 
-                <label class="admin-whatsapp-enabled-field">
-                    <input
-                    id="adminWhatsappEnabled"
-                    type="checkbox">
-                    <span>保存后立即启用 WhatsApp 跳转</span>
-                </label>
+                    <div class="admin-whatsapp-routing-grid">
+                        <label>
+                            <span>号码名称</span>
+                            <input
+                            id="adminWhatsappLibraryLabel"
+                            type="text"
+                            maxlength="80"
+                            autocomplete="off"
+                            placeholder="例如 US Number A">
+                        </label>
 
-                <div class="admin-whatsapp-settings-actions">
-                    <button
-                    id="adminWhatsappSaveBtn"
-                    type="button">
-                        保存设置
-                    </button>
+                        <label>
+                            <span>国际号码</span>
+                            <input
+                            id="adminWhatsappLibraryNumber"
+                            type="tel"
+                            inputmode="numeric"
+                            maxlength="15"
+                            autocomplete="off"
+                            placeholder="例如 13182009447">
+                        </label>
+                    </div>
 
-                    <button
-                    id="adminWhatsappDisableBtn"
-                    type="button">
-                        暂停功能
-                    </button>
+                    <label class="admin-whatsapp-enabled-field">
+                        <input
+                        id="adminWhatsappLibraryEnabled"
+                        type="checkbox"
+                        checked>
+                        <span>此号码可用于页面路由</span>
+                    </label>
 
-                    <button
-                    id="adminWhatsappRestoreBtn"
-                    type="button"
-                    disabled>
-                        恢复上一个号码
-                    </button>
+                    <div class="admin-whatsapp-settings-actions">
+                        <button
+                        id="adminWhatsappLibrarySaveBtn"
+                        type="button">
+                            保存号码
+                        </button>
+
+                        <button
+                        id="adminWhatsappLibraryCancelBtn"
+                        type="button">
+                            清空表单
+                        </button>
+                    </div>
+
+                    <div
+                    id="adminWhatsappNumberList"
+                    class="admin-whatsapp-routing-list"
+                    aria-live="polite">
+                    </div>
+                </div>
+
+                <div class="admin-whatsapp-routing-block">
+                    <div class="admin-whatsapp-subheading">
+                        <h3>页面路由绑定</h3>
+                        <span>页面只保存 routeKey，不保存真实号码</span>
+                    </div>
+
+                    <div class="admin-whatsapp-routing-grid">
+                        <label>
+                            <span>页面 routeKey</span>
+                            <input
+                            id="adminWhatsappRouteKey"
+                            type="text"
+                            maxlength="100"
+                            autocomplete="off"
+                            placeholder="例如 market-clarity-a">
+                        </label>
+
+                        <label>
+                            <span>绑定号码</span>
+                            <select id="adminWhatsappRouteNumber">
+                                <option value="">请先添加号码</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="admin-whatsapp-settings-actions">
+                        <button
+                        id="adminWhatsappRouteSaveBtn"
+                        type="button">
+                            保存页面绑定
+                        </button>
+                    </div>
+
+                    <div
+                    id="adminWhatsappRouteList"
+                    class="admin-whatsapp-routing-list"
+                    aria-live="polite">
+                    </div>
                 </div>
 
                 <p

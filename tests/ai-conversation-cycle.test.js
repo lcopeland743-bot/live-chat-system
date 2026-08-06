@@ -378,7 +378,9 @@ function testFifthReplyStillForcesWhatsapp() {
                 generated,
                 state,
                 latestMessage:
-                    `Customer question ${turn}`
+                    `Customer question ${turn}`,
+                whatsappAvailable:
+                    true
             });
 
         if (turn === 5) {
@@ -446,7 +448,9 @@ function testOldPersistentStateExplainsRegression() {
             generated,
             state: resetState,
             latestMessage:
-                "Fifth question in a new conversation cycle"
+                "Fifth question in a new conversation cycle",
+            whatsappAvailable:
+                true
         });
 
     assert.strictEqual(

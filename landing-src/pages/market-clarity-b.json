@@ -1,0 +1,32 @@
+{
+  "enabled": true,
+  "template": "market-clarity",
+  "slug": "market-clarity-b",
+  "pageId": "market-clarity-b",
+  "pageFamily": "market-clarity",
+  "variantId": "B",
+  "pageVersion": "1.0.0",
+  "campaignId": "us-market-clarity-b",
+  "whatsappRouteKey": "market-clarity-b",
+  "audience": "question-driven-investor",
+  "theme": "blue-gold",
+  "layout": "questions",
+  "seo": {
+    "title": "Four Questions That Can Clarify Today’s Market | Meridian",
+    "description": "Ask focused questions about market direction, sector momentum, risk, and investor context with an AI market research assistant."
+  },
+  "hero": {
+    "eyebrow": "Start with the questions that matter",
+    "title": "Four Questions Can Clarify Today’s Market",
+    "subtitle": "You do not need more headlines. You need a clearer way to organize what the market may be signaling.",
+    "primaryCta": "Get a Clearer Market Read",
+    "secondaryCta": "Explore the Four Questions",
+    "question": "Help me answer the four most important questions about today’s market structure."
+  },
+  "prompts": [
+    "What kind of market environment are we in?",
+    "Is the current trend supported or fragile?",
+    "Which sectors are gaining or losing leadership?",
+    "Where is risk beginning to increase?"
+  ]
+}

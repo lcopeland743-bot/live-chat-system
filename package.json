@@ -19,7 +19,11 @@
     "test:lead-management": "node tests/admin-lead-management.test.js",
     "test:funnel": "node tests/admin-funnel-analytics.test.js",
     "test:ai-conversation-cycle": "node tests/ai-conversation-cycle.test.js",
-    "test:ip-geolocation": "node tests/ip-geolocation.test.js"
+    "test:ip-geolocation": "node tests/ip-geolocation.test.js",
+    "landing:validate": "node scripts/validate-landing-pages.js",
+    "landing:build": "node scripts/build-landing-pages.js",
+    "test:landing-factory": "node tests/landing-page-factory.test.js",
+    "test:whatsapp-routing": "node tests/whatsapp-page-routing.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

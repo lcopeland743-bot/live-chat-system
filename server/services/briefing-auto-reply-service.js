@@ -180,12 +180,18 @@ function getChoiceFromPayload(payload){
 }
 
 
-function createWhatsAppUrl(prefill){
+function createWhatsAppUrl(prefill, routeKey = ""){
 
 
     return whatsappSettingsService
 
-    .buildInternalUrl(prefill);
+    .buildInternalUrl(
+
+        prefill,
+
+        routeKey
+
+    );
 
 
 }
@@ -193,7 +199,7 @@ function createWhatsAppUrl(prefill){
 
 
 
-async function createAutoReplyMessages(choiceId){
+async function createAutoReplyMessages(choiceId, options = {}){
 
 
     const choice =
@@ -256,7 +262,17 @@ async function createAutoReplyMessages(choiceId){
 
     await whatsappSettingsService
 
-    .getResolvedSettings();
+    .getResolvedSettings({
+
+        routeKey:
+
+        options.routeKey
+
+        ||
+
+        ""
+
+    });
 
 
 
@@ -282,7 +298,9 @@ async function createAutoReplyMessages(choiceId){
 
     createWhatsAppUrl(
 
-        choice.whatsappPrefill
+        choice.whatsappPrefill,
+
+        whatsappSettings.routeKey
 
     );
 
@@ -336,7 +354,25 @@ async function createAutoReplyMessages(choiceId){
                 choice.whatsappPrefill,
 
 
-                url:url
+                url:url,
+
+
+                whatsappRouteKey:
+
+                whatsappSettings.routeKey
+
+                ||
+
+                "",
+
+
+                whatsappNumberId:
+
+                whatsappSettings.numberId
+
+                ||
+
+                ""
 
 
             }

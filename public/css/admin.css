@@ -2032,3 +2032,148 @@ body{
     font-size: 9px;
     line-height: 1.4;
 }
+
+/* WhatsApp Routing v2.5.0 */
+.admin-whatsapp-routing-block {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.admin-whatsapp-routing-block h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #e2e8f0;
+}
+
+.admin-whatsapp-subheading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.admin-whatsapp-subheading span {
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: right;
+}
+
+.admin-whatsapp-routing-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+}
+
+.admin-whatsapp-routing-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+.admin-whatsapp-routing-grid input,
+.admin-whatsapp-routing-grid select {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.82);
+    color: #f8fafc;
+    box-sizing: border-box;
+}
+
+.admin-whatsapp-routing-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.admin-whatsapp-routing-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 9px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.admin-whatsapp-routing-row > div:first-child {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.admin-whatsapp-routing-row strong,
+.admin-whatsapp-routing-row span {
+    overflow-wrap: anywhere;
+}
+
+.admin-whatsapp-routing-row strong {
+    color: #f8fafc;
+    font-size: 12px;
+}
+
+.admin-whatsapp-routing-row span {
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.admin-whatsapp-routing-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.admin-whatsapp-routing-row-actions button,
+.admin-whatsapp-routing-row-actions a {
+    min-height: 30px;
+    padding: 6px 9px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 7px;
+    background: rgba(30, 41, 59, 0.92);
+    color: #e2e8f0;
+    font-size: 11px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.admin-whatsapp-routing-row-actions .is-danger {
+    color: #fecaca;
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
+.admin-whatsapp-routing-empty {
+    margin: 0;
+    padding: 9px 10px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.45);
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+    .admin-whatsapp-routing-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-whatsapp-routing-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-whatsapp-routing-row-actions {
+        justify-content: flex-start;
+    }
+}

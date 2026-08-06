@@ -154,6 +154,9 @@ function registerPresenceHandler(
                 socket.data.conversationId =
                     data.conversationId || "";
 
+                socket.data.landingContext =
+                    data.landingContext || null;
+
                 const user =
                     presenceService.addUser({
                         userId:
@@ -162,6 +165,8 @@ function registerPresenceHandler(
                             socket.id,
                         page:
                             data.page,
+                        landingContext:
+                            data.landingContext,
                         ipAddress,
                         userAgent,
                         connectedAt:

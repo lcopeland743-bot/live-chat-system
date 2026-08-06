@@ -215,9 +215,16 @@ function createCard({
         )
         || localizedPrefill;
 
+    const routeKey =
+        whatsappSettings.routeKey
+        || "";
+
     const url =
         whatsappSettingsService
-        .buildInternalUrl(prefill);
+        .buildInternalUrl(
+            prefill,
+            routeKey
+        );
 
     const ctaVariant = [
         generated.intent || "unknown",
@@ -251,7 +258,16 @@ function createCard({
                 decision.finalAiReply === true,
             language:
                 language.code,
-            prefill
+            prefill,
+            whatsappRouteKey:
+                routeKey,
+            whatsappNumberId:
+                whatsappSettings.numberId
+                || "",
+            whatsappResolutionSource:
+                whatsappSettings.resolutionSource
+                || whatsappSettings.source
+                || ""
         }
     };
 }

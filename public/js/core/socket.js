@@ -123,6 +123,16 @@ window.MeridianSocket = {
 
 
 
+                        landingContext:
+
+                        config.user.landingContext
+
+                        ||
+
+                        {},
+
+
+
                         socketId:
 
                         this.socket.id,
@@ -406,6 +416,16 @@ window.MeridianSocket = {
 
 
 
+                landingContext:
+
+                window.MeridianConfig.user.landingContext
+
+                ||
+
+                {},
+
+
+
                 time:
 
                 MeridianTime.now()
@@ -477,6 +497,16 @@ window.MeridianSocket = {
                 page:
 
                 window.MeridianConfig.user.page,
+
+
+
+                landingContext:
+
+                window.MeridianConfig.user.landingContext
+
+                ||
+
+                {},
 
 
 

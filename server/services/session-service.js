@@ -31,6 +31,13 @@ const conversationCycleService =
 require("./conversation-cycle-service");
 
 
+const {
+    normalizeLandingContext
+}
+=
+require("../utils/landing-context-utils");
+
+
 function buildConversionUpdate(state) {
     const normalized =
         conversionStateService
@@ -114,7 +121,8 @@ async function createSession(data) {
             conversationId: 1,
             humanTakeover: 1,
             ipAddress: 1,
-            geoLocation: 1
+            geoLocation: 1,
+            landingContext: 1
         })
         .lean();
 
@@ -131,6 +139,26 @@ async function createSession(data) {
 
     const time =
         data.time || new Date();
+
+    const incomingLandingContext =
+        normalizeLandingContext(
+            data.landingContext
+        );
+
+    const existingLandingContext =
+        normalizeLandingContext(
+            existingSession
+            && existingSession.landingContext
+        );
+
+    const shouldCaptureLandingContext = Boolean(
+        incomingLandingContext
+        && (
+            !existingSession
+            || cycleDecision.resetConversionState
+            || !existingLandingContext
+        )
+    );
 
     const setValues = {
         userId: data.userId,
@@ -155,6 +183,13 @@ async function createSession(data) {
     if (data.userAgent) {
         setValues.userAgent =
             data.userAgent;
+    }
+
+    if (shouldCaptureLandingContext) {
+        setValues.landingContext = {
+            ...incomingLandingContext,
+            capturedAt: time
+        };
     }
 
     if (

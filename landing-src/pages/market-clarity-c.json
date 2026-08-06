@@ -1,0 +1,32 @@
+{
+  "enabled": true,
+  "template": "market-clarity",
+  "slug": "market-clarity-c",
+  "pageId": "market-clarity-c",
+  "pageFamily": "market-clarity",
+  "variantId": "C",
+  "pageVersion": "1.0.0",
+  "campaignId": "us-market-clarity-c",
+  "whatsappRouteKey": "market-clarity-c",
+  "audience": "ai-product-demo",
+  "theme": "blue-gold",
+  "layout": "demo",
+  "seo": {
+    "title": "Ask the Market. Get a Structured Answer. | Meridian",
+    "description": "Experience a conversation-based AI market research assistant for trends, sectors, risk pressure, and market structure."
+  },
+  "hero": {
+    "eyebrow": "Conversation-based market research",
+    "title": "Ask the Market. Get a Structured Answer.",
+    "subtitle": "Turn a market question into a clearer research framework—then keep asking until the picture makes more sense.",
+    "primaryCta": "Ask Your First Market Question",
+    "secondaryCta": "View the AI Research Flow",
+    "question": "Can you explain today’s market structure in simple, organized language?"
+  },
+  "prompts": [
+    "What is the current market regime?",
+    "Which sectors look stronger right now?",
+    "What risk signals should I watch?",
+    "How does this fit a long-term investor?"
+  ]
+}

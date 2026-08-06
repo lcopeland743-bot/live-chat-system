@@ -1,8 +1,8 @@
 /**
- * Meridian Admin WhatsApp Settings Routes
+ * Meridian Admin WhatsApp Settings and Routing Routes
  *
  * Version:
- * v2.4.2
+ * v2.5.0
  */
 
 const express = require("express");
@@ -57,7 +57,7 @@ function handleError(res, error) {
 router.get("/", async (req, res) => {
     try {
         const settings = await whatsappSettingsService
-            .getResolvedSettings({ forceRefresh: true });
+            .getAdminSettings();
 
         return res.json({
             success: true,
@@ -70,12 +70,14 @@ router.get("/", async (req, res) => {
 
 router.put("/", async (req, res) => {
     try {
+        await whatsappSettingsService.saveSettings({
+            number: req.body.number,
+            enabled: req.body.enabled === true,
+            updatedBy: adminName(req)
+        });
+
         const settings = await whatsappSettingsService
-            .saveSettings({
-                number: req.body.number,
-                enabled: req.body.enabled === true,
-                updatedBy: adminName(req)
-            });
+            .getAdminSettings();
 
         return res.json({
             success: true,
@@ -88,10 +90,12 @@ router.put("/", async (req, res) => {
 
 router.post("/disable", async (req, res) => {
     try {
+        await whatsappSettingsService.disableSettings({
+            updatedBy: adminName(req)
+        });
+
         const settings = await whatsappSettingsService
-            .disableSettings({
-                updatedBy: adminName(req)
-            });
+            .getAdminSettings();
 
         return res.json({
             success: true,
@@ -104,8 +108,82 @@ router.post("/disable", async (req, res) => {
 
 router.post("/restore", async (req, res) => {
     try {
+        await whatsappSettingsService.restorePrevious({
+            updatedBy: adminName(req)
+        });
+
         const settings = await whatsappSettingsService
-            .restorePrevious({
+            .getAdminSettings();
+
+        return res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        return handleError(res, error);
+    }
+});
+
+router.post("/numbers", async (req, res) => {
+    try {
+        const settings = await whatsappSettingsService
+            .saveNumber({
+                numberId: req.body.numberId,
+                label: req.body.label,
+                number: req.body.number,
+                enabled: req.body.enabled !== false,
+                updatedBy: adminName(req)
+            });
+
+        return res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        return handleError(res, error);
+    }
+});
+
+router.delete("/numbers/:numberId", async (req, res) => {
+    try {
+        const settings = await whatsappSettingsService
+            .deleteNumber({
+                numberId: req.params.numberId,
+                updatedBy: adminName(req)
+            });
+
+        return res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        return handleError(res, error);
+    }
+});
+
+router.put("/routes/:routeKey", async (req, res) => {
+    try {
+        const settings = await whatsappSettingsService
+            .saveRouteBinding({
+                routeKey: req.params.routeKey,
+                numberId: req.body.numberId,
+                updatedBy: adminName(req)
+            });
+
+        return res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        return handleError(res, error);
+    }
+});
+
+router.delete("/routes/:routeKey", async (req, res) => {
+    try {
+        const settings = await whatsappSettingsService
+            .deleteRouteBinding({
+                routeKey: req.params.routeKey,
                 updatedBy: adminName(req)
             });
 

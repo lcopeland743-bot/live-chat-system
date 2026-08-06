@@ -1,0 +1,32 @@
+{
+  "enabled": true,
+  "template": "market-clarity",
+  "slug": "market-clarity-a",
+  "pageId": "market-clarity-a",
+  "pageFamily": "market-clarity",
+  "variantId": "A",
+  "pageVersion": "1.0.0",
+  "campaignId": "us-market-clarity-a",
+  "whatsappRouteKey": "market-clarity-a",
+  "audience": "general-market-research",
+  "theme": "blue-gold",
+  "layout": "authority",
+  "seo": {
+    "title": "What Is the Market Really Signaling Right Now? | Meridian",
+    "description": "Use AI-assisted market research to understand market regime, trend strength, sector rotation, and risk pressure in plain English."
+  },
+  "hero": {
+    "eyebrow": "AI-assisted market research",
+    "title": "What Is the Market Really Signaling Right Now?",
+    "subtitle": "Move beyond daily price noise with a structured view of market regime, trend strength, sector leadership, and risk pressure.",
+    "primaryCta": "Analyze the Market Now",
+    "secondaryCta": "See the Research Framework",
+    "question": "What is the current market environment, and what are the most important signals to understand right now?"
+  },
+  "prompts": [
+    "Is the market becoming more aggressive or defensive?",
+    "Which sectors are showing stronger momentum?",
+    "Where is risk pressure beginning to build?",
+    "How should a long-term investor interpret this market?"
+  ]
+}

@@ -2634,6 +2634,62 @@ window.MeridianChatUI = {
 
 
 
+  getCurrentWhatsappRouteKey(){
+
+
+    const context =
+
+    window.MeridianConfig
+
+    &&
+
+    window.MeridianConfig.user
+
+    &&
+
+    window.MeridianConfig.user.landingContext
+
+    ?
+
+    window.MeridianConfig.user.landingContext
+
+    :
+
+    {};
+
+
+    const value =
+
+    String(
+
+      context.whatsappRouteKey
+
+      ||
+
+      ""
+
+    )
+
+    .trim()
+
+    .toLowerCase();
+
+
+    return /^[a-z0-9][a-z0-9_-]{0,99}$/.test(value)
+
+    ?
+
+    value
+
+    :
+
+    "";
+
+
+  },
+
+
+
   async loadWhatsappAvailability(){
 
 
@@ -2654,7 +2710,12 @@ window.MeridianChatUI = {
 
       await fetch(
 
-        "/api/conversion/whatsapp-status",
+        "/api/conversion/whatsapp-status"
+        + (
+          this.getCurrentWhatsappRouteKey()
+          ? `?routeKey=${encodeURIComponent(this.getCurrentWhatsappRouteKey())}`
+          : ""
+        ),
 
         {
 
@@ -2801,6 +2862,23 @@ window.MeridianChatUI = {
     "";
 
 
+    let routeKey =
+
+    String(
+
+      metadata.whatsappRouteKey
+
+      ||
+
+      ""
+
+    )
+
+    .trim()
+
+    .toLowerCase();
+
+
     try{
 
 
@@ -2828,6 +2906,26 @@ window.MeridianChatUI = {
       "";
 
 
+      const match =
+
+      original.pathname.match(
+
+        /^\/go\/whatsapp\/([a-z0-9][a-z0-9_-]{0,99})$/i
+
+      );
+
+
+      if(match){
+
+
+        routeKey =
+
+        match[1].toLowerCase();
+
+
+      }
+
+
     }
 
     catch(error){
@@ -2841,11 +2939,26 @@ window.MeridianChatUI = {
     }
 
 
+    if(!/^[a-z0-9][a-z0-9_-]{0,99}$/.test(routeKey)){
+
+
+      routeKey =
+
+      this.getCurrentWhatsappRouteKey();
+
+
+    }
+
+
     const redirect =
 
     new URL(
 
-      "/go/whatsapp",
+      routeKey
+
+      ? `/go/whatsapp/${encodeURIComponent(routeKey)}`
+
+      : "/go/whatsapp",
 
       window.location.origin
 
@@ -3137,7 +3250,15 @@ window.MeridianChatUI = {
 
       userId:userId,
 
-      trackingId:metadata.trackingId
+      trackingId:metadata.trackingId,
+
+      routeKey:
+
+      metadata.whatsappRouteKey
+
+      ||
+
+      this.getCurrentWhatsappRouteKey()
 
     });
 

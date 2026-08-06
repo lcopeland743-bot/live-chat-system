@@ -263,7 +263,7 @@ async function run() {
     );
     assert.ok(
         briefingSource.includes(
-            ".buildInternalUrl(prefill)"
+            ".buildInternalUrl("
         )
     );
 
@@ -278,7 +278,7 @@ async function run() {
     );
     assert.ok(
         conversionSource.includes(
-            ".buildInternalUrl(prefill)"
+            ".buildInternalUrl("
         )
     );
 

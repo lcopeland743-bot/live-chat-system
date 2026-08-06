@@ -2,9 +2,10 @@
  * Meridian Admin Link Card
  *
  * Version:
- * v2.4.2
+ * v2.5.0
  *
- * All WhatsApp cards use the stable server redirect.
+ * WhatsApp cards use the selected conversation's landing-page route when
+ * available, then fall back to the global redirect.
  */
 
 window.MeridianAdminLinkCard = {
@@ -12,11 +13,11 @@ window.MeridianAdminLinkCard = {
 
     config: {
         platform: "whatsapp",
-        url: "/go/whatsapp",
         avatar: "",
         title: "Your briefing is ready.",
         subtitle: "",
-        buttonText: "Claim for free"
+        buttonText: "Claim for free",
+        prefill: ""
     },
 
     init() {
@@ -47,8 +48,51 @@ window.MeridianAdminLinkCard = {
         this.button.disabled = !this.available;
         this.button.title =
             this.available
-            ? "发送 WhatsApp 链接卡片"
+            ? "发送当前会话对应的 WhatsApp 链接卡片"
             : "请先在 WhatsApp 设置中启用号码";
+    },
+
+    getConversationContext() {
+        const user =
+            window.MeridianAdminState
+            && typeof window.MeridianAdminState
+                .getCurrentUser === "function"
+            ? window.MeridianAdminState
+                .getCurrentUser()
+            : null;
+
+        return user && user.landingContext
+            ? user.landingContext
+            : {};
+    },
+
+    normalizeRouteKey(value) {
+        const key = String(value || "")
+            .trim()
+            .toLowerCase();
+
+        return /^[a-z0-9][a-z0-9_-]{0,99}$/.test(key)
+            ? key
+            : "";
+    },
+
+    buildUrl(routeKey, prefill = "") {
+        const key = this.normalizeRouteKey(routeKey);
+        const url = new URL(
+            key
+                ? `/go/whatsapp/${encodeURIComponent(key)}`
+                : "/go/whatsapp",
+            window.location.origin
+        );
+
+        if (prefill) {
+            url.searchParams.set(
+                "text",
+                String(prefill).slice(0, 500)
+            );
+        }
+
+        return url.pathname + url.search;
     },
 
     createMessage() {
@@ -70,14 +114,36 @@ window.MeridianAdminLinkCard = {
             return null;
         }
 
-        return window.MeridianMessageAdapter
-            .createLinkCardMessage(this.config);
+        const context = this.getConversationContext();
+        const routeKey = this.normalizeRouteKey(
+            context.whatsappRouteKey
+        );
+        const url = this.buildUrl(
+            routeKey,
+            this.config.prefill
+        );
+        const message = window.MeridianMessageAdapter
+            .createLinkCardMessage({
+                ...this.config,
+                url
+            });
+
+        message.metadata = {
+            ...(message.metadata || {}),
+            prefill: this.config.prefill,
+            whatsappRouteKey: routeKey,
+            pageId: context.pageId || "",
+            campaignId: context.campaignId || ""
+        };
+
+        return message;
     },
 
     normalizeOutgoingMessage(message) {
         if (
             typeof message === "string"
-            && message.trim() === this.config.url
+            && /^(?:https?:\/\/[^/]+)?\/go\/whatsapp(?:\/|\?|$)/i
+                .test(message.trim())
         ) {
             return this.createMessage() || message;
         }

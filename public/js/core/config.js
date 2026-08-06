@@ -1,7 +1,7 @@
 /**
  * Meridian SDK Configuration
  *
- * Version: v1.0.3
+ * Version: v1.1.0
  */
 (function(){
 
@@ -26,9 +26,47 @@
         .toString(36)
         .substring(2, 14);
 
+  function normalizeContextId(value, maximum){
+    const text = String(value || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      text
+      && text.length <= maximum
+      && /^[a-z0-9][a-z0-9_-]*$/.test(text)
+    )
+      ? text
+      : "";
+  }
+
+  const landingSource =
+    window.MeridianLandingContext
+    && typeof window.MeridianLandingContext === "object"
+    ? window.MeridianLandingContext
+    : {};
+
+  const landingPageId =
+    normalizeContextId(landingSource.pageId, 100);
+
+  const landingContext = {
+    pageId: landingPageId,
+    pageFamily:
+      normalizeContextId(landingSource.pageFamily, 100),
+    variantId:
+      normalizeContextId(landingSource.variantId, 40),
+    campaignId:
+      normalizeContextId(landingSource.campaignId, 120),
+    whatsappRouteKey:
+      normalizeContextId(
+        landingSource.whatsappRouteKey || landingPageId,
+        100
+      )
+  };
+
   window.MeridianConfig = {
     appName: "Meridian Chat SDK",
-    version: "1.0.3",
+    version: "1.1.0",
 
     debug: true,
 
@@ -47,7 +85,8 @@
       id: visitorId,
       conversationId,
       page: window.location.href,
-      referrer: document.referrer || ""
+      referrer: document.referrer || "",
+      landingContext
     },
 
     tracking: {
