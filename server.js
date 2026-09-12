@@ -300,6 +300,75 @@ app.use(
 );
 
 
+app.get(
+
+    /^\/lp\/004-when-machines-become-work\/?$/,
+
+    (req,res)=>{
+
+        const campaignPath =
+        "/lp/004-when-machines-become-work";
+
+        if(
+
+            req.path
+            ===
+            campaignPath
+
+        ){
+
+            const queryStart =
+            req.originalUrl.indexOf(
+
+                "?"
+
+            );
+
+            const queryString =
+            queryStart
+            ===
+            -1
+            ?
+            ""
+            :
+            req.originalUrl.slice(
+
+                queryStart
+
+            );
+
+            return res.redirect(
+
+                308,
+
+                `${campaignPath}/${queryString}`
+
+            );
+
+        }
+
+        return res.sendFile(
+
+            path.join(
+
+                __dirname,
+
+                "public",
+
+                "lp",
+
+                "004-when-machines-become-work",
+
+                "index.html"
+
+            )
+
+        );
+
+    }
+
+);
+
 app.use(
 
     express.static(
