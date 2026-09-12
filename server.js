@@ -180,6 +180,10 @@ const whatsappRedirectRoute =
 require("./server/routes/whatsapp-redirect-route");
 
 
+const analysisEntryRoute =
+require("./server/routes/analysis-entry-route");
+
+
 installProcessHandlers();
 
 
@@ -296,6 +300,15 @@ app.use(
     "/",
 
     whatsappRedirectRoute
+
+);
+
+
+app.use(
+
+    "/",
+
+    analysisEntryRoute
 
 );
 

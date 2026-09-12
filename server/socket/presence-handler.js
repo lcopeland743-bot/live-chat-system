@@ -32,6 +32,12 @@ const {
 =
 require("../middleware/admin-socket-auth");
 
+const {
+    resolveAnalysisLandingContext
+}
+=
+require("../config/analysis-campaign-registry");
+
 
 function emitSessionUpdate(io, session) {
     if (!session) {
@@ -148,6 +154,11 @@ function registerPresenceHandler(
                         data.userId
                     );
 
+                const landingContext =
+                    resolveAnalysisLandingContext(
+                        data.landingContext
+                    );
+
                 socket.data.userId =
                     data.userId;
 
@@ -155,7 +166,7 @@ function registerPresenceHandler(
                     data.conversationId || "";
 
                 socket.data.landingContext =
-                    data.landingContext || null;
+                    landingContext;
 
                 const user =
                     presenceService.addUser({
@@ -166,7 +177,7 @@ function registerPresenceHandler(
                         page:
                             data.page,
                         landingContext:
-                            data.landingContext,
+                            landingContext,
                         ipAddress,
                         userAgent,
                         connectedAt:
@@ -186,6 +197,7 @@ function registerPresenceHandler(
                             !hadActiveConnection,
                         page:
                             data.page,
+                        landingContext,
                         ipAddress,
                         userAgent,
                         time

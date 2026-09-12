@@ -77,6 +77,10 @@ window.MeridianPresence = {
         window.MeridianConfig.user.conversationId;
 
 
+        const landingContext =
+        window.MeridianConfig.user.landingContext;
+
+
 
 
 
@@ -103,11 +107,7 @@ window.MeridianPresence = {
 
 
 
-        socket.emit(
-
-            EVENTS.USER_ONLINE,
-
-            {
+        const onlinePayload = {
 
 
                 userId:userId,
@@ -123,7 +123,32 @@ window.MeridianPresence = {
                 MeridianTime.now()
 
 
-            }
+        };
+
+
+        if(
+
+            landingContext
+
+            &&
+
+            landingContext.campaignId
+
+        ){
+
+
+            onlinePayload.landingContext =
+            landingContext;
+
+
+        }
+
+
+        socket.emit(
+
+            EVENTS.USER_ONLINE,
+
+            onlinePayload
 
         );
 
