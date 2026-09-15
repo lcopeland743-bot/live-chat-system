@@ -49,6 +49,40 @@
   const landingPageId =
     normalizeContextId(landingSource.pageId, 100);
 
+  function readApprovedUtm(){
+    const approved = [
+      ["utm_source", "utmSource"],
+      ["utm_medium", "utmMedium"],
+      ["utm_campaign", "utmCampaign"],
+      ["utm_content", "utmContent"]
+    ];
+
+    const result = {};
+    const parameters = new URLSearchParams(
+      window.location.search || ""
+    );
+
+    approved.forEach(([queryKey, contextKey])=>{
+      const values = parameters.getAll(queryKey);
+
+      if(values.length !== 1){
+        return;
+      }
+
+      const value = String(values[0] || "").trim();
+
+      if(
+        value
+        && value.length <= 200
+        && !/[\u0000-\u001f\u007f]/.test(value)
+      ){
+        result[contextKey] = value;
+      }
+    });
+
+    return result;
+  }
+
   const landingContext = {
     pageId: landingPageId,
     pageFamily:
@@ -61,7 +95,8 @@
       normalizeContextId(
         landingSource.whatsappRouteKey || landingPageId,
         100
-      )
+      ),
+    ...readApprovedUtm()
   };
 
   window.MeridianConfig = {

@@ -839,6 +839,12 @@ href="/css/admin.css">
                 </div>
 
                 <div class="admin-lead-network">
+                    <span
+                    id="adminLeadPresenceBadge"
+                    class="admin-presence-badge status-offline"
+                    aria-label="访客当前离线">
+                        OFFLINE
+                    </span>
                     <span>
                         IP：
                         <strong id="adminLeadIpAddress">未记录</strong>
@@ -857,7 +863,32 @@ href="/css/admin.css">
                     class="admin-lead-user-agent"
                     title="">
                     </span>
+                    <span
+                    id="adminLeadSourceBadge"
+                    class="admin-lead-source-badge">
+                        来源：Direct / Unknown
+                    </span>
                 </div>
+
+                <section
+                class="admin-source-attribution"
+                aria-labelledby="adminSourceAttributionTitle">
+                    <div class="admin-source-attribution-heading">
+                        <strong id="adminSourceAttributionTitle">
+                            流量来源
+                        </strong>
+                        <span>Source Attribution</span>
+                    </div>
+                    <p
+                    id="adminSourceAttributionSummary"
+                    class="admin-source-attribution-summary">
+                        Direct / Unknown
+                    </p>
+                    <dl
+                    id="adminSourceAttributionDetails"
+                    class="admin-source-attribution-details">
+                    </dl>
+                </section>
 
                 <ul
                 id="adminLeadIntentReasons"

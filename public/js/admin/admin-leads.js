@@ -167,6 +167,22 @@ window.MeridianAdminLeads = {
             document.getElementById(
                 "adminLeadUserAgent"
             );
+        this.presenceBadge =
+            document.getElementById(
+                "adminLeadPresenceBadge"
+            );
+        this.sourceBadge =
+            document.getElementById(
+                "adminLeadSourceBadge"
+            );
+        this.sourceSummary =
+            document.getElementById(
+                "adminSourceAttributionSummary"
+            );
+        this.sourceDetails =
+            document.getElementById(
+                "adminSourceAttributionDetails"
+            );
         this.intentReasons =
             document.getElementById(
                 "adminLeadIntentReasons"
@@ -987,6 +1003,108 @@ window.MeridianAdminLeads = {
     },
 
 
+    renderPresenceStatus(status) {
+        if (!this.presenceBadge) {
+            return;
+        }
+
+        const isOnline =
+            status === "online";
+
+        this.presenceBadge.className =
+            `admin-presence-badge status-${isOnline ? "online" : "offline"}`;
+        this.presenceBadge.textContent =
+            isOnline ? "ONLINE" : "OFFLINE";
+        this.presenceBadge.setAttribute(
+            "aria-label",
+            isOnline
+                ? "访客当前在线"
+                : "访客当前离线"
+        );
+    },
+
+
+    renderSourceAttribution(attribution) {
+        const source =
+            attribution
+            && typeof attribution === "object"
+            ? attribution
+            : null;
+
+        const campaignId =
+            source
+            ? String(source.campaignId || "").trim()
+            : "";
+
+        const campaignName =
+            source
+            ? String(source.campaignName || "").trim()
+            : "";
+
+        const campaignLabel =
+            campaignId && campaignName
+            ? `#${campaignId} · ${campaignName}`
+            : campaignName
+            || (campaignId ? `#${campaignId}` : "")
+            || "Direct / Unknown";
+
+        if (this.sourceBadge) {
+            this.sourceBadge.textContent =
+                `来源：${campaignLabel}`;
+            this.sourceBadge.title =
+                campaignLabel;
+        }
+
+        if (this.sourceSummary) {
+            this.sourceSummary.textContent =
+                campaignLabel;
+        }
+
+        if (!this.sourceDetails) {
+            return;
+        }
+
+        this.sourceDetails.replaceChildren();
+
+        if (!source) {
+            return;
+        }
+
+        const rows = [
+            ["Campaign", campaignLabel],
+            ["首次 Landing", source.landingPath],
+            ["Page ID", source.pageId],
+            ["Page Family", source.pageFamily],
+            ["UTM Source", source.utmSource],
+            ["UTM Medium", source.utmMedium],
+            ["UTM Campaign", source.utmCampaign],
+            ["UTM Content", source.utmContent]
+        ];
+
+        rows.forEach(([label, value]) => {
+            const text =
+                String(value || "").trim();
+
+            if (!text) {
+                return;
+            }
+
+            const term =
+                document.createElement("dt");
+            const description =
+                document.createElement("dd");
+
+            term.textContent = label;
+            description.textContent = text;
+
+            this.sourceDetails.append(
+                term,
+                description
+            );
+        });
+    },
+
+
     renderCurrentSession(session) {
         this.currentSession =
             session || null;
@@ -1064,6 +1182,10 @@ window.MeridianAdminLeads = {
 
         this.refreshCurrentLocalTime();
 
+        this.renderPresenceStatus(
+            session.status
+        );
+
         if (this.userAgent) {
             const userAgent =
                 String(
@@ -1078,6 +1200,10 @@ window.MeridianAdminLeads = {
             this.userAgent.title =
                 userAgent;
         }
+
+        this.renderSourceAttribution(
+            session.sourceAttribution
+        );
 
         const lead =
             session.leadIntent

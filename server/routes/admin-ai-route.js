@@ -39,6 +39,13 @@ const sessionService =
 require("../services/session-service");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("../services/source-attribution-service");
+
+
 const errorMonitorService =
 require("../services/error-monitor-service");
 
@@ -64,7 +71,10 @@ function emitSessionUpdate(
             "admin_session_update",
             {
                 type: "update",
-                session
+                session:
+                    serializeAdminSession(
+                        session
+                    )
             }
         );
     }
@@ -143,7 +153,10 @@ router.patch(
 
             return res.json({
                 success: true,
-                session
+                session:
+                    serializeAdminSession(
+                        session
+                    )
             });
         } catch (error) {
             console.error(

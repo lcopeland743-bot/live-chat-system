@@ -38,6 +38,13 @@ const {
 =
 require("../config/analysis-campaign-registry");
 
+const {
+    attachApprovedUtm,
+    serializeAdminSession
+}
+=
+require("../services/source-attribution-service");
+
 
 function emitSessionUpdate(io, session) {
     if (!session) {
@@ -49,7 +56,10 @@ function emitSessionUpdate(io, session) {
         "admin_session_update",
         {
             type: "update",
-            session
+            session:
+                serializeAdminSession(
+                    session
+                )
         }
     );
 }
@@ -155,7 +165,10 @@ function registerPresenceHandler(
                     );
 
                 const landingContext =
-                    resolveAnalysisLandingContext(
+                    attachApprovedUtm(
+                        resolveAnalysisLandingContext(
+                            data.landingContext
+                        ),
                         data.landingContext
                     );
 

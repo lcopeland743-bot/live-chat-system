@@ -12,6 +12,13 @@ const Session =
 require("../database/models/session-model");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("./source-attribution-service");
+
+
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 100;
@@ -1484,20 +1491,7 @@ function deriveLeadProfile(session) {
 
 
 function toPlainSession(session) {
-    if (!session) {
-        return null;
-    }
-
-    if (
-        typeof session.toObject
-        === "function"
-    ) {
-        return session.toObject();
-    }
-
-    return {
-        ...session
-    };
+    return serializeAdminSession(session);
 }
 
 

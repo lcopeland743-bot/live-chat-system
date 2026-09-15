@@ -27,6 +27,15 @@
 
   const maximumAttributionLength = 200;
 
+  const campaignContext = Object.freeze({
+    pageId: "004-when-machines-become-work",
+    pageFamily: "when-machines-become-work",
+    variantId: "",
+    campaignId: "004"
+  });
+
+  const triggerSelector = "[data-meridian-chat]";
+
   function validAttribution(value){
     return Boolean(
       value
@@ -55,44 +64,42 @@
     return "/analysis/entry?" + target.toString();
   }
 
-  function findFinalCta(documentObject){
-    const heading = documentObject.getElementById(
-      "close-heading"
+  function findCampaignTriggers(documentObject){
+    return Array.from(
+      documentObject.querySelectorAll(triggerSelector)
     );
+  }
 
-    if(!heading){
-      return null;
+  function setLandingContext(windowObject){
+    windowObject.MeridianLandingContext =
+      campaignContext;
+  }
+
+  function upgradeTrigger(trigger, search){
+    if(
+      trigger
+      && typeof trigger.setAttribute === "function"
+    ){
+      trigger.setAttribute(
+        "href",
+        buildEntryUrl(search)
+      );
     }
-
-    const section = heading.closest(
-      'section[aria-labelledby="close-heading"]'
-    );
-
-    if(!section){
-      return null;
-    }
-
-    return Array.from(section.querySelectorAll("a"))
-      .find((anchor)=>{
-        return /^Continue the analysis\b/.test(
-          String(anchor.textContent || "")
-            .replace(/\s+/g, " ")
-            .trim()
-        );
-      }) || null;
   }
 
   function init(windowObject, documentObject){
     function upgrade(){
-      const cta = findFinalCta(documentObject);
-
-      if(cta){
-        cta.setAttribute(
-          "href",
-          buildEntryUrl(windowObject.location.search)
-        );
-      }
+      setLandingContext(windowObject);
+      findCampaignTriggers(documentObject)
+        .forEach((trigger)=>{
+          upgradeTrigger(
+            trigger,
+            windowObject.location.search
+          );
+        });
     }
+
+    setLandingContext(windowObject);
 
     documentObject.addEventListener(
       "click",
@@ -102,10 +109,14 @@
           ? event.target.closest("a")
           : null;
 
-        if(anchor && anchor === findFinalCta(documentObject)){
-          anchor.setAttribute(
-            "href",
-            buildEntryUrl(windowObject.location.search)
+        if(
+          anchor
+          && typeof anchor.matches === "function"
+          && anchor.matches(triggerSelector)
+        ){
+          upgradeTrigger(
+            anchor,
+            windowObject.location.search
           );
         }
       },
@@ -130,9 +141,12 @@
     allowedAttribution:
       Object.freeze(allowedAttribution.slice()),
     maximumAttributionLength,
+    campaignContext,
     validAttribution,
     buildEntryUrl,
-    findFinalCta,
+    findCampaignTriggers,
+    setLandingContext,
+    upgradeTrigger,
     init
   };
 });

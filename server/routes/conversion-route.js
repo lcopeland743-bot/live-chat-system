@@ -24,6 +24,13 @@ const sessionService =
 require("../services/session-service");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("../services/source-attribution-service");
+
+
 const conversionAnalyticsService =
 require("../services/conversion-analytics-service");
 
@@ -209,7 +216,10 @@ router.post(
                     "admin_session_update",
                     {
                         type: "update",
-                        session
+                        session:
+                            serializeAdminSession(
+                                session
+                            )
                     }
                 );
             }

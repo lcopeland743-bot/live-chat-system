@@ -130,6 +130,58 @@ function testUtmPolicy() {
     );
 }
 
+function testCampaignBridge() {
+    const triggers = Array.from({ length: 5 }, () => ({
+        attributes: {},
+        setAttribute(name, value) {
+            this.attributes[name] = value;
+        }
+    }));
+
+    const windowObject = {
+        location: {
+            search:
+                "?utm_source=phase4b"
+                + "&utm_medium=paid"
+                + "&utm_campaign=robotics"
+                + "&utm_content=final"
+        },
+        addEventListener() {}
+    };
+
+    const documentObject = {
+        readyState: "complete",
+        querySelectorAll(selector) {
+            assert.strictEqual(selector, "[data-meridian-chat]");
+            return triggers;
+        },
+        addEventListener() {}
+    };
+
+    campaignLink.init(windowObject, documentObject);
+
+    assert.deepStrictEqual(
+        windowObject.MeridianLandingContext,
+        expectedContext
+    );
+    assert.strictEqual(
+        windowObject.MeridianLandingContext,
+        campaignLink.campaignContext
+    );
+    assert.ok(Object.isFrozen(windowObject.MeridianLandingContext));
+
+    triggers.forEach((trigger) => {
+        assert.strictEqual(
+            trigger.attributes.href,
+            "/analysis/entry?campaign=004"
+            + "&utm_source=phase4b"
+            + "&utm_medium=paid"
+            + "&utm_campaign=robotics"
+            + "&utm_content=final"
+        );
+    });
+}
+
 function testViewEscaping() {
     const html = renderAnalysisEntry({
         title: "<Campaign>",
@@ -372,10 +424,20 @@ function testSourceIntegration() {
     );
 
     const bootstrap = read("public/js/analysis-entry.js");
+    const campaignBridge = read(
+        "public/js/campaign-analysis-entry-link.js"
+    );
+    const landingLoader = read(
+        "public/js/meridian-landing-loader.js"
+    );
     const clientPresence = read("public/js/core/presence.js");
     const serverPresence = read("server/socket/presence-handler.js");
     const campaignHtml = read(
         "public/lp/004-when-machines-become-work/index.html"
+    );
+    const renderedCampaignHtml = campaignHtml.slice(
+        0,
+        campaignHtml.indexOf("</main>") + "</main>".length
     );
 
     assert.match(bootstrap, /loader\.open\(\{/);
@@ -391,11 +453,64 @@ function testSourceIntegration() {
         campaignHtml,
         /src="\/js\/campaign-analysis-entry-link\.js"/
     );
+    assert.strictEqual(
+        (renderedCampaignHtml.match(/data-meridian-chat(?:="")?/g) || []).length,
+        5,
+        "Campaign 004 must render exactly five shared Chat entry points"
+    );
+    assert.strictEqual(
+        (renderedCampaignHtml.match(/data-meridian-floating-entry(?:="")?/g) || []).length,
+        1,
+        "Campaign 004 must render exactly one Campaign floating launcher"
+    );
+    assert.strictEqual(
+        (renderedCampaignHtml.match(/data-meridian-auto-send="false"/g) || []).length,
+        5,
+        "every Campaign 004 Chat entry must disable auto-send"
+    );
+    assert.strictEqual(
+        (renderedCampaignHtml.match(new RegExp(
+            expectedQuestion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+            "g"
+        )) || []).length,
+        5,
+        "every Campaign 004 Chat entry must carry the reviewed question"
+    );
+    assert.strictEqual(
+        (renderedCampaignHtml.match(/href="\/analysis\/entry\?campaign=004"/g) || []).length,
+        5,
+        "all Campaign 004 Chat entries must retain the canonical fallback"
+    );
+    assert.match(
+        renderedCampaignHtml,
+        /href="#thesis"[^>]*>Trace the economics/,
+        "the Hero CTA must remain in-page navigation"
+    );
+    assert.match(
+        renderedCampaignHtml,
+        /robotic-workcell-system-economics-v2\.png/,
+        "the current workcell SYSTEM / ECONOMICS image must be present"
+    );
+    assert.match(campaignBridge, /findCampaignTriggers/);
+    assert.match(campaignBridge, /setLandingContext/);
+    assert.match(campaignBridge, /campaignId:\s*"004"/);
+    assert.doesNotMatch(campaignBridge, /handleSend\s*\(/);
+    assert.match(
+        landingLoader,
+        /autoSend\s*&&[\s\S]*chatUI\.handleSend\(\)/,
+        "the shared loader may send only after an explicit true autoSend value"
+    );
+    assert.match(
+        landingLoader,
+        /window\.__MeridianLandingLoaderState/,
+        "the shared loader must reuse one SDK initialization"
+    );
 }
 
 async function run() {
     testRegistry();
     testUtmPolicy();
+    testCampaignBridge();
     testViewEscaping();
     await testRoute();
     await testFirstTouchSessionContext();

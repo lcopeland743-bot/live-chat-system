@@ -306,6 +306,30 @@ new mongoose.Schema(
             default: ""
         },
 
+        utmSource: {
+            type: String,
+            default: "",
+            maxlength: 200
+        },
+
+        utmMedium: {
+            type: String,
+            default: "",
+            maxlength: 200
+        },
+
+        utmCampaign: {
+            type: String,
+            default: "",
+            maxlength: 200
+        },
+
+        utmContent: {
+            type: String,
+            default: "",
+            maxlength: 200
+        },
+
         whatsappRouteKey: {
             type: String,
             default: ""

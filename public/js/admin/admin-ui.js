@@ -2258,6 +2258,45 @@ window.MeridianAdminUI = {
                 className;
 
 
+                const isOnline =
+
+                className === "online-user";
+
+
+                const presenceLabel =
+
+                document.createElement(
+
+                    "span"
+
+                );
+
+
+                presenceLabel.className =
+
+                `session-presence-label status-${isOnline ? "online" : "offline"}`;
+
+
+                presenceLabel.textContent =
+
+                isOnline
+
+                ?
+
+                "ONLINE"
+
+                :
+
+                "OFFLINE";
+
+
+                item.appendChild(
+
+                    presenceLabel
+
+                );
+
+
                 const userId =
 
                 user.userId
@@ -2628,6 +2667,19 @@ window.MeridianAdminUI = {
                 :
 
                 "⚫";
+
+
+                const statusLabel =
+
+                session.status === "online"
+
+                ?
+
+                "ONLINE"
+
+                :
+
+                "OFFLINE";
 
 
                 const time =
@@ -3030,6 +3082,9 @@ window.MeridianAdminUI = {
                     <div class="session-item-heading">
                         <b>
                             ${statusIcon}
+                            <span class="session-presence-label status-${statusLabel.toLowerCase()}">
+                                ${statusLabel}
+                            </span>
                             ${this.escapeHtml(session.userId)}
                         </b>
                         <span class="session-intent-badge intent-${leadLevel}">

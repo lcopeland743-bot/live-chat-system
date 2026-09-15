@@ -4,6 +4,16 @@
  * Version: v1.0.0
  */
 
+const MAX_UTM_LENGTH = 200;
+
+const APPROVED_UTM_CONTEXT_FIELDS =
+Object.freeze([
+    "utmSource",
+    "utmMedium",
+    "utmCampaign",
+    "utmContent"
+]);
+
 function normalizeIdentifier(value, maximum = 100) {
     const text = String(value || "")
         .trim()
@@ -20,6 +30,24 @@ function normalizeIdentifier(value, maximum = 100) {
     return text;
 }
 
+function normalizeUtmValue(value) {
+    if (typeof value !== "string") {
+        return "";
+    }
+
+    const normalized = value.trim();
+
+    if (
+        !normalized
+        || normalized.length > MAX_UTM_LENGTH
+        || /[\u0000-\u001f\u007f]/.test(normalized)
+    ) {
+        return "";
+    }
+
+    return normalized;
+}
+
 function normalizeLandingContext(value) {
     const source = value && typeof value === "object"
         ? value
@@ -34,6 +62,20 @@ function normalizeLandingContext(value) {
         100
     );
 
+    const approvedUtm = {};
+
+    for (
+        const key
+        of APPROVED_UTM_CONTEXT_FIELDS
+    ) {
+        const text =
+            normalizeUtmValue(source[key]);
+
+        if (text) {
+            approvedUtm[key] = text;
+        }
+    }
+
     if (
         !pageId
         && !campaignId
@@ -47,11 +89,15 @@ function normalizeLandingContext(value) {
         pageFamily,
         variantId,
         campaignId,
-        whatsappRouteKey
+        whatsappRouteKey,
+        ...approvedUtm
     };
 }
 
 module.exports = {
+    MAX_UTM_LENGTH,
+    APPROVED_UTM_CONTEXT_FIELDS,
     normalizeIdentifier,
+    normalizeUtmValue,
     normalizeLandingContext
 };

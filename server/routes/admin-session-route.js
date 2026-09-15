@@ -33,6 +33,13 @@ const adminSessionQueryService =
 require("../services/admin-session-query-service");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("../services/source-attribution-service");
+
+
 const conversionAnalyticsService =
 require("../services/conversion-analytics-service");
 
@@ -62,7 +69,10 @@ function emitSessionUpdate(
             "admin_session_update",
             {
                 type: "update",
-                session
+                session:
+                    serializeAdminSession(
+                        session
+                    )
             }
         );
     }

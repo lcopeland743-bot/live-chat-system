@@ -8,7 +8,8 @@ const embedPath = path.join(projectRoot, "public", "js", "embed.js");
 const landingPages = [
   "market-clarity-a",
   "market-clarity-b",
-  "market-clarity-c"
+  "market-clarity-c",
+  "004-when-machines-become-work"
 ].map((slug)=>path.join(
   projectRoot,
   "public",

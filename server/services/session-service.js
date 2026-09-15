@@ -38,6 +38,13 @@ const {
 require("../utils/landing-context-utils");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("./source-attribution-service");
+
+
 function buildConversionUpdate(state) {
     const normalized =
         conversionStateService
@@ -966,17 +973,17 @@ async function getAdminVisitorOverview() {
 
     return {
         sessions:
-            overview.sessions
-            ||
-            [],
+            (overview.sessions || [])
+            .map(serializeAdminSession)
+            .filter(Boolean),
         onlineUsers:
-            overview.onlineUsers
-            ||
-            [],
+            (overview.onlineUsers || [])
+            .map(serializeAdminSession)
+            .filter(Boolean),
         offlineUsers:
-            overview.offlineUsers
-            ||
-            [],
+            (overview.offlineUsers || [])
+            .map(serializeAdminSession)
+            .filter(Boolean),
         visitorStats:
             normalizeVisitorStats(
                 overview.stats

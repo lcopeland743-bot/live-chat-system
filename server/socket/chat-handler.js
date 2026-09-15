@@ -28,6 +28,13 @@ const sessionService =
 require("../services/session-service");
 
 
+const {
+    serializeAdminSession
+}
+=
+require("../services/source-attribution-service");
+
+
 const briefingAutoReplyService =
 require("../services/briefing-auto-reply-service");
 
@@ -194,7 +201,10 @@ function emitSessionUpdate(
         "admin_session_update",
         {
             type: "update",
-            session
+            session:
+                serializeAdminSession(
+                    session
+                )
         }
     );
 }
