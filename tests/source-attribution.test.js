@@ -37,6 +37,8 @@ function clone(value) {
 
 
 function testTrustedSerialization() {
+    const campaign001 =
+        getAnalysisCampaign("001");
     const campaign002 =
         getAnalysisCampaign("002");
     const campaign003 =
@@ -44,6 +46,35 @@ function testTrustedSerialization() {
     const campaign =
         getAnalysisCampaign("004");
 
+    assert.ok(campaign001);
+    assert.strictEqual(
+        campaign001.landingPath,
+        "/lp/001-beyond-the-headlines/"
+    );
+    assert.deepStrictEqual(
+        buildSourceAttribution({
+            landingContext: {
+                campaignId: "001",
+                pageId: "browser-tampered-page",
+                pageFamily: "browser-tampered-family",
+                utmSource: "facebook",
+                utmMedium: "paid_social",
+                utmCampaign: "market-move-us",
+                utmContent: "qa-a"
+            }
+        }),
+        {
+            campaignId: "001",
+            campaignName: "Beyond the Headlines",
+            landingPath: "/lp/001-beyond-the-headlines/",
+            pageId: "001-beyond-the-headlines",
+            pageFamily: "beyond-the-headlines",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "market-move-us",
+            utmContent: "qa-a"
+        }
+    );
     assert.ok(campaign002);
     assert.strictEqual(
         campaign002.landingPath,
@@ -565,6 +596,30 @@ function testSafeAdminRendering() {
         ui.sourceDetails.children.length,
         8,
         "missing UTM fields must not create blank detail rows"
+    );
+
+    renderer.call(ui, buildSourceAttribution({
+        landingContext: {
+            campaignId: "001",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "market-move-us",
+            utmContent: "qa-a"
+        }
+    }));
+
+    assert.strictEqual(
+        ui.sourceBadge.textContent,
+        "来源：#001 · Beyond the Headlines"
+    );
+    assert.strictEqual(
+        ui.sourceSummary.textContent,
+        "#001 · Beyond the Headlines"
+    );
+    assert.strictEqual(
+        ui.sourceDetails.children.length,
+        16,
+        "Campaign 001 and its four approved UTMs must render through the shared Admin mapping"
     );
 
     renderer.call(ui, buildSourceAttribution({

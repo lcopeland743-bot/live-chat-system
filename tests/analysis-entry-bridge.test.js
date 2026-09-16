@@ -34,6 +34,9 @@ const campaignLink = require(
 const expectedQuestion =
     "What assumptions, constraints, and evidence determine whether a robotics system can become economically meaningful work?";
 
+const expectedQuestion001 =
+    "What changed behind the move, and what evidence would change your interpretation?";
+
 const expectedQuestion002 =
     "Which constraint—compute, memory, power, grid access, capital, or uncertainty—most limits the path from AI capability to useful scale?";
 
@@ -54,10 +57,30 @@ function clone(value) {
 }
 
 function testRegistry() {
+    const campaign001 = getAnalysisCampaign("001");
     const campaign002 = getAnalysisCampaign("002");
     const campaign003 = getAnalysisCampaign("003");
     const campaign = getAnalysisCampaign("004");
 
+    assert.ok(campaign001);
+    assert.strictEqual(campaign001.campaignName, "Beyond the Headlines");
+    assert.strictEqual(campaign001.title, "Beyond the Headlines");
+    assert.strictEqual(campaign001.landingPath, "/lp/001-beyond-the-headlines/");
+    assert.strictEqual(campaign001.initialQuestion, expectedQuestion001);
+    assert.deepStrictEqual(campaign001.landingContext, {
+        pageId: "001-beyond-the-headlines",
+        pageFamily: "beyond-the-headlines",
+        variantId: "",
+        campaignId: "001"
+    });
+    assert.strictEqual(
+        Object.prototype.hasOwnProperty.call(
+            campaign001.landingContext,
+            "whatsappRouteKey"
+        ),
+        false,
+        "Campaign 001 must not invent an unregistered WhatsApp route"
+    );
     assert.ok(campaign002);
     assert.strictEqual(campaign002.campaignName, "The AGI Repricing");
     assert.strictEqual(campaign002.title, "The AGI Repricing");
@@ -136,6 +159,14 @@ function testRegistry() {
 }
 
 function testUtmPolicy() {
+    assert.strictEqual(
+        campaignLink.buildEntryUrl(
+            "001",
+            "?utm_source=facebook&utm_medium=paid_social&utm_campaign=market-move-us&utm_content=qa-a"
+        ),
+        "/analysis/entry?campaign=001&utm_source=facebook&utm_medium=paid_social&utm_campaign=market-move-us&utm_content=qa-a"
+    );
+
     const result = campaignLink.buildEntryUrl(
         "004",
         "?utm_source=phase4b"
@@ -328,6 +359,16 @@ async function testRoute() {
             response.headers.get("content-security-policy"),
             /script-src[^;]*unsafe-inline/
         );
+
+        response = await request(
+            "/analysis/entry?campaign=001"
+        );
+        body = await response.text();
+        assert.strictEqual(response.status, 200);
+        assert.match(body, /data-campaign-id="001"/);
+        assert.match(body, /data-page-id="001-beyond-the-headlines"/);
+        assert.ok(body.includes(expectedQuestion001));
+        assert.doesNotMatch(body, /data-whatsapp-route-key/);
 
         response = await request(
             "/analysis/entry?campaign=002"
@@ -531,6 +572,9 @@ function testSourceIntegration() {
     const campaignHtml = read(
         "public/lp/004-when-machines-become-work/index.html"
     );
+    const campaign001Html = read(
+        "public/lp/001-beyond-the-headlines/index.html"
+    );
     const campaign002Html = read(
         "public/lp/002-agi-repricing/index.html"
     );
@@ -540,6 +584,10 @@ function testSourceIntegration() {
     const renderedCampaignHtml = campaignHtml.slice(
         0,
         campaignHtml.indexOf("</main>") + "</main>".length
+    );
+    const renderedCampaign001Html = campaign001Html.slice(
+        0,
+        campaign001Html.indexOf("</main>") + "</main>".length
     );
     const renderedCampaign002Html = campaign002Html.slice(
         0,
@@ -607,7 +655,7 @@ function testSourceIntegration() {
     assert.match(campaignBridge, /getCampaignIdFromTrigger/);
     assert.doesNotMatch(
         campaignBridge,
-        /campaignId:\s*"00[234]"/,
+        /campaignId:\s*"00[1234]"/,
         "the shared Campaign bridge must not hard-code Campaign identity"
     );
     assert.doesNotMatch(campaignBridge, /handleSend\s*\(/);
@@ -620,6 +668,40 @@ function testSourceIntegration() {
         landingLoader,
         /window\.__MeridianLandingLoaderState/,
         "the shared loader must reuse one SDK initialization"
+    );
+
+    assert.strictEqual(
+        (renderedCampaign001Html.match(/data-meridian-chat(?:="")?/g) || []).length,
+        5,
+        "Campaign 001 must render exactly five shared Chat entry points"
+    );
+    assert.strictEqual(
+        (renderedCampaign001Html.match(/data-meridian-floating-entry(?:="")?/g) || []).length,
+        1,
+        "Campaign 001 must render exactly one Campaign floating launcher"
+    );
+    assert.strictEqual(
+        (renderedCampaign001Html.match(/data-meridian-auto-send="false"/g) || []).length,
+        5,
+        "every Campaign 001 Chat entry must disable auto-send"
+    );
+    assert.strictEqual(
+        (renderedCampaign001Html.match(new RegExp(
+            expectedQuestion001.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+            "g"
+        )) || []).length,
+        5,
+        "every Campaign 001 Chat entry must carry the reviewed question"
+    );
+    assert.strictEqual(
+        (renderedCampaign001Html.match(/href="\/analysis\/entry\?campaign=001"/g) || []).length,
+        5,
+        "all Campaign 001 Chat entries must retain the canonical fallback"
+    );
+    assert.match(
+        renderedCampaign001Html,
+        /href="#discovery"[^>]*>Trace what changed/,
+        "the Campaign 001 Hero CTA must remain in-page narrative progression"
     );
 
     assert.strictEqual(

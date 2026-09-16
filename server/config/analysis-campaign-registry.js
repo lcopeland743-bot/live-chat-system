@@ -35,6 +35,16 @@ function createCampaign({
     });
 }
 
+const campaign001 = createCampaign({
+    campaignId: "001",
+    campaignName: "Beyond the Headlines",
+    landingPath: "/lp/001-beyond-the-headlines/",
+    pageId: "001-beyond-the-headlines",
+    pageFamily: "beyond-the-headlines",
+    initialQuestion:
+        "What changed behind the move, and what evidence would change your interpretation?"
+});
+
 const campaign002 = createCampaign({
     campaignId: "002",
     campaignName: "The AGI Repricing",
@@ -66,6 +76,7 @@ const campaign004 = createCampaign({
 });
 
 const campaigns = Object.freeze({
+    "001": campaign001,
     "002": campaign002,
     "003": campaign003,
     "004": campaign004

@@ -9,6 +9,7 @@ const landingPages = [
   "market-clarity-a",
   "market-clarity-b",
   "market-clarity-c",
+  "001-beyond-the-headlines",
   "002-agi-repricing",
   "003-weight-of-the-index",
   "004-when-machines-become-work"
