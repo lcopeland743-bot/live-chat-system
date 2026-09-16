@@ -57,8 +57,17 @@ function normalizeLandingContext(value) {
     const pageFamily = normalizeIdentifier(source.pageFamily, 100);
     const variantId = normalizeIdentifier(source.variantId, 40);
     const campaignId = normalizeIdentifier(source.campaignId, 120);
+    const hasExplicitWhatsappRoute =
+        Object.prototype.hasOwnProperty.call(
+            source,
+            "whatsappRouteKey"
+        );
     const whatsappRouteKey = normalizeIdentifier(
-        source.whatsappRouteKey || pageId,
+        hasExplicitWhatsappRoute
+        ? source.whatsappRouteKey
+        : campaignId
+        ? ""
+        : pageId,
         100
     );
 

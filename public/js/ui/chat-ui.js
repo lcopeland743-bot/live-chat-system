@@ -1559,16 +1559,6 @@ window.MeridianChatUI = {
 
 
 
-    this.elements.panel.setAttribute(
-
-      "aria-hidden",
-
-      "true"
-
-    );
-
-
-
     this.elements.button.setAttribute(
 
       "aria-expanded",
@@ -1583,10 +1573,28 @@ window.MeridianChatUI = {
 
 
 
+    const loaderState =
+    window.__MeridianLandingLoaderState;
+
+
+
+    const returnFocus =
+    loaderState
+    &&
+    loaderState.lastTrigger
+    &&
+    document.contains(loaderState.lastTrigger)
+    ?
+    loaderState.lastTrigger
+    :
+    this.elements.button;
+
+
+
     try{
 
 
-      this.elements.button.focus({
+      returnFocus.focus({
 
         preventScroll:true
 
@@ -1598,10 +1606,20 @@ window.MeridianChatUI = {
     catch(error){
 
 
-      this.elements.button.focus();
+      returnFocus.focus();
 
 
     }
+
+
+
+    this.elements.panel.setAttribute(
+
+      "aria-hidden",
+
+      "true"
+
+    );
 
 
   },

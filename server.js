@@ -184,6 +184,13 @@ const analysisEntryRoute =
 require("./server/routes/analysis-entry-route");
 
 
+const {
+    getAnalysisCampaignByLandingPath
+}
+=
+require("./server/config/analysis-campaign-registry");
+
+
 installProcessHandlers();
 
 
@@ -315,12 +322,32 @@ app.use(
 
 app.get(
 
-    /^\/lp\/004-when-machines-become-work\/?$/,
+    /^\/lp\/[a-z0-9-]+\/?$/,
 
-    (req,res)=>{
+    (req,res,next)=>{
+
+        const requestedLandingPath =
+        req.path.endsWith("/")
+        ?
+        req.path
+        :
+        `${req.path}/`;
+
+        const campaign =
+        getAnalysisCampaignByLandingPath(
+
+            requestedLandingPath
+
+        );
+
+        if(!campaign){
+
+            return next();
+
+        }
 
         const campaignPath =
-        "/lp/004-when-machines-become-work";
+        campaign.landingPath.slice(0,-1);
 
         if(
 
@@ -368,9 +395,9 @@ app.get(
 
                 "public",
 
-                "lp",
-
-                "004-when-machines-become-work",
+                ...campaign.landingPath
+                    .split("/")
+                    .filter(Boolean),
 
                 "index.html"
 

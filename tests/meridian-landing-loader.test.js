@@ -64,6 +64,11 @@ assert.match(
   /input\.value = question/,
   "loader must pass a CTA question into the existing chat input"
 );
+assert.match(
+  loader,
+  /sharedState\.lastTrigger = trigger/,
+  "loader must retain the invoking Campaign control for accessible focus restoration"
+);
 
 assert.match(
   index,

@@ -49,6 +49,12 @@
   const landingPageId =
     normalizeContextId(landingSource.pageId, 100);
 
+  const hasExplicitWhatsappRoute =
+    Object.prototype.hasOwnProperty.call(
+      landingSource,
+      "whatsappRouteKey"
+    );
+
   function readApprovedUtm(){
     const approved = [
       ["utm_source", "utmSource"],
@@ -93,7 +99,11 @@
       normalizeContextId(landingSource.campaignId, 120),
     whatsappRouteKey:
       normalizeContextId(
-        landingSource.whatsappRouteKey || landingPageId,
+        hasExplicitWhatsappRoute
+        ? landingSource.whatsappRouteKey
+        : landingSource.campaignId
+        ? ""
+        : landingPageId,
         100
       ),
     ...readApprovedUtm()

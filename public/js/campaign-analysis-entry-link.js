@@ -1,5 +1,5 @@
 /**
- * Campaign #004 Analysis Entry Link
+ * Registered Campaign Analysis Entry Link
  */
 (function(factory){
   "use strict";
@@ -27,14 +27,8 @@
 
   const maximumAttributionLength = 200;
 
-  const campaignContext = Object.freeze({
-    pageId: "004-when-machines-become-work",
-    pageFamily: "when-machines-become-work",
-    variantId: "",
-    campaignId: "004"
-  });
-
   const triggerSelector = "[data-meridian-chat]";
+  const campaignPattern = /^\d{3}$/;
 
   function validAttribution(value){
     return Boolean(
@@ -44,11 +38,15 @@
     );
   }
 
-  function buildEntryUrl(search){
+  function buildEntryUrl(campaignId, search){
+    if(!campaignPattern.test(campaignId || "")){
+      return "";
+    }
+
     const source = new URLSearchParams(search || "");
     const target = new URLSearchParams();
 
-    target.set("campaign", "004");
+    target.set("campaign", campaignId);
 
     allowedAttribution.forEach((key)=>{
       const values = source.getAll(key);
@@ -70,36 +68,88 @@
     );
   }
 
-  function setLandingContext(windowObject){
-    windowObject.MeridianLandingContext =
-      campaignContext;
+  function getCampaignIdFromTrigger(trigger, baseUrl){
+    if(!trigger || typeof trigger.getAttribute !== "function"){
+      return "";
+    }
+
+    try{
+      const target = new URL(
+        trigger.getAttribute("href") || "",
+        baseUrl
+      );
+      const values = target.searchParams.getAll("campaign");
+
+      return target.pathname === "/analysis/entry"
+        && values.length === 1
+        && campaignPattern.test(values[0])
+        ? values[0]
+        : "";
+    }
+    catch{
+      return "";
+    }
   }
 
-  function upgradeTrigger(trigger, search){
+  function resolveCampaignId(documentObject, baseUrl){
+    const campaignIds = new Set(
+      findCampaignTriggers(documentObject)
+        .map((trigger)=>getCampaignIdFromTrigger(trigger, baseUrl))
+        .filter(Boolean)
+    );
+
+    return campaignIds.size === 1
+      ? Array.from(campaignIds)[0]
+      : "";
+  }
+
+  function setLandingContext(windowObject, campaignId){
+    if(!campaignPattern.test(campaignId || "")){
+      return null;
+    }
+
+    const campaignContext = Object.freeze({
+      campaignId: campaignId
+    });
+
+    windowObject.MeridianLandingContext = campaignContext;
+    return campaignContext;
+  }
+
+  function upgradeTrigger(trigger, campaignId, search){
     if(
       trigger
       && typeof trigger.setAttribute === "function"
     ){
       trigger.setAttribute(
         "href",
-        buildEntryUrl(search)
+        buildEntryUrl(campaignId, search)
       );
     }
   }
 
   function init(windowObject, documentObject){
     function upgrade(){
-      setLandingContext(windowObject);
-      findCampaignTriggers(documentObject)
+      const triggers = findCampaignTriggers(documentObject);
+      const campaignId = resolveCampaignId(
+        documentObject,
+        windowObject.location.href
+      );
+
+      if(!campaignId){
+        return;
+      }
+
+      setLandingContext(windowObject, campaignId);
+      triggers
         .forEach((trigger)=>{
           upgradeTrigger(
             trigger,
+            campaignId,
             windowObject.location.search
           );
         });
     }
-
-    setLandingContext(windowObject);
 
     documentObject.addEventListener(
       "click",
@@ -114,8 +164,15 @@
           && typeof anchor.matches === "function"
           && anchor.matches(triggerSelector)
         ){
+          const campaignId = getCampaignIdFromTrigger(
+            anchor,
+            windowObject.location.href
+          );
+
+          setLandingContext(windowObject, campaignId);
           upgradeTrigger(
             anchor,
+            campaignId,
             windowObject.location.search
           );
         }
@@ -141,10 +198,12 @@
     allowedAttribution:
       Object.freeze(allowedAttribution.slice()),
     maximumAttributionLength,
-    campaignContext,
+    campaignPattern,
     validAttribution,
     buildEntryUrl,
     findCampaignTriggers,
+    getCampaignIdFromTrigger,
+    resolveCampaignId,
     setLandingContext,
     upgradeTrigger,
     init

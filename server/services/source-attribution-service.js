@@ -110,7 +110,7 @@ function buildSourceAttribution(value) {
         campaignId:
             campaign.campaignId,
         campaignName:
-            campaign.title,
+            campaign.campaignName,
         landingPath:
             campaign.landingPath,
         pageId:

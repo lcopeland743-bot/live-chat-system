@@ -37,9 +37,71 @@ function clone(value) {
 
 
 function testTrustedSerialization() {
+    const campaign002 =
+        getAnalysisCampaign("002");
+    const campaign003 =
+        getAnalysisCampaign("003");
     const campaign =
         getAnalysisCampaign("004");
 
+    assert.ok(campaign002);
+    assert.strictEqual(
+        campaign002.landingPath,
+        "/lp/002-agi-repricing/"
+    );
+    assert.deepStrictEqual(
+        buildSourceAttribution({
+            landingContext: {
+                campaignId: "002",
+                pageId: "browser-tampered-page",
+                pageFamily: "browser-tampered-family",
+                utmSource: "facebook",
+                utmMedium: "paid_social",
+                utmCampaign: "agi-repricing-us",
+                utmContent: "qa-a"
+            }
+        }),
+        {
+            campaignId: "002",
+            campaignName: "The AGI Repricing",
+            landingPath: "/lp/002-agi-repricing/",
+            pageId: "002-agi-repricing",
+            pageFamily: "agi-repricing",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "agi-repricing-us",
+            utmContent: "qa-a"
+        }
+    );
+    assert.ok(campaign003);
+    assert.strictEqual(
+        campaign003.landingPath,
+        "/lp/003-weight-of-the-index/"
+    );
+    assert.deepStrictEqual(
+        buildSourceAttribution({
+            landingContext: {
+                campaignId: "003",
+                pageId: "browser-tampered-page",
+                pageFamily: "browser-tampered-family",
+                utmSource: "facebook",
+                utmMedium: "paid_social",
+                utmCampaign: "index-weight-us",
+                utmContent: "qa-a"
+            }
+        }),
+        {
+            campaignId: "003",
+            campaignName: "The Weight of the Index",
+            landingPath: "/lp/003-weight-of-the-index/",
+            pageId: "003-weight-of-the-index",
+            pageFamily: "weight-of-the-index",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "index-weight-us",
+            utmContent: "qa-a"
+        }
+    );
     assert.ok(campaign);
     assert.strictEqual(
         campaign.landingPath,
@@ -223,6 +285,11 @@ function testClientUtmCapture() {
     assert.strictEqual(context.utmMedium, "paid_social");
     assert.strictEqual(context.utmCampaign, "robotics-us");
     assert.strictEqual(context.utmContent, "creative-a");
+    assert.strictEqual(
+        context.whatsappRouteKey,
+        "",
+        "registered Campaigns without an approved WhatsApp binding must remain unbound"
+    );
     assert.strictEqual(context.gclid, undefined);
     assert.strictEqual(context.redirect, undefined);
 
@@ -289,16 +356,18 @@ async function testFirstTouchPersistence() {
 
         const canonical =
             resolveAnalysisLandingContext({
-                campaignId: "004"
+                campaignId: "002"
             });
 
         const firstTouch =
             attachApprovedUtm(
                 canonical,
                 {
-                    campaignId: "004",
+                    campaignId: "002",
                     utmSource: "facebook",
-                    utmMedium: "paid_social"
+                    utmMedium: "paid_social",
+                    utmCampaign: "agi-repricing-us",
+                    utmContent: "qa-a"
                 }
             );
 
@@ -314,7 +383,7 @@ async function testFirstTouchPersistence() {
         assert.strictEqual(
             lastUpdate.$set.landingContext
                 .campaignId,
-            "004"
+            "002"
         );
         assert.strictEqual(
             lastUpdate.$set.landingContext
@@ -496,6 +565,54 @@ function testSafeAdminRendering() {
         ui.sourceDetails.children.length,
         8,
         "missing UTM fields must not create blank detail rows"
+    );
+
+    renderer.call(ui, buildSourceAttribution({
+        landingContext: {
+            campaignId: "002",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "agi-repricing-us",
+            utmContent: "qa-a"
+        }
+    }));
+
+    assert.strictEqual(
+        ui.sourceBadge.textContent,
+        "来源：#002 · The AGI Repricing"
+    );
+    assert.strictEqual(
+        ui.sourceSummary.textContent,
+        "#002 · The AGI Repricing"
+    );
+    assert.strictEqual(
+        ui.sourceDetails.children.length,
+        16,
+        "Campaign 002 and its four approved UTMs must render through the shared Admin mapping"
+    );
+
+    renderer.call(ui, buildSourceAttribution({
+        landingContext: {
+            campaignId: "003",
+            utmSource: "facebook",
+            utmMedium: "paid_social",
+            utmCampaign: "index-weight-us",
+            utmContent: "qa-a"
+        }
+    }));
+
+    assert.ok(
+        ui.sourceBadge.textContent.includes("#003")
+        && ui.sourceBadge.textContent.includes("The Weight of the Index")
+    );
+    assert.ok(
+        ui.sourceSummary.textContent.includes("#003")
+        && ui.sourceSummary.textContent.includes("The Weight of the Index")
+    );
+    assert.strictEqual(
+        ui.sourceDetails.children.length,
+        16,
+        "Campaign 003 and its four approved UTMs must render through the shared Admin mapping"
     );
 
     const presenceSource = fs.readFileSync(

@@ -259,6 +259,8 @@
 
     event.preventDefault();
 
+    sharedState.lastTrigger = trigger;
+
     const question =
       trigger.getAttribute("data-question") || "";
 

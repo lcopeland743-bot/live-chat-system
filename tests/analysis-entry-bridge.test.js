@@ -34,6 +34,12 @@ const campaignLink = require(
 const expectedQuestion =
     "What assumptions, constraints, and evidence determine whether a robotics system can become economically meaningful work?";
 
+const expectedQuestion002 =
+    "Which constraint—compute, memory, power, grid access, capital, or uncertainty—most limits the path from AI capability to useful scale?";
+
+const expectedQuestion003 =
+    "Which weights, shared exposures, and evidence matter most when examining what really carries a broad market-cap-weighted index?";
+
 const expectedContext = {
     pageId: "004-when-machines-become-work",
     pageFamily: "when-machines-become-work",
@@ -48,9 +54,50 @@ function clone(value) {
 }
 
 function testRegistry() {
+    const campaign002 = getAnalysisCampaign("002");
+    const campaign003 = getAnalysisCampaign("003");
     const campaign = getAnalysisCampaign("004");
 
+    assert.ok(campaign002);
+    assert.strictEqual(campaign002.campaignName, "The AGI Repricing");
+    assert.strictEqual(campaign002.title, "The AGI Repricing");
+    assert.strictEqual(campaign002.landingPath, "/lp/002-agi-repricing/");
+    assert.strictEqual(campaign002.initialQuestion, expectedQuestion002);
+    assert.deepStrictEqual(campaign002.landingContext, {
+        pageId: "002-agi-repricing",
+        pageFamily: "agi-repricing",
+        variantId: "",
+        campaignId: "002"
+    });
+    assert.strictEqual(
+        Object.prototype.hasOwnProperty.call(
+            campaign002.landingContext,
+            "whatsappRouteKey"
+        ),
+        false,
+        "Campaign 002 must not invent an unregistered WhatsApp route"
+    );
+    assert.ok(campaign003);
+    assert.strictEqual(campaign003.campaignName, "The Weight of the Index");
+    assert.strictEqual(campaign003.title, "The Weight of the Index");
+    assert.strictEqual(campaign003.landingPath, "/lp/003-weight-of-the-index/");
+    assert.strictEqual(campaign003.initialQuestion, expectedQuestion003);
+    assert.deepStrictEqual(campaign003.landingContext, {
+        pageId: "003-weight-of-the-index",
+        pageFamily: "weight-of-the-index",
+        variantId: "",
+        campaignId: "003"
+    });
+    assert.strictEqual(
+        Object.prototype.hasOwnProperty.call(
+            campaign003.landingContext,
+            "whatsappRouteKey"
+        ),
+        false,
+        "Campaign 003 must not invent an unregistered WhatsApp route"
+    );
     assert.ok(campaign);
+    assert.strictEqual(campaign.campaignName, "When Machines Become Work");
     assert.strictEqual(campaign.title, "When Machines Become Work");
     assert.strictEqual(campaign.initialQuestion, expectedQuestion);
     assert.deepStrictEqual(campaign.landingContext, expectedContext);
@@ -90,6 +137,7 @@ function testRegistry() {
 
 function testUtmPolicy() {
     const result = campaignLink.buildEntryUrl(
+        "004",
         "?utm_source=phase4b"
         + "&utm_medium=paid"
         + "&utm_campaign=robotics"
@@ -110,6 +158,7 @@ function testUtmPolicy() {
 
     assert.strictEqual(
         campaignLink.buildEntryUrl(
+            "004",
             "?utm_source=hello world"
         ),
         "/analysis/entry?campaign=004&utm_source=hello+world"
@@ -117,6 +166,7 @@ function testUtmPolicy() {
 
     assert.strictEqual(
         campaignLink.buildEntryUrl(
+            "004",
             "?utm_source=" + "x".repeat(201)
         ),
         "/analysis/entry?campaign=004"
@@ -124,15 +174,37 @@ function testUtmPolicy() {
 
     assert.strictEqual(
         campaignLink.buildEntryUrl(
+            "004",
             "?utm_source=one&utm_source=two"
         ),
         "/analysis/entry?campaign=004"
     );
+
+    assert.strictEqual(
+        campaignLink.buildEntryUrl(
+            "002",
+            "?utm_source=facebook&utm_medium=paid_social"
+        ),
+        "/analysis/entry?campaign=002&utm_source=facebook&utm_medium=paid_social"
+    );
+    assert.strictEqual(
+        campaignLink.buildEntryUrl(
+            "003",
+            "?utm_source=facebook&utm_campaign=index-weight-us"
+        ),
+        "/analysis/entry?campaign=003&utm_source=facebook&utm_campaign=index-weight-us"
+    );
+    assert.strictEqual(campaignLink.buildEntryUrl("invalid", ""), "");
 }
 
 function testCampaignBridge() {
     const triggers = Array.from({ length: 5 }, () => ({
-        attributes: {},
+        attributes: {
+            href: "/analysis/entry?campaign=004"
+        },
+        getAttribute(name) {
+            return this.attributes[name] || null;
+        },
         setAttribute(name, value) {
             this.attributes[name] = value;
         }
@@ -140,6 +212,9 @@ function testCampaignBridge() {
 
     const windowObject = {
         location: {
+            href:
+                "http://127.0.0.1:3000/lp/004-when-machines-become-work/"
+                + "?utm_source=phase4b",
             search:
                 "?utm_source=phase4b"
                 + "&utm_medium=paid"
@@ -162,11 +237,7 @@ function testCampaignBridge() {
 
     assert.deepStrictEqual(
         windowObject.MeridianLandingContext,
-        expectedContext
-    );
-    assert.strictEqual(
-        windowObject.MeridianLandingContext,
-        campaignLink.campaignContext
+        { campaignId: "004" }
     );
     assert.ok(Object.isFrozen(windowObject.MeridianLandingContext));
 
@@ -257,6 +328,26 @@ async function testRoute() {
             response.headers.get("content-security-policy"),
             /script-src[^;]*unsafe-inline/
         );
+
+        response = await request(
+            "/analysis/entry?campaign=002"
+        );
+        body = await response.text();
+        assert.strictEqual(response.status, 200);
+        assert.match(body, /data-campaign-id="002"/);
+        assert.match(body, /data-page-id="002-agi-repricing"/);
+        assert.ok(body.includes(expectedQuestion002));
+        assert.doesNotMatch(body, /data-whatsapp-route-key/);
+
+        response = await request(
+            "/analysis/entry?campaign=003"
+        );
+        body = await response.text();
+        assert.strictEqual(response.status, 200);
+        assert.match(body, /data-campaign-id="003"/);
+        assert.match(body, /data-page-id="003-weight-of-the-index"/);
+        assert.ok(body.includes(expectedQuestion003));
+        assert.doesNotMatch(body, /data-whatsapp-route-key/);
 
         response = await request("/analysis/entry");
         assert.strictEqual(response.status, 400);
@@ -371,6 +462,11 @@ async function testFirstTouchSessionContext() {
             },
             expectedContext
         );
+        assert.strictEqual(
+            lastUpdate.$set.landingContext.whatsappRouteKey,
+            "",
+            "Campaign 004 must not infer a WhatsApp binding from its page ID"
+        );
 
         existingSession = {
             userId: "user_existing1",
@@ -435,9 +531,23 @@ function testSourceIntegration() {
     const campaignHtml = read(
         "public/lp/004-when-machines-become-work/index.html"
     );
+    const campaign002Html = read(
+        "public/lp/002-agi-repricing/index.html"
+    );
+    const campaign003Html = read(
+        "public/lp/003-weight-of-the-index/index.html"
+    );
     const renderedCampaignHtml = campaignHtml.slice(
         0,
         campaignHtml.indexOf("</main>") + "</main>".length
+    );
+    const renderedCampaign002Html = campaign002Html.slice(
+        0,
+        campaign002Html.indexOf("</main>") + "</main>".length
+    );
+    const renderedCampaign003Html = campaign003Html.slice(
+        0,
+        campaign003Html.indexOf("</main>") + "</main>".length
     );
 
     assert.match(bootstrap, /loader\.open\(\{/);
@@ -493,7 +603,13 @@ function testSourceIntegration() {
     );
     assert.match(campaignBridge, /findCampaignTriggers/);
     assert.match(campaignBridge, /setLandingContext/);
-    assert.match(campaignBridge, /campaignId:\s*"004"/);
+    assert.match(campaignBridge, /resolveCampaignId/);
+    assert.match(campaignBridge, /getCampaignIdFromTrigger/);
+    assert.doesNotMatch(
+        campaignBridge,
+        /campaignId:\s*"00[234]"/,
+        "the shared Campaign bridge must not hard-code Campaign identity"
+    );
     assert.doesNotMatch(campaignBridge, /handleSend\s*\(/);
     assert.match(
         landingLoader,
@@ -504,6 +620,63 @@ function testSourceIntegration() {
         landingLoader,
         /window\.__MeridianLandingLoaderState/,
         "the shared loader must reuse one SDK initialization"
+    );
+
+    assert.strictEqual(
+        (renderedCampaign002Html.match(/data-meridian-chat(?:="")?/g) || []).length,
+        5,
+        "Campaign 002 must render exactly five shared Chat entry points"
+    );
+    assert.strictEqual(
+        (renderedCampaign002Html.match(/data-meridian-floating-entry(?:="")?/g) || []).length,
+        1,
+        "Campaign 002 must render exactly one Campaign floating launcher"
+    );
+    assert.strictEqual(
+        (renderedCampaign002Html.match(/data-meridian-auto-send="false"/g) || []).length,
+        5,
+        "every Campaign 002 Chat entry must disable auto-send"
+    );
+    assert.strictEqual(
+        (renderedCampaign002Html.match(new RegExp(
+            expectedQuestion002.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+            "g"
+        )) || []).length,
+        5,
+        "every Campaign 002 Chat entry must carry the reviewed question"
+    );
+    assert.strictEqual(
+        (renderedCampaign002Html.match(/href="\/analysis\/entry\?campaign=002"/g) || []).length,
+        5,
+        "all Campaign 002 Chat entries must retain the canonical fallback"
+    );
+    assert.strictEqual(
+        (renderedCampaign003Html.match(/data-meridian-chat(?:="")?/g) || []).length,
+        5,
+        "Campaign 003 must render exactly five shared Chat entry points"
+    );
+    assert.strictEqual(
+        (renderedCampaign003Html.match(/data-meridian-floating-entry(?:="")?/g) || []).length,
+        1,
+        "Campaign 003 must render exactly one Campaign floating launcher"
+    );
+    assert.strictEqual(
+        (renderedCampaign003Html.match(/data-meridian-auto-send="false"/g) || []).length,
+        5,
+        "every Campaign 003 Chat entry must disable auto-send"
+    );
+    assert.strictEqual(
+        (renderedCampaign003Html.match(new RegExp(
+            expectedQuestion003.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+            "g"
+        )) || []).length,
+        5,
+        "every Campaign 003 Chat entry must carry the reviewed question"
+    );
+    assert.strictEqual(
+        (renderedCampaign003Html.match(/href="\/analysis\/entry\?campaign=003"/g) || []).length,
+        5,
+        "all Campaign 003 Chat entries must retain the canonical fallback"
     );
 }
 

@@ -9,6 +9,8 @@ const landingPages = [
   "market-clarity-a",
   "market-clarity-b",
   "market-clarity-c",
+  "002-agi-repricing",
+  "003-weight-of-the-index",
   "004-when-machines-become-work"
 ].map((slug)=>path.join(
   projectRoot,
@@ -77,6 +79,18 @@ assert(
   ui.includes("stopMobileFullscreen") &&
   ui.includes("window.visualViewport"),
   "Missing mobile full-screen lifecycle support."
+);
+
+const closeMethod = ui.slice(
+  ui.indexOf("  close(){"),
+  ui.indexOf("  handleSend(){")
+);
+
+assert(
+  closeMethod.includes("loaderState.lastTrigger") &&
+  closeMethod.indexOf("returnFocus.focus") <
+  closeMethod.indexOf('"aria-hidden"'),
+  "Chat close must restore focus outside the panel before hiding the dialog."
 );
 
 assert(
